@@ -242,3 +242,78 @@ export function Folder() {
         </li>
     `;
 }
+
+
+export function RenderPost(post) {
+    const title = post.title || "Untitled";
+    const typeText = post.type ? post.type.charAt(0).toUpperCase() + post.type.slice(1) : "Unknown";
+
+    switch (post.type) {
+        case PostType.IMAGE:
+            return /*html*/ `
+                <a href="post/${post.key}" class="favorite-post" data-key="${post.key}">
+                    <div class="favorite-post-type">${typeText}</div>
+                    ${Image(post.src, post.title, post.key)}
+                </a>
+                
+            `;
+        case PostType.JOURNAL:
+            return /*html*/ `
+                <a href="post/${post.key}" class="favorite-post" data-key="${post.key}">
+                    <div class="favorite-post-type">${typeText}</div>
+                    ${Journal(post.body, post.key)}
+                </a>
+            `;
+    }
+}
+
+export class ContentData {
+    constructor({ key, title, type }) {
+        this.key = key;
+        this.title = title;
+        this.type = type;
+    }
+}
+
+export function LoadFavoritesDataAsync(profileUUID, offset = 0) {
+    return new Promise((resolve, reject) => {
+        $.ajax({
+            url: "/content_handler.php",
+            type: "POST",
+            dataType: "json",
+            data: {
+                offset,
+                profile_uuid: profileUUID
+            },
+            success: json => {
+                if (!json || !json.success || !Array.isArray(json.array)) {
+                    resolve([]);
+                    return;
+                }
+
+                resolve(json.array.map(c => new ContentData(c)));
+            },
+            error: xhr => reject(xhr.responseText)
+        });
+    });
+}
+
+export async function LoadFavorites(profileUUID) {
+    const $container = $("#content-view");
+    $container.empty();
+
+    let posts = [];
+
+    try {
+        posts = await LoadFavoritesDataAsync(profileUUID, 0);
+    } catch (err) {
+        console.error("Failed to load comments:", err);
+        return;
+    }
+
+    posts.forEach(post => {
+        const $postEl = $(RenderPost(post));
+
+        $container.append($postEl);
+    });
+}
