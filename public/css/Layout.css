@@ -913,11 +913,15 @@
         white-space: nowrap
     }
 
+    #post-owner-info {
+        margin-top: calc(var(--spacing)*2);
+        margin-left: calc(var(--spacing)*2)
+    }
+
     .user-metadata {
         margin-right: calc(var(--spacing)*5);
         margin-bottom: calc(var(--spacing)*1);
         --tw-leading: 1;
-        place-self: end;
         line-height: 1
     }
 
@@ -1844,6 +1848,10 @@
 @layer utilities {
     .absolute {
         position: absolute
+    }
+
+    .hidden {
+        display: none
     }
 
     .filter {
