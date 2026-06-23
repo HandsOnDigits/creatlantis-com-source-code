@@ -4,7 +4,7 @@ export const PostType = {
     PROFILE: "profile"
 }
 
-export function UserMetadata(main = false) {
+export function DynamicUserMetadata(main = false) {
     return /*html*/`
         <a id="${main ? 'main-user' : ""}" href="#" title="Go to the user's profile" class="profile-link">
             <img class="user-icon" src="../images/default_pp.webp"/>
@@ -68,7 +68,7 @@ export function OnPostThumbClick(post) {
 export function RenderComment(comment) {
     return /*html*/ `
         <div class="comment" data-stack-uuid="${comment.stackUUID}">
-            ${UserMetadata()}
+            ${DynamicUserMetadata()}
             <div class="comment-body">${comment.body}</div>
             <div class="make-a-reply-container">
                 <button class="reply" title="Start sending a reply to this comment">Reply</button>
@@ -214,7 +214,7 @@ export function CommentSection() {
             <hr/>
 
             <form id="add-new-comment">
-                ${UserMetadata(true)}
+                ${DynamicUserMetadata(true)}
                 <textarea id="comment-input" cols="100" name="comment" rows="5">Add a new comment...</textarea>
 
                 <br/>

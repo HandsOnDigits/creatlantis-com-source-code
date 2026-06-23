@@ -19,7 +19,7 @@
   $areYouTheViewedUser = false;
   
   if(isset($_SESSION["user_data"]))
-    $areYouTheViewedUser = ($viewedUser->uuid() == unserialize($_SESSION["user_data"])->uuid())
+    $areYouTheViewedUser = ($viewedUser->uuid() == unserialize($_SESSION["user_data"])->uuid());
 
 ?>
 
@@ -68,7 +68,7 @@
         </div>
         
         <script type="module">
-            import { UserMetadata, LoadFavorites } from "./js/common.js";
+            import { LoadFavorites, Profile } from "./js/common.js";
             import { 
                 LoadProfileElements, 
                 BeforeStartEditingProfileElement, 
@@ -140,11 +140,9 @@
 
             /* Load in viewed user metadata */
 
-            $("#content-map-left-part").prepend(UserMetadata());
-            
-            $("#content-map-left-part .user-name").text("<?php echo $viewedUserUsername; ?>");
-            $("#content-map-left-part .user-tagline").text("<?php echo $viewedUser->tagline(); ?>");
-            $("#content-map-left-part .user-icon").attr("src", "<?php echo $viewedUserProfileImage; ?>");
+            var profile = Profile("<?php echo $viewedUserUsername; ?>", "<?php echo $viewedUser->tagline(); ?>", "<?php echo $viewedUserProfileImage; ?>");
+
+            $("#content-map-left-part").prepend(profile);
 
             /* Load selected profile tap */
             switch ("<?php echo $_GET["tab"]; ?>") {

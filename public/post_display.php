@@ -104,7 +104,7 @@
                 PostType, 
                 CommentSection, 
                 LoadComments, 
-                UserMetadata, 
+                Profile,
                 SetupReplyContainer, 
                 DestroyReplyContainer 
             } from "./js/common.js";
@@ -133,14 +133,8 @@
                 /* Load owner info */
 
                 $(document).ready(function () {
-                    $("#post-owner-info").append(UserMetadata());
-
-                    $("#post-owner-info .profile-link").attr("href", "profile/" + postData.metadata.owner.username);
-                    $("#post-owner-info .user-icon").attr("src", postData.metadata.owner.profile_image);
-                    $("#post-owner-info .user-name").html(postData.metadata.owner.username);
-                    $("#post-owner-info .user-tagline").html(postData.metadata.owner.tagline);''
-
-                    postData.owner
+                    var profile = Profile(postData.metadata.owner.username, postData.metadata.owner.tagline, postData.metadata.owner.profile_image, postData.metadata.owner.profile_image);
+                    $("#post-owner-info").append(profile);
                 });
                 
                 /* Load comments and repies */
