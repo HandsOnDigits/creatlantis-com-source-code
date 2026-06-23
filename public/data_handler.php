@@ -926,6 +926,64 @@ class DataHandle {
         return $row['unread_count'] ?? 0;
     }
 
+    public function loadProfileFavorites($profileUUID, $maxKeys, $offset) {
+        $stmt = $this->mysqli->prepare("SELECT post_id FROM feedback WHERE uuid=? LIMIT ? OFFSET ?");
+
+        if (!$stmt) {
+            error_log("MySQL prepare failed in loadProfileFavorites: " . $this->mysqli->error);
+            return json_encode(['success' => false, 'error' => 'DB prepare failed.']);
+        }
+
+        $stmt->bind_param("sii", $profileUUID, $maxKeys, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+
+        $favorites = [];
+        while ($row = $result->fetch_assoc()) {
+            $postId = $row['post_id'] ?? null;
+            if (!$postId) continue;
+
+            $postStmt = $this->mysqli->prepare("SELECT short_uuid, title, type, `key` FROM post_list WHERE id=?");
+            if (!$postStmt) {
+                error_log("MySQL prepare failed fetching post: " . $this->mysqli->error);
+                continue;
+            }
+
+            $postStmt->bind_param("i", $postId);
+            $postStmt->execute();
+            $postResult = $postStmt->get_result();
+            $postRow = $postResult->fetch_assoc();
+            $postStmt->close();
+
+            if (!$postRow) continue;
+
+            $favorite = [
+                'key' => $postRow['short_uuid'] ?? '',
+                'title' => $postRow['title'] ?? '',
+                'type' => $postRow['type'] ?? ''
+            ];
+
+            if ($postRow['type'] === FileType::image->value) {
+                $objects = $this->s3->listObjects($postRow['key'] ?? '');
+                $keys = array_column($objects, 'Key');
+                $finalKey = $this->resolveImageRes($keys, false);
+                if ($finalKey) {
+                    $favorite['src'] = $this->s3->getPresignedUrl($finalKey);
+                }
+            } elseif ($postRow['type'] === FileType::journal->value) {
+                $body = $this->s3->getObjectBodyAsString($postRow['key'] ?? '');
+                if ($body !== null) {
+                    $favorite['body'] = preg_replace('/[\x00-\x1F\x7F]/', '', $body);
+                }
+            }
+
+            $favorites[] = $favorite;
+        }
+
+        return json_encode(['success' => true, 'favorites' => $favorites]);
+    }
+
     public function __destruct() {
         if (isset($this->mysqli)) $this->mysqli->close();
     } 
