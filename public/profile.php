@@ -68,8 +68,21 @@
         </div>
         
         <script type="module">
-            import { UserMetadata } from "./js/common.js";
-            import { LoadProfileElements, BeforeStartEditingProfileElement, SaveSingleElement, StartEditingProfileLayout, ElementType, EndEditingProfileLayout, CustomProfileView, CustomProfileEdit, CustomProfileElement, CommentSectionElement, PostSpotlightElement, ProfileBIOElement } from "./js/profile.js";
+            import { UserMetadata, LoadFavorites } from "./js/common.js";
+            import { 
+                LoadProfileElements, 
+                BeforeStartEditingProfileElement, 
+                SaveSingleElement, 
+                StartEditingProfileLayout, 
+                ElementType, 
+                EndEditingProfileLayout, 
+                CustomProfileView, 
+                CustomProfileEdit, 
+                CustomProfileElement, 
+                CommentSectionElement, 
+                PostSpotlightElement, 
+                ProfileBIOElement 
+            } from "./js/profile.js";
             
             /* Load in profile elements */
 
@@ -235,6 +248,10 @@
             }
 
             function Favorites() {
+                $(document).ready(async function () {
+                    await LoadFavorites("<?php echo $viewedUser->uuid();?>");
+                });
+
                 return /*html*/ `
                     <div id="content-view">
                         <!-- Favorites here -->
