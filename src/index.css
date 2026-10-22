@@ -1,1 +1,80 @@
 @import 'tailwindcss';
+
+@theme {
+  /* Themes */
+
+  --color-dark-0: oklch(44.6% 0.03 256.802);
+  --color-dark-1: #72727280;
+  --color-dark-2: #363636;
+  --color-dark-3: #1a2421;
+  --color-dark-4: #272f45;
+
+  --color-light-0: #e3e3fa;
+  --color-light-1: #c3c3c380;
+  --color-light-2: #aec5d9;
+  --color-light-3: white;
+  --color-light-4: #a9accc;
+
+  --color-green-0: #c8e3d8;
+  --color-green-1: #a4bfa780;
+  --color-green-2: #59785f;
+  --color-green-3: #d6ffda;
+  --color-green-4: #c6d8d0;
+
+  --star-rate-mask: url('../images/5-stars.webp');
+  --upload-image: url('../images/icons/uploadIcon.webp');
+}
+
+@layer components {
+  :root {
+    /* Font */
+    --font-scale: 0.7;
+
+    /* Dynamic values */
+    --star-rating: 0%;
+  }
+
+  html {
+    @apply subpixel-antialiased;
+
+    @apply leading-tight;
+  }
+
+  /* FLUID TEXT: mobile-first clamp(), then bigger clamps on larger breakpoints and antialias */
+
+  /* Default text size */
+  html:not(.big-text):not(.extra-big-text) {
+    /* base (mobile) */
+    @apply text-[calc(clamp(1rem,0vw,2rem)*var(--font-scale))];
+    /* tablet */
+    @apply sm:text-[calc(clamp(1.25rem,3.2vw,2.5rem)*var(--font-scale))];
+    /* small desktop */
+    @apply md:text-[calc(clamp(1.5rem,2.2vw,3rem)*var(--font-scale))];
+    /* large desktop */
+    @apply lg:text-[calc(clamp(1.25rem,0.75vw,4rem)*var(--font-scale))];
+  }
+
+  /* Big text size */
+  .big-text {
+    /* base (mobile) */
+    @apply text-[calc(clamp(2.25rem,0vw,4rem)*var(--font-scale))];
+    /* tablet */
+    @apply sm:text-[calc(clamp(2rem,3.2vw,3.5rem)*var(--font-scale))];
+    /* small desktop */
+    @apply md:text-[calc(clamp(2.25rem,2.2vw,4rem)*var(--font-scale))];
+    /* large desktop */
+    @apply lg:text-[calc(clamp(2.25rem,0.75vw,5rem)*var(--font-scale))];
+  }
+
+  /* Extra big text size */
+  .extra-big-text {
+    /* base (mobile) */
+    @apply text-[calc(clamp(4rem,0vw,6.5rem)*var(--font-scale))];
+    /* tablet */
+    @apply sm:text-[calc(clamp(3.25rem,3.2vw,5rem)*var(--font-scale))];
+    /* small desktop */
+    @apply md:text-[calc(clamp(3.5rem,2.2vw,5.5rem)*var(--font-scale))];
+    /* large desktop */
+    @apply lg:text-[calc(clamp(3.75rem,0.75vw,6.5rem)*var(--font-scale))];
+  }
+}
