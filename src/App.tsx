@@ -1,5 +1,3 @@
-import './App.css'
-
 function App() {
   return (
     <div className="flex bg-slate-100 p-4 text-4xl font-bold underline">
