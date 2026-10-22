@@ -1,8 +1,32 @@
-# Note!
-Contains AI-Assisted Code. All Art and icons are made by Humans.
+# React + TypeScript + Vite
 
-# READ ME IN ORDER TO MAKE THIS WORK (!!!NEED TO BE UPDATED!!!)
-When you have cloned the repository, you need some extra files to make it work:
-- 1 This website uses Amazon Web Service S3 as its file server, so you need to get the PHP SDK (https://aws.amazon.com/sdk-for-php/) as a folder named "aws" inside of "public" > "php_functions" under
-- 2 You need to set up your own MySQL server with all the tables, data rows, and columns. Keep in mind that it is case-sensitive.
-- 3 Add your own db_connect.php with the needed PHP functions to use to connect to the database of your own, and add it to "public" > "php_functions" > "mysql_functions"
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the Oxlint configuration
+
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
+```
+
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
