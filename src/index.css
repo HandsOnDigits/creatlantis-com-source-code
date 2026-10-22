@@ -1,8 +1,7 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Themes */
-
+  /* --- Raw Color Palette --- */
   --color-dark-0: oklch(44.6% 0.03 256.802);
   --color-dark-1: #72727280;
   --color-dark-2: #363636;
@@ -21,60 +20,128 @@
   --color-green-3: #d6ffda;
   --color-green-4: #c6d8d0;
 
+  /* --- Universal Semantic Tokens --- */
+  --color-bg: var(--theme-bg);
+  --color-text: var(--theme-text);
+  --color-surface: var(--theme-surface);
+  --color-category-list: var(--theme-category-list);
+
+  /* --- Assets --- */
   --star-rate-mask: url('../images/5-stars.webp');
   --upload-image: url('../images/icons/uploadIcon.webp');
 }
 
+/* ==========================================
+   Theme Variant Declarations (Attached to HTML)
+   ================================---------- */
+
+:root {
+  /* Safe fallback defaults */
+  --theme-bg: #ffffff;
+  --theme-text: #000000;
+  --theme-surface: #f1f5f9;
+  --color-category-list: #cecece;
+}
+
+html.dark-theme {
+  --theme-bg: var(--color-dark-3);
+  --theme-text: var(--color-neutral-50, #f8fafc);
+  --theme-surface: var(--color-dark-2);
+  --color-category-list: var(--color-dark-1);
+}
+
+html.light-theme {
+  --theme-bg: var(--color-light-3);
+  --theme-text: #000000;
+  --theme-surface: var(--color-light-2);
+  --color-category-list: var(--color-light-1);
+}
+
+html.green-theme {
+  --theme-bg: var(--color-green-3);
+  --theme-text: #000000;
+  --theme-surface: var(--color-green-2);
+  --color-category-list: var(--color-green-1);
+}
+
+/* ==========================================
+   Components & Global Layout
+   ================================---------- */
+
 @layer components {
   :root {
-    /* Font */
     --font-scale: 0.7;
-
-    /* Dynamic values */
     --star-rating: 0%;
   }
 
   html {
-    @apply subpixel-antialiased;
-
-    @apply leading-tight;
+    @apply leading-tight subpixel-antialiased;
   }
-
-  /* FLUID TEXT: mobile-first clamp(), then bigger clamps on larger breakpoints and antialias */
 
   /* Default text size */
   html:not(.big-text):not(.extra-big-text) {
-    /* base (mobile) */
     @apply text-[calc(clamp(1rem,0vw,2rem)*var(--font-scale))];
-    /* tablet */
     @apply sm:text-[calc(clamp(1.25rem,3.2vw,2.5rem)*var(--font-scale))];
-    /* small desktop */
     @apply md:text-[calc(clamp(1.5rem,2.2vw,3rem)*var(--font-scale))];
-    /* large desktop */
     @apply lg:text-[calc(clamp(1.25rem,0.75vw,4rem)*var(--font-scale))];
   }
 
   /* Big text size */
   .big-text {
-    /* base (mobile) */
     @apply text-[calc(clamp(2.25rem,0vw,4rem)*var(--font-scale))];
-    /* tablet */
     @apply sm:text-[calc(clamp(2rem,3.2vw,3.5rem)*var(--font-scale))];
-    /* small desktop */
     @apply md:text-[calc(clamp(2.25rem,2.2vw,4rem)*var(--font-scale))];
-    /* large desktop */
     @apply lg:text-[calc(clamp(2.25rem,0.75vw,5rem)*var(--font-scale))];
   }
 
   /* Extra big text size */
   .extra-big-text {
-    /* base (mobile) */
     @apply text-[calc(clamp(4rem,0vw,6.5rem)*var(--font-scale))];
-    /* tablet */
     @apply sm:text-[calc(clamp(3.25rem,3.2vw,5rem)*var(--font-scale))];
-    /* small desktop */
     @apply md:text-[calc(clamp(3.5rem,2.2vw,5.5rem)*var(--font-scale))];
-    /* large desktop */
     @apply lg:text-[calc(clamp(3.75rem,0.75vw,6.5rem)*var(--font-scale))];
+  }
+
+  /* Star rate */
+  #star-rateing {
+    --star-rating-hover: 0%;
+    @apply mask-(--star-rate-mask) mask-type-alpha mask-contain mask-center mask-no-repeat;
+    @apply w-[12.5vw] max-w-50;
+    @apply bg-[linear-gradient(to_right,var(--color-yellow-400)_var(--star-rating),var(--color-gray-400)_var(--star-rating))];
+    @apply hover:bg-[linear-gradient(to_right,var(--color-yellow-400)_var(--star-rating-hover),var(--color-gray-400)_var(--star-rating-hover))];
+  }
+
+  .rate-star-element {
+    @apply h-full grow;
+  }
+
+  #star-rateing:has(#rate-1-star:hover) {
+    --star-rating-hover: 20%;
+  }
+  #star-rateing:has(#rate-2-star:hover) {
+    --star-rating-hover: 40%;
+  }
+  #star-rateing:has(#rate-3-star:hover) {
+    --star-rating-hover: 60%;
+  }
+  #star-rateing:has(#rate-4-star:hover) {
+    --star-rating-hover: 80%;
+  }
+  #star-rateing:has(#rate-5-star:hover) {
+    --star-rating-hover: 100%;
+  }
+
+  /* Universal Theme Application targeting HTML and its children */
+  html[class*='-theme'] {
+    @apply bg-bg text-text min-h-screen;
+
+    & #category-list {
+      @apply bg-category-list;
+    }
+
+    & nav,
+    & footer {
+      @apply bg-surface;
+    }
   }
 }
