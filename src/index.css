@@ -25,6 +25,7 @@
   --color-text: var(--theme-text);
   --color-surface: var(--theme-surface);
   --color-category-list: var(--theme-category-list);
+  --color-journal-body: var(--theme-journal-body);
 
   /* --- Assets --- */
   --star-rate-mask: url('../images/5-stars.webp');
@@ -41,6 +42,7 @@
   --theme-text: #000000;
   --theme-surface: #f1f5f9;
   --color-category-list: #cecece;
+  --color-journal-body: #fff499;
 }
 
 html.dark-theme {
@@ -48,6 +50,7 @@ html.dark-theme {
   --theme-text: var(--color-neutral-50, #f8fafc);
   --theme-surface: var(--color-dark-2);
   --color-category-list: var(--color-dark-1);
+  --color-journal-body: var(--color-dark-0);
 }
 
 html.light-theme {
@@ -55,6 +58,7 @@ html.light-theme {
   --theme-text: #000000;
   --theme-surface: var(--color-light-2);
   --color-category-list: var(--color-light-1);
+  --color-journal-body: var(--color-light-0);
 }
 
 html.green-theme {
@@ -62,6 +66,7 @@ html.green-theme {
   --theme-text: #000000;
   --theme-surface: var(--color-green-2);
   --color-category-list: var(--color-green-1);
+  --color-journal-body: var(--color-green-0);
 }
 
 /* ==========================================
@@ -131,12 +136,20 @@ html.green-theme {
     --star-rating-hover: 100%;
   }
 
+  .selected-index {
+    @apply text-blue-400 after:content-["\0020<"];
+  }
+
   /* Universal Theme Application targeting HTML and its children */
   html[class*='-theme'] {
     @apply bg-bg text-text min-h-screen;
 
     & #category-list {
       @apply bg-category-list;
+    }
+
+    & .journal {
+      @apply bg-journal-body text-text;
     }
 
     & nav,

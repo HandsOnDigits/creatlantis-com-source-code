@@ -9,10 +9,7 @@
     <!-- Inline script placed safely in head to prevent white/wrong-theme flash -->
     <script>
       const savedTheme = localStorage.getItem('theme')
-      const systemPrefersDark = window.matchMedia(
-        '(prefers-color-scheme: dark)',
-      ).matches
-      const fallback = systemPrefersDark ? 'dark' : 'light'
+      const fallback = 'dark'
       const activeTheme = savedTheme || fallback
 
       // Apply the theme class to <html> immediately before render
