@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react'
 
+import { VerticalHR } from './Utilites'
+
+// Image
+import test_icon from './assets/images/test_icon.webp'
+
 function NavigationBar() {
   // Read initial theme from document class or default to dark
   const [currentTheme, setCurrentTheme] = useState(() => {
@@ -21,10 +26,14 @@ function NavigationBar() {
   }, [currentTheme])
 
   return (
-    <nav className="flex items-center justify-between p-4 shadow-md transition-colors duration-200">
+    <nav className="sticky top-0 flex items-center justify-between p-4 shadow-2xs transition-colors duration-200">
       <span className="font-medium">
-        React + TypeScript + Tailwind v4 running!
+        <img className="w-[70%]" src={test_icon} alt="Statisk logo" />
       </span>
+
+      <VerticalHR />
+
+      <VerticalHR />
 
       {/* Theme Switcher Controls */}
       <div className="flex items-center gap-2">

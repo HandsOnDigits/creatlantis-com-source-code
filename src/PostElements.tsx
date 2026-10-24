@@ -2,7 +2,7 @@
 export function Journal({ content }: { content: string }) {
   return (
     <div
-      className="journal h-[40vh] w-fit overflow-y-scroll p-4 leading-relaxed sm:h-[65vh]"
+      className="journal h-[40vh] overflow-y-scroll p-4 leading-relaxed sm:h-[65vh] md:h-[40vh]"
       dangerouslySetInnerHTML={{ __html: content }}
     />
   )

@@ -20,6 +20,8 @@
   --color-green-3: #d6ffda;
   --color-green-4: #c6d8d0;
 
+  --color-line: rgba(1, 1, 1, 0.33);
+
   /* --- Universal Semantic Tokens --- */
   --color-bg: var(--theme-bg);
   --color-text: var(--theme-text);
@@ -108,6 +110,7 @@ html.green-theme {
   }
 
   /* Star rate */
+
   #star-rateing {
     --star-rating-hover: 0%;
     @apply mask-(--star-rate-mask) mask-type-alpha mask-contain mask-center mask-no-repeat;

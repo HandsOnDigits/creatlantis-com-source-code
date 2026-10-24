@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { Journal, Image } from './PostElements'
+import { HorizontalHR } from './Utilites'
 
 const categoryNames = {
   ALL: 'All',
@@ -78,7 +79,10 @@ function Collection() {
   return (
     <div className="flex min-h-screen">
       {/* Category Selection */}
-      <ol id="category-list" className="w-[17%] space-y-2 pt-4 pl-4 sm:w-[6%]">
+      <ol
+        id="category-list"
+        className="w-[18vw] space-y-2 p-4 text-nowrap lg:w-[8vw]"
+      >
         {categories.map((category) => (
           <li
             key={category}
@@ -94,20 +98,24 @@ function Collection() {
       </ol>
 
       {/* Selected Category Display */}
-      <div className="flex-1 p-6">
-        <h2 className="mb-6 text-2xl font-bold">{selectedCategory} Posts</h2>
+      <div className="flex min-h-0 flex-1 flex-col p-6">
+        <h2 className="big-text font-bold">{selectedCategory} Posts</h2>
+        <HorizontalHR />
 
-        {/* Masonry Layout Container */}
-        <div className="columns-1 gap-6 space-y-6 sm:columns-2 lg:columns-3">
-          {filteredItems.map((item) => (
-            <div key={item.id}>
-              {/* Conditional rendering based on item type */}
-              {item.type === 'image' && (
-                <Image url={item.url} alt={item.title} />
-              )}
-              {item.type === 'journal' && <Journal content={item.content} />}
-            </div>
-          ))}
+        {/* Scrollable Container Wrapper */}
+        <div className="h-[90vh] scrollbar-none overflow-y-auto">
+          {/* Masonry Layout Container */}
+          <div className="columns-1 gap-6 space-y-6 sm:columns-2 lg:columns-3">
+            {filteredItems.map((item) => (
+              <div key={item.id} className="break-inside-avoid">
+                {/* Conditional rendering based on item type */}
+                {item.type === 'image' && (
+                  <Image url={item.url} alt={item.title} />
+                )}
+                {item.type === 'journal' && <Journal content={item.content} />}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
