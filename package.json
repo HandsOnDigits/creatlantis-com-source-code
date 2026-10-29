@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "contract:emit": "prisma contract emit",
     "db:init:preview": "prisma db init --db \"%DATABASE_URL%\" --dry-run",
