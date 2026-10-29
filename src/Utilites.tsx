@@ -6,8 +6,9 @@ interface profileURL {
 
 export function ProfileLink({ name }: profileURL) {
   return (
-    <a href={name} className="flex h-auto max-w-14 items-center gap-2">
-      <img src={default_pp} /> <p>{name}</p>
+    <a href={name} className="user-profile flex items-center">
+      <img className="h-auto max-w-14" src={default_pp} />
+      <p className="p-4">{name}</p>
     </a>
   )
 }

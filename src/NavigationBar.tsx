@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { VerticalHR, ProfileLink } from './Utilites'
+import { VerticalHR, HorizontalHR, ProfileLink } from './Utilites'
 
 // Image
 import test_icon from './assets/images/test_icon.webp'
@@ -35,7 +35,25 @@ function NavigationBar() {
 
       <VerticalHR />
 
-      <ProfileLink name="Name" />
+      {/* Profile Dropdown Container */}
+      <div className="drop-down">
+        <ProfileLink name="Name" />
+        <div className="drop-down-content">
+          <button>Logout</button>
+
+          <HorizontalHR />
+
+          <div>
+            <button id="dark-theme-option" className="theme-option"></button>
+            <button id="light-theme-option" className="theme-option"></button>
+            <button id="green-theme-option" className="theme-option"></button>
+          </div>
+
+          <HorizontalHR />
+
+          <div>Settings</div>
+        </div>
+      </div>
 
       {/* Theme Switcher Controls */}
       <div className="flex items-center gap-2">
