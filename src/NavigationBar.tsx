@@ -39,55 +39,40 @@ function NavigationBar() {
       <div className="drop-down">
         <ProfileLink name="Name" />
         <div className="drop-down-content">
-          <button>Logout</button>
+          <button id="logout">Logout</button>
+          <button id="login">Login</button>
 
           <HorizontalHR />
 
-          <div>
-            <button id="dark-theme-option" className="theme-option"></button>
-            <button id="light-theme-option" className="theme-option"></button>
-            <button id="green-theme-option" className="theme-option"></button>
+          <div className="block">
+            <p>Switch theme</p>
+
+            {/* Theme Switcher Controls */}
+            <div>
+              <button
+                id="dark-theme-option"
+                className="theme-option"
+                onClick={() => setCurrentTheme('dark')}
+              ></button>
+              <button
+                id="light-theme-option"
+                className="theme-option"
+                onClick={() => setCurrentTheme('light')}
+              ></button>
+              <button
+                id="green-theme-option"
+                className="theme-option"
+                onClick={() => setCurrentTheme('green')}
+              ></button>
+            </div>
           </div>
 
           <HorizontalHR />
 
-          <div>Settings</div>
+          <button id="edit" disabled>
+            Settings
+          </button>
         </div>
-      </div>
-
-      {/* Theme Switcher Controls */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm opacity-80">Theme:</span>
-        <button
-          onClick={() => setCurrentTheme('dark')}
-          className={`rounded px-3 py-1 text-sm transition-all ${
-            currentTheme === 'dark'
-              ? 'font-bold ring-2 ring-neutral-400 ring-offset-2'
-              : 'opacity-70 hover:opacity-100'
-          }`}
-        >
-          Dark
-        </button>
-        <button
-          onClick={() => setCurrentTheme('light')}
-          className={`rounded px-3 py-1 text-sm transition-all ${
-            currentTheme === 'light'
-              ? 'font-bold ring-2 ring-neutral-600 ring-offset-2'
-              : 'opacity-70 hover:opacity-100'
-          }`}
-        >
-          Light
-        </button>
-        <button
-          onClick={() => setCurrentTheme('green')}
-          className={`rounded px-3 py-1 text-sm transition-all ${
-            currentTheme === 'green'
-              ? 'font-bold ring-2 ring-green-600 ring-offset-2'
-              : 'opacity-70 hover:opacity-100'
-          }`}
-        >
-          Green
-        </button>
       </div>
     </nav>
   )
