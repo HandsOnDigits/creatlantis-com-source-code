@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { VerticalHR } from './Utilites'
+import { VerticalHR, ProfileLink } from './Utilites'
 
 // Image
 import test_icon from './assets/images/test_icon.webp'
@@ -34,6 +34,8 @@ function NavigationBar() {
       <VerticalHR />
 
       <VerticalHR />
+
+      <ProfileLink name="Name" />
 
       {/* Theme Switcher Controls */}
       <div className="flex items-center gap-2">

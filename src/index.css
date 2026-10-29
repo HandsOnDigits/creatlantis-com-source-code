@@ -20,7 +20,7 @@
   --color-green-3: #d6ffda;
   --color-green-4: #c6d8d0;
 
-  --color-line: rgba(1, 1, 1, 0.33);
+  --color-vr-line: rgba(1, 1, 1, 0.33);
 
   /* --- Universal Semantic Tokens --- */
   --color-bg: var(--theme-bg);
@@ -28,6 +28,7 @@
   --color-surface: var(--theme-surface);
   --color-category-list: var(--theme-category-list);
   --color-journal-body: var(--theme-journal-body);
+  --color-hr-line: var(--theme-hr-line);
 
   /* --- Assets --- */
   --star-rate-mask: url('../images/5-stars.webp');
@@ -43,6 +44,7 @@
   --theme-bg: #ffffff;
   --theme-text: #000000;
   --theme-surface: #f1f5f9;
+  --theme-hr-line: var(--color-vr-line);
   --color-category-list: #cecece;
   --color-journal-body: #fff499;
 }
@@ -51,6 +53,7 @@ html.dark-theme {
   --theme-bg: var(--color-dark-3);
   --theme-text: var(--color-neutral-50, #f8fafc);
   --theme-surface: var(--color-dark-2);
+  --theme-hr-line: rgba(255, 255, 255, 0.33);
   --color-category-list: var(--color-dark-1);
   --color-journal-body: var(--color-dark-0);
 }
