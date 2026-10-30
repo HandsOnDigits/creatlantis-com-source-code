@@ -1,8 +1,8 @@
 // use prisma-8
 
 model User {
-  id           Int       @id @default(autoincrement())
-  email        String    @unique
+  id           Int               @id @default(autoincrement())
+  email        String            @unique
   username     String?
   name         String?
   passwordHash String?
@@ -13,20 +13,20 @@ model User {
 }
 
 model Post {
-  id        Int      @id @default(autoincrement())
+  id        Int               @id @default(autoincrement())
   title     String
   content   String?
-  author    User     @relation(fields: [authorId], references: [id])
+  author    User              @relation(fields: [authorId], references: [id])
   authorId  Int
   createdAt TimestamptzString @default(now())
   updatedAt temporal.UpdatedAtString
 }
 
 model Session {
-  id               String   @id @onCreate(uuid())
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String            @id @onCreate(uuid())
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId           Int
-  refreshTokenHash String   @unique
+  refreshTokenHash String            @unique
   expiresAt        TimestamptzString
   createdAt        TimestamptzString @default(now())
 }

@@ -41,6 +41,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.88.0",
     "prettier": "^3.9.10",
+    "prettier-plugin-prisma": "^5.0.0",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "prisma": "^8.0.0-rc.28",
     "tailwindcss": "^4.3.3",
