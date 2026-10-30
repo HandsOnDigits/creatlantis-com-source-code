@@ -12,8 +12,24 @@ const categoryNames = {
 
 type Category = (typeof categoryNames)[keyof typeof categoryNames]
 
+type CollectionItem =
+  | {
+      id: number
+      category: Exclude<Category, 'All'>
+      type: 'image'
+      url: string
+      title: string
+    }
+  | {
+      id: number
+      category: Exclude<Category, 'All'>
+      type: 'journal'
+      content: string
+      title: string
+    }
+
 // --- Updated Mock Data using Journal & Image types ---
-const collectionItems = [
+const collectionItems: CollectionItem[] = [
   {
     id: 1,
     category: 'Drawings',
