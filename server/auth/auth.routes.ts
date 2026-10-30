@@ -30,7 +30,7 @@ const refreshCookieOptions = {
   path: '/api/auth',
 }
 
-router.post('/register', async (req, res) => {
+router.post('/register', async (req, res, next) => {
   const parsed = registerSchema.safeParse(req.body)
 
   if (!parsed.success) {
@@ -56,12 +56,12 @@ router.post('/register', async (req, res) => {
       error.sqlState === '23505'
     ) {
       res.status(409).json({
-        error: 'An account with this email already exists',
+        error: 'Email or username is already taken',
       })
       return
     }
 
-    throw error
+    next(error)
   }
 })
 
@@ -158,7 +158,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
 router.get('/me', requireAuth, async (req, res) => {
   const user = await db.orm.public.User.where({ id: req.auth!.userId })
-    .select('id', 'email', 'username', 'name', 'createdAt')
+    .select('id', 'email', 'username', 'name', 'nameIsPublic', 'createdAt')
     .first()
 
   if (!user) {

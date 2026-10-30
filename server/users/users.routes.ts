@@ -16,14 +16,37 @@ const updateUserSchema = z
       .max(254)
       .transform((value) => value.toLowerCase())
       .optional(),
-    username: z.string().trim().min(1).max(50).optional(),
+
+    username: z
+      .string()
+      .trim()
+      .min(3)
+      .max(50)
+      .regex(
+        /^[a-zA-Z0-9_]+$/,
+        'Username can only contain letters, numbers and underscores',
+      )
+      .optional(),
+
     name: z.string().trim().min(1).max(100).optional(),
+
+    nameIsPublic: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
     message: 'At least one field must be provided',
   })
 
 // Helpers
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'sqlState' in error &&
+    error.sqlState === '23505'
+  )
+}
+
 function parseUserId(value: string | string[] | undefined): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
     return null
@@ -37,7 +60,7 @@ function parseUserId(value: string | string[] | undefined): number | null {
 // List users (only the authenticated user's own record)
 router.get('/', requireAuth, async (req, res) => {
   const users = await db.orm.public.User.where({ id: req.auth!.userId })
-    .select('id', 'username', 'name', 'createdAt')
+    .select('id', 'email', 'username', 'name', 'nameIsPublic', 'createdAt')
     .all()
 
   res.json({ data: users })
@@ -58,7 +81,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 
   const user = await db.orm.public.User.where({ id })
-    .select('id', 'email', 'username', 'name', 'createdAt')
+    .select('id', 'email', 'username', 'name', 'nameIsPublic', 'createdAt')
     .first()
 
   if (!user) {
@@ -96,7 +119,20 @@ router.patch('/:id', requireAuth, async (req, res) => {
     return
   }
 
-  const user = await db.orm.public.User.where({ id }).update(parsed.data)
+  let user
+
+  try {
+    user = await db.orm.public.User.where({ id }).update(parsed.data)
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      res.status(409).json({
+        error: 'Email or username is already taken',
+      })
+      return
+    }
+
+    throw error
+  }
 
   if (!user) {
     res.status(404).json({ error: 'User not found' })
@@ -109,6 +145,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
       email: user.email,
       username: user.username,
       name: user.name,
+      nameIsPublic: user.nameIsPublic,
       createdAt: user.createdAt,
     },
   })

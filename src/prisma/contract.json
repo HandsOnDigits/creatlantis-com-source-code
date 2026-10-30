@@ -217,6 +217,13 @@
                   "kind": "scalar"
                 }
               },
+              "nameIsPublic": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "passwordHash": {
                 "nullable": true,
                 "type": {
@@ -232,7 +239,7 @@
                 }
               },
               "username": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -284,6 +291,9 @@
                 },
                 "name": {
                   "column": "name"
+                },
+                "nameIsPublic": {
+                  "column": "nameIsPublic"
                 },
                 "passwordHash": {
                   "column": "passwordHash"
@@ -494,6 +504,15 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "nameIsPublic": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "passwordHash": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -507,11 +526,18 @@
                 "username": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "nullable": true
+                  "nullable": false
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "expression": "lower(username)",
+                  "name": "User_username_lower_key_4babe768",
+                  "prefix": "User_username_lower_key",
+                  "unique": true
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -531,7 +557,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "17451b43282e6e1906aeed32cf47a3dc41aca8dfa7e1bcebf7ae907d67022a9b"
+    "storageHash": "2aef2e890b74139f9bca1b3e82293a6454e384ac557dd9886b374e22d3a9e53c"
   },
   "execution": {
     "executionHash": "a08f8962fee25a07156664f0e759dce843d79067cac16522d04fafb77e592201",

@@ -39,24 +39,38 @@ async function createAccessToken(userId: number): Promise<string> {
     .sign(secret)
 }
 
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'sqlState' in error &&
+    error.sqlState === '23505'
+  )
+}
+
 export async function registerUser(input: RegisterInput) {
   const passwordHash = await argon2.hash(input.password, {
     type: argon2.argon2id,
   })
 
-  const user = await db.orm.public.User.create({
-    email: input.email,
-    username: input.username ?? null,
-    name: input.name ?? null,
-    passwordHash,
-  })
+  try {
+    const user = await db.orm.public.User.create({
+      email: input.email,
+      username: input.username,
+      name: input.name ?? null,
+      nameIsPublic: false,
+      passwordHash,
+    })
 
-  return {
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    name: user.name,
-    createdAt: user.createdAt,
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      name: user.name,
+      createdAt: user.createdAt,
+    }
+  } catch (error) {
+    throw error
   }
 }
 

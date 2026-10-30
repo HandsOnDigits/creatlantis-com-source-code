@@ -9,6 +9,7 @@ import { db } from '../src/prisma/db'
 import { errorHandler } from './middleware/error-handler'
 import authRoutes from './auth/auth.routes'
 import usersRoutes from './users/users.routes'
+import profilesRoutes from './profiles/profiles.routes'
 
 const app = express()
 const port = Number(process.env['API_PORT'] ?? 3000)
@@ -44,6 +45,7 @@ app.use('/api', apiLimiter)
 // API routes
 app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
+app.use('/api/profiles', profilesRoutes)
 
 // Health
 app.get('/api/health', async (_req, res) => {

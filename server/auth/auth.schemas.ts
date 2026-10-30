@@ -7,8 +7,19 @@ export const registerSchema = z.object({
     .email()
     .max(254)
     .transform((value) => value.toLowerCase()),
+
   password: z.string().min(12).max(128),
-  username: z.string().trim().min(1).max(50).optional(),
+
+  username: z
+    .string()
+    .trim()
+    .min(3)
+    .max(50)
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      'Username can only contain letters, numbers and underscores',
+    ),
+
   name: z.string().trim().min(1).max(100).optional(),
 })
 
