@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "tsx server/index.ts",
+    "dev:all": "concurrently -k -n API,WEB \"npm:dev:api\" \"npm:dev\"",
     "build": "tsc -b && vite build",
     "contract:emit": "prisma contract emit",
     "db:init:preview": "prisma db init --db \"%DATABASE_URL%\" --dry-run",
@@ -42,6 +43,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
     "oxlint": "^1.88.0",
     "prettier": "^3.9.10",
     "prettier-plugin-prisma": "^5.0.0",

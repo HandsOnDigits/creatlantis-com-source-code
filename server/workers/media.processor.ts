@@ -13,21 +13,6 @@ const MAX_IMAGE_PIXELS = 40_000_000
 
 const VARIANT_WIDTHS = [320, 960, 1600] as const
 
-const FORMATS = [
-  {
-    name: 'webp',
-    mimeType: 'image/webp',
-    extension: 'webp',
-    quality: 82,
-  },
-  {
-    name: 'avif',
-    mimeType: 'image/avif',
-    extension: 'avif',
-    quality: 55,
-  },
-] as const
-
 export async function processMediaJob(job: MediaJob): Promise<void> {
   const original = await downloadOriginalBuffer(
     job.originalKey,
@@ -54,54 +39,58 @@ export async function processMediaJob(job: MediaJob): Promise<void> {
     throw new Error('Animated images are not supported')
   }
 
-  const width = metadata.width
-  const height = metadata.height
+  const swapsDimensions = [5, 6, 7, 8].includes(metadata.orientation ?? 0)
+
+  const width = swapsDimensions ? metadata.height : metadata.width
+  const height = swapsDimensions ? metadata.width : metadata.height
+
+  const variantWidths: number[] = VARIANT_WIDTHS.filter(
+    (targetWidth) => targetWidth <= width,
+  )
+
+  if (variantWidths.length === 0) {
+    variantWidths.push(width)
+  }
 
   const variants: {
     mediaId: string
     objectKey: string
     fileId: string
-    format: 'WEBP' | 'AVIF'
+    format: 'WEBP'
     width: number
     height: number
     size: bigint
   }[] = []
 
-  for (const targetWidth of VARIANT_WIDTHS) {
-    if (targetWidth > width) continue
-
-    for (const format of FORMATS) {
-      const output = await sharp(original, {
-        limitInputPixels: MAX_IMAGE_PIXELS,
+  for (const targetWidth of variantWidths) {
+    const output = await sharp(original, {
+      limitInputPixels: MAX_IMAGE_PIXELS,
+    })
+      .rotate()
+      .resize({
+        width: targetWidth,
+        withoutEnlargement: true,
       })
-        .rotate()
-        .resize({
-          width: targetWidth,
-          withoutEnlargement: true,
-        })
-        .toFormat(format.name, {
-          quality: format.quality,
-        })
-        .toBuffer({ resolveWithObject: true })
+      .webp({ quality: 82 })
+      .toBuffer({ resolveWithObject: true })
 
-      const objectKey = `media/${job.id}/v1/${format.extension}/${targetWidth}.${format.extension}`
+    const objectKey = `media/${job.id}/v1/${targetWidth}.webp`
 
-      const uploaded = await uploadMediaVariant(
-        objectKey,
-        output.data,
-        format.mimeType,
-      )
+    const uploaded = await uploadMediaVariant(
+      objectKey,
+      output.data,
+      'image/webp',
+    )
 
-      variants.push({
-        mediaId: job.id,
-        objectKey,
-        fileId: uploaded.fileId,
-        format: format.name.toUpperCase() as 'WEBP' | 'AVIF',
-        width: output.info.width,
-        height: output.info.height,
-        size: BigInt(output.data.byteLength),
-      })
-    }
+    variants.push({
+      mediaId: job.id,
+      objectKey,
+      fileId: uploaded.fileId,
+      format: 'WEBP',
+      width: output.info.width,
+      height: output.info.height,
+      size: BigInt(output.data.byteLength),
+    })
   }
 
   if (variants.length === 0) {
