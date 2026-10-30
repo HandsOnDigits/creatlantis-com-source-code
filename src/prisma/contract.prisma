@@ -18,6 +18,8 @@ model User {
   sessions     Session[]
   createdAt    TimestamptzString @default(now())
   updatedAt    temporal.UpdatedAtString
+
+  media Media[]
 }
 
 model Post {
@@ -28,6 +30,8 @@ model Post {
   authorId  Int
   createdAt TimestamptzString @default(now())
   updatedAt temporal.UpdatedAtString
+
+  media PostMedia[]
 }
 
 model Session {
@@ -37,4 +41,81 @@ model Session {
   refreshTokenHash String            @unique
   expiresAt        TimestamptzString
   createdAt        TimestamptzString @default(now())
+}
+
+enum MediaStatus {
+  PENDING_UPLOAD
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+  DELETING
+}
+
+enum MediaFormat {
+  WEBP
+  AVIF
+}
+
+model Media {
+  id String @id @onCreate(uuid())
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  originalKey      String  @unique
+  originalFileId   String?
+  originalFilename String
+  originalMimeType String
+  originalSize     BigInt?
+
+  width  Int?
+  height Int?
+
+  status             MediaStatus        @default(PENDING_UPLOAD)
+  processingAttempts Int                @default(0)
+  processingError    String?
+  nextAttemptAt      TimestamptzString?
+  processedAt        TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+
+  variants  MediaVariant[]
+  postMedia PostMedia[]
+
+  @@index([userId, createdAt])
+  @@index([status, nextAttemptAt])
+}
+
+model MediaVariant {
+  id String @id @onCreate(uuid())
+
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId String
+
+  format    MediaFormat
+  width     Int
+  height    Int
+  size      BigInt
+  objectKey String      @unique
+  fileId    String?
+
+  createdAt TimestamptzString @default(now())
+
+  @@unique([mediaId, format, width])
+  @@index([mediaId])
+}
+
+model PostMedia {
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId Int
+
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId String
+
+  position Int @default(0)
+
+  @@id([postId, mediaId])
+  @@index([mediaId])
 }

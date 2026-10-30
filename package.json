@@ -11,9 +11,11 @@
     "db:init:preview": "prisma db init --db \"%DATABASE_URL%\" --dry-run",
     "db:migrate:plan": "prisma migration plan",
     "db:migrate": "prisma db migrate",
-    "db:migrate:status": "prisma migration status"
+    "db:migrate:status": "prisma migration status",
+    "worker:media": "tsx server/workers/media.worker.ts"
   },
   "dependencies": {
+    "@backblaze-labs/b2-sdk": "^0.4.0",
     "@bbob/core": "^4.4.1",
     "@prisma/orm-postgres": "^8.0.0-rc.21",
     "argon2": "^0.45.1",
@@ -26,6 +28,7 @@
     "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
