@@ -1,13 +1,15 @@
 // use prisma-8
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String?
-  name      String?
-  posts     Post[]
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.UpdatedAtString
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  username     String?
+  name         String?
+  passwordHash String?
+  posts        Post[]
+  sessions     Session[]
+  createdAt    TimestamptzString @default(now())
+  updatedAt    temporal.UpdatedAtString
 }
 
 model Post {
@@ -18,4 +20,13 @@ model Post {
   authorId  Int
   createdAt TimestamptzString @default(now())
   updatedAt temporal.UpdatedAtString
+}
+
+model Session {
+  id               String   @id @onCreate(uuid())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           Int
+  refreshTokenHash String   @unique
+  expiresAt        TimestamptzString
+  createdAt        TimestamptzString @default(now())
 }
