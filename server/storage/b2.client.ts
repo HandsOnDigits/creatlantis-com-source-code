@@ -20,15 +20,15 @@ const applicationKey = requiredEnv('B2_APPLICATION_KEY')
 const originalsBucket = requiredEnv('B2_ORIGINALS_BUCKET')
 const mediaBucketName = requiredEnv('B2_MEDIA_BUCKET')
 
-if (!applicationKeyId || !applicationKey) {
-  throw new Error('Missing Backblaze B2 credentials')
-}
-
-if (!originalsBucket) {
-  throw new Error('Missing B2_ORIGINALS_BUCKET')
-}
-
 let clientPromise: Promise<B2Client> | undefined
+
+export function getMediaVariantUrl(objectKey: string): string {
+  const baseUrl = requiredEnv('B2_MEDIA_PUBLIC_BASE_URL').replace(/\/+$/, '')
+
+  const encodedKey = objectKey.split('/').map(encodeURIComponent).join('/')
+
+  return `${baseUrl}/${encodedKey}`
+}
 
 async function getClient(): Promise<B2Client> {
   clientPromise ??= (async () => {
@@ -165,10 +165,6 @@ export async function uploadMediaVariant(
   buffer: Buffer,
   contentType: string,
 ) {
-  if (!mediaBucketName) {
-    throw new Error('Missing B2_MEDIA_BUCKET')
-  }
-
   const bucket = await getBucket(mediaBucketName)
 
   const result = await bucket.upload({

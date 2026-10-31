@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { db } from '../../src/prisma/db'
 import { requireAuth } from '../auth/auth.middleware'
 import {
+  createOriginalDownloadUrl,
   createOriginalUploadUrl,
   getOriginalObjectMetadata,
 } from '../storage/b2.client'
@@ -19,6 +20,52 @@ const createUploadSchema = z.object({
   filename: z.string().trim().min(1).max(255),
   contentType: z.enum(allowedContentTypes),
   size: z.number().int().positive().max(MAX_FILE_SIZE),
+})
+
+router.get('/:id/original', requireAuth, async (req, res) => {
+  const mediaId = req.params.id
+  const userId = req.auth?.userId
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'Authentication required',
+    })
+  }
+
+  if (
+    typeof mediaId !== 'string' ||
+    !z.string().uuid().safeParse(mediaId).success
+  ) {
+    return res.status(400).json({
+      error: 'Invalid media ID',
+    })
+  }
+
+  const media = await db.orm.public.Media.where({
+    id: mediaId,
+  }).first()
+
+  if (
+    !media ||
+    media.userId !== userId ||
+    !media.originalFileId ||
+    media.status === 'DELETING'
+  ) {
+    return res.status(404).json({
+      error: 'Media not found',
+    })
+  }
+
+  const downloadUrl = await createOriginalDownloadUrl(media.originalKey)
+
+  res.setHeader('Cache-Control', 'no-store')
+
+  return res.status(200).json({
+    data: {
+      url: downloadUrl,
+      expiresIn: 120,
+    },
+  })
 })
 
 router.post('/uploads', requireAuth, async (req, res) => {

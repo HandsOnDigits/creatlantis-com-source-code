@@ -1,6 +1,5 @@
 import { db } from '../../src/prisma/db'
 import { processMediaJob } from './media.processor'
-import type { MediaProcessingJob } from './media.types'
 
 export type MediaJob = NonNullable<Awaited<ReturnType<typeof claimMediaJob>>>
 
