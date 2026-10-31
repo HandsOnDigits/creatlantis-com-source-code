@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 
 import { VerticalHR, HorizontalHR, ProfileLink } from './Utilites'
 
-// Image
+import SearchAndFilter from './SearchAndFilte'
+
+// Images
 import test_icon from './assets/images/test_icon.webp'
 
 function NavigationBar() {
@@ -27,51 +29,56 @@ function NavigationBar() {
 
   return (
     <nav className="sticky top-0 flex items-center justify-between p-4 shadow-2xs transition-colors duration-200">
-      <span className="font-medium">
+      <div className="flex gap-4">
+        {/* Home Icon */}
         <img className="w-[70%]" src={test_icon} alt="Statisk logo" />
-      </span>
 
-      <VerticalHR />
+        <VerticalHR />
+      </div>
 
-      <VerticalHR />
+      <SearchAndFilter />
 
-      {/* Profile Dropdown Container */}
-      <div className="drop-down">
-        <ProfileLink name="Name" />
-        <div className="drop-down-content">
-          <button id="logout">Logout</button>
-          <button id="login">Login</button>
+      <div className="flex items-center gap-4">
+        <VerticalHR />
 
-          <HorizontalHR />
+        {/* Profile Dropdown Container */}
+        <div className="drop-down">
+          <ProfileLink name="Name" />
+          <div className="drop-down-content">
+            <button id="logout">Logout</button>
+            <button id="login">Login</button>
 
-          <div className="block">
-            <p>Switch theme</p>
+            <HorizontalHR />
 
-            {/* Theme Switcher Controls */}
-            <div>
-              <button
-                id="dark-theme-option"
-                className="theme-option"
-                onClick={() => setCurrentTheme('dark')}
-              ></button>
-              <button
-                id="light-theme-option"
-                className="theme-option"
-                onClick={() => setCurrentTheme('light')}
-              ></button>
-              <button
-                id="green-theme-option"
-                className="theme-option"
-                onClick={() => setCurrentTheme('green')}
-              ></button>
+            <div className="block">
+              <p>Switch theme</p>
+
+              {/* Theme Switcher Controls */}
+              <div>
+                <button
+                  id="dark-theme-option"
+                  className="theme-option"
+                  onClick={() => setCurrentTheme('dark')}
+                ></button>
+                <button
+                  id="light-theme-option"
+                  className="theme-option"
+                  onClick={() => setCurrentTheme('light')}
+                ></button>
+                <button
+                  id="green-theme-option"
+                  className="theme-option"
+                  onClick={() => setCurrentTheme('green')}
+                ></button>
+              </div>
             </div>
+
+            <HorizontalHR />
+
+            <button id="edit" disabled>
+              Settings
+            </button>
           </div>
-
-          <HorizontalHR />
-
-          <button id="edit" disabled>
-            Settings
-          </button>
         </div>
       </div>
     </nav>

@@ -9,7 +9,7 @@
   --color-dark-4: #272f45;
 
   --color-light-0: #e3e3fa;
-  --color-light-1: #c3c3c380;
+  --color-light-1: #c8c8c8;
   --color-light-2: #aec5d9;
   --color-light-3: white;
   --color-light-4: #a9accc;
@@ -26,7 +26,7 @@
   --color-bg: var(--theme-bg);
   --color-text: var(--theme-text);
   --color-surface: var(--theme-surface);
-  --color-category-list: var(--theme-category-list);
+  --color-background-blend: var(--theme-category-list);
   --color-journal-body: var(--theme-journal-body);
   --color-hr-line: var(--theme-hr-line);
   --color-drop-down: var(--theme-drop-down);
@@ -47,7 +47,7 @@
   --theme-surface: #f1f5f9;
   --theme-drop-down: #fff000;
   --theme-hr-line: var(--color-vr-line);
-  --color-category-list: #cecece;
+  --color-background-blend: #cecece;
   --color-journal-body: #fff499;
 }
 
@@ -57,7 +57,7 @@ html.dark-theme {
   --theme-surface: var(--color-dark-2);
   --theme-drop-down: var(--color-dark-4);
   --theme-hr-line: rgba(255, 255, 255, 0.33);
-  --color-category-list: var(--color-dark-1);
+  --color-background-blend: var(--color-dark-1);
   --color-journal-body: var(--color-dark-0);
 }
 
@@ -66,7 +66,7 @@ html.light-theme {
   --theme-text: #000000;
   --theme-surface: var(--color-light-2);
   --theme-drop-down: var(--color-light-4);
-  --color-category-list: var(--color-light-1);
+  --color-background-blend: var(--color-light-1);
   --color-journal-body: var(--color-light-0);
 }
 
@@ -75,7 +75,7 @@ html.green-theme {
   --theme-text: #000000;
   --theme-surface: var(--color-green-2);
   --theme-drop-down: var(--color-green-4);
-  --color-category-list: var(--color-green-1);
+  --color-background-blend: var(--color-green-1);
   --color-journal-body: var(--color-green-0);
 }
 
@@ -157,6 +157,13 @@ html.green-theme {
     }
   }
 
+  /* Icon scales */
+  img {
+    &.navigation-icon {
+      @apply h-5 sm:h-6 md:h-7 lg:h-10;
+    }
+  }
+
   /* Star rate */
 
   #star-rateing {
@@ -228,10 +235,11 @@ html.green-theme {
 
   /* Universal Theme Application targeting HTML and its children */
   html[class*='-theme'] {
-    @apply bg-bg text-text min-h-screen;
+    @apply bg-bg text-text placeholder-text min-h-screen;
 
-    & #category-list {
-      @apply bg-category-list;
+    & #category-list,
+    input {
+      @apply bg-background-blend;
     }
 
     & .journal {
