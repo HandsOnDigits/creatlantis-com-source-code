@@ -29,9 +29,9 @@ function NavigationBar() {
 
   return (
     <nav className="sticky top-0 flex items-center justify-between p-4 shadow-2xs transition-colors duration-200">
-      <div className="flex gap-4">
+      <div className="flex items-center gap-4">
         {/* Home Icon */}
-        <img className="w-[70%]" src={test_icon} alt="Statisk logo" />
+        <img className="h-auto w-[30vw]" src={test_icon} alt="Statisk logo" />
 
         <VerticalHR />
       </div>
@@ -50,7 +50,7 @@ function NavigationBar() {
 
             <HorizontalHR />
 
-            <div className="block">
+            <div>
               <p>Switch theme</p>
 
               {/* Theme Switcher Controls */}

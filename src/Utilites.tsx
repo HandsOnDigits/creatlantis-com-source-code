@@ -20,5 +20,5 @@ export function VerticalHR() {
 }
 
 export function HorizontalHR() {
-  return <div className="border-hr-line my-3 border-b-3"></div>
+  return <div className="border-hr-line my-3 w-[90%] border-b-3"></div>
 }

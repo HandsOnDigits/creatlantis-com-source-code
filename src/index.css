@@ -9,7 +9,7 @@
   --color-dark-4: #272f45;
 
   --color-light-0: #e3e3fa;
-  --color-light-1: #c8c8c8;
+  --color-light-1: rgba(195, 195, 195, 0.65);
   --color-light-2: #aec5d9;
   --color-light-3: white;
   --color-light-4: #a9accc;
@@ -215,21 +215,21 @@ html.green-theme {
   }
 
   .drop-down {
+    @apply relative;
+
     * {
       @apply p-1;
     }
-
-    @apply relative;
   }
 
   .drop-down-content {
-    @apply absolute top-full right-0 left-auto;
+    @apply absolute top-full right-0 left-auto w-[20vw];
 
-    @apply flex flex-col;
+    @apply flex flex-col items-center;
 
     & .theme-options-container,
     & div {
-      @apply flex flex-row flex-nowrap items-center whitespace-nowrap;
+      @apply whitespace-nowrap;
     }
   }
 
@@ -238,7 +238,8 @@ html.green-theme {
     @apply bg-bg text-text placeholder-text min-h-screen;
 
     & #category-list,
-    input {
+    & input,
+    & select {
       @apply bg-background-blend;
     }
 
