@@ -227,9 +227,8 @@ html.green-theme {
 
     @apply flex flex-col items-center;
 
-    & .theme-options-container,
-    & div {
-      @apply whitespace-nowrap;
+    div {
+      @apply text-center whitespace-nowrap;
     }
   }
 
