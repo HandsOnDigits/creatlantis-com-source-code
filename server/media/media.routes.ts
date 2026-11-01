@@ -8,7 +8,6 @@ import {
   createOriginalDownloadUrl,
   createOriginalUploadUrl,
   getOriginalObjectMetadata,
-  deleteOriginalObject,
 } from '../storage/b2.client'
 
 const router = Router()
@@ -196,15 +195,29 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
     })
   }
 
-  // The reservation ID is also used as the eventual Media ID.
-  // This makes completion retries idempotent.
   const existingMedia = await db.orm.public.Media.where({
     id: reservationId,
   }).first()
 
-  await db.orm.public.UploadReservation.where({
-    id: reservationId,
-  }).delete()
+  if (existingMedia) {
+    if (existingMedia.userId !== userId) {
+      return res.status(404).json({
+        error: 'Upload reservation not found',
+      })
+    }
+
+    // Clean up a leftover reservation from a previous completion.
+    await db.orm.public.UploadReservation.where({
+      id: reservationId,
+    }).delete()
+
+    return res.status(200).json({
+      data: {
+        id: existingMedia.id,
+        status: existingMedia.status,
+      },
+    })
+  }
 
   const reservation = await db.orm.public.UploadReservation.where({
     id: reservationId,
