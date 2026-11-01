@@ -6,14 +6,14 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "tsx server/index.ts",
-    "dev:all": "concurrently -k -n API,WEB \"npm:dev:api\" \"npm:dev\"",
+    "dev:media": "tsx server/media/workers/media.worker.ts",
+    "dev:all": "concurrently -k -n WEB,API,MEDIA \"npm:dev\" \"npm:dev:api\" \"npm:dev:media\"",
     "build": "tsc -b && vite build",
     "contract:emit": "prisma contract emit",
     "db:init:preview": "prisma db init --db \"%DATABASE_URL%\" --dry-run",
     "db:migrate:plan": "prisma migration plan",
     "db:migrate": "prisma db migrate",
-    "db:migrate:status": "prisma migration status",
-    "worker:media": "tsx server/workers/media.worker.ts"
+    "db:migrate:status": "prisma migration status"
   },
   "dependencies": {
     "@backblaze-labs/b2-sdk": "^0.4.0",
