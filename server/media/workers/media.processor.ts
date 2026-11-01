@@ -1,10 +1,10 @@
 import sharp from 'sharp'
 
-import { db } from '../../src/prisma/db'
+import { db } from '../../../src/prisma/db'
 import {
   downloadOriginalBuffer,
   uploadMediaVariant,
-} from '../storage/b2.client'
+} from '../../storage/b2.client'
 
 import type { MediaJob } from './media.worker'
 

@@ -118,3 +118,140 @@ export const api = {
     })
   },
 }
+
+// -----------------------------------------------------------------------------
+// Users
+// -----------------------------------------------------------------------------
+
+export interface User {
+  id: number
+  email: string
+  username: string
+  name: string | null
+  nameIsPublic: boolean
+  createdAt: string
+}
+
+export interface UpdateUserInput {
+  email?: string
+  username?: string
+  name?: string
+  nameIsPublic?: boolean
+}
+
+interface ApiResponse<T> {
+  data: T
+}
+
+export const usersApi = {
+  // GET /api/users
+  list() {
+    return api.get<ApiResponse<User[]>>('/api/users')
+  },
+
+  // GET /api/users/:id
+  get(id: number) {
+    return api.get<ApiResponse<User>>(`/api/users/${id}`)
+  },
+
+  // PATCH /api/users/:id
+  update(id: number, data: UpdateUserInput) {
+    return api.patch<ApiResponse<User>>(`/api/users/${id}`, data)
+  },
+
+  // DELETE /api/users/:id
+  delete(id: number) {
+    return api.delete<void>(`/api/users/${id}`)
+  },
+}
+
+// -----------------------------------------------------------------------------
+// Profiles
+// -----------------------------------------------------------------------------
+
+export interface PublicProfile {
+  id: number
+  username: string
+  name?: string
+}
+
+export const profilesApi = {
+  // GET /api/profiles/:id
+  get(id: number) {
+    return api.get<ApiResponse<PublicProfile>>(`/api/profiles/${id}`, {
+      authenticated: false,
+    })
+  },
+}
+
+// -----------------------------------------------------------------------------
+// Authentication
+// -----------------------------------------------------------------------------
+
+export interface AuthUser {
+  id: number
+  email: string
+  username: string
+  name: string | null
+}
+
+interface AuthResponse {
+  data: {
+    accessToken: string
+    tokenType: 'Bearer'
+    expiresIn: string
+    user: AuthUser
+  }
+}
+
+export interface LoginInput {
+  email: string
+  password: string
+}
+
+export interface RegisterInput {
+  email: string
+  password: string
+  username: string
+  name?: string
+}
+
+export const authApi = {
+  async register(input: RegisterInput) {
+    return api.post('/api/auth/register', input, {
+      authenticated: false,
+    })
+  },
+
+  async login(credentials: LoginInput) {
+    const response = await api.post<AuthResponse>(
+      '/api/auth/login',
+      credentials,
+      { authenticated: false },
+    )
+
+    setAccessToken(response.data.accessToken)
+
+    return response.data
+  },
+
+  async refresh() {
+    const response = await api.post<AuthResponse>(
+      '/api/auth/refresh',
+      undefined,
+      { authenticated: false },
+    )
+
+    setAccessToken(response.data.accessToken)
+
+    return response.data
+  },
+
+  logout() {
+    clearAccessToken()
+
+    return api.post<void>('/api/auth/logout', undefined, {
+      authenticated: false,
+    })
+  },
+}

@@ -11,6 +11,7 @@ import authRoutes from './auth/auth.routes'
 import usersRoutes from './users/users.routes'
 import profilesRoutes from './profiles/profiles.routes'
 import mediaRoutes from './media/media.routes'
+import postsRoutes from './posts/posts.routes'
 
 const app = express()
 const port = Number(process.env['API_PORT'] ?? 3000)
@@ -48,6 +49,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/profiles', profilesRoutes)
 app.use('/api/media', mediaRoutes)
+app.use('/api/posts', postsRoutes)
 
 // Health
 app.get('/api/health', async (_req, res) => {

@@ -1,9 +1,12 @@
 import { B2Client, BufferSource } from '@backblaze-labs/b2-sdk'
 import {
-  presignS3GetObjectUrl,
   presignS3PutObjectUrl,
   type B2S3Config,
 } from '@backblaze-labs/b2-sdk/s3'
+
+const applicationKeyId = requiredEnv('B2_MEDIA_APPLICATION_KEY_ID')
+const applicationKey = requiredEnv('B2_MEDIA_APPLICATION_KEY')
+const bucketName = requiredEnv('B2_MEDIA_BUCKET')
 
 function requiredEnv(name: string): string {
   const value = process.env[name]
@@ -15,10 +18,11 @@ function requiredEnv(name: string): string {
   return value
 }
 
-const applicationKeyId = requiredEnv('B2_APPLICATION_KEY_ID')
-const applicationKey = requiredEnv('B2_APPLICATION_KEY')
-const originalsBucket = requiredEnv('B2_ORIGINALS_BUCKET')
-const mediaBucketName = requiredEnv('B2_MEDIA_BUCKET')
+export async function createOriginalDownloadUrl(
+  fileName: string,
+): Promise<string> {
+  return getMediaVariantUrl(fileName)
+}
 
 let clientPromise: Promise<B2Client> | undefined
 
@@ -55,6 +59,17 @@ async function getS3Config(): Promise<B2S3Config> {
   }
 }
 
+async function getBucket() {
+  const client = await getClient()
+  const bucket = await client.getBucket(bucketName)
+
+  if (!bucket) {
+    throw new Error(`B2 bucket not found: ${bucketName}`)
+  }
+
+  return bucket
+}
+
 export async function createOriginalUploadUrl(
   fileName: string,
   contentType: string,
@@ -62,7 +77,7 @@ export async function createOriginalUploadUrl(
 ): Promise<string> {
   return presignS3PutObjectUrl({
     ...(await getS3Config()),
-    bucketName: originalsBucket,
+    bucketName,
     fileName,
     expiresIn: 300,
     contentType,
@@ -70,25 +85,8 @@ export async function createOriginalUploadUrl(
   })
 }
 
-export async function createOriginalDownloadUrl(
-  fileName: string,
-): Promise<string> {
-  return presignS3GetObjectUrl({
-    ...(await getS3Config()),
-    bucketName: originalsBucket,
-    fileName,
-    expiresIn: 120,
-  })
-}
-
 export async function getOriginalObjectMetadata(fileName: string) {
-  const client = await getClient()
-  const bucket = await client.getBucket(originalsBucket)
-
-  if (!bucket) {
-    throw new Error(`B2 bucket not found: ${originalsBucket}`)
-  }
-
+  const bucket = await getBucket()
   const { headers } = await bucket.head(fileName)
 
   return {
@@ -100,24 +98,11 @@ export async function getOriginalObjectMetadata(fileName: string) {
   }
 }
 
-// Helpers
-
-async function getBucket(bucketName: string) {
-  const client = await getClient()
-  const bucket = await client.getBucket(bucketName)
-
-  if (!bucket) {
-    throw new Error(`B2 bucket not found: ${bucketName}`)
-  }
-
-  return bucket
-}
-
 export async function downloadOriginalBuffer(
   fileName: string,
   maxBytes: number,
 ): Promise<Buffer> {
-  const bucket = await getBucket(originalsBucket)
+  const bucket = await getBucket()
   const result = await bucket.download(fileName)
 
   const expectedSize = result.headers.contentLength
@@ -165,7 +150,7 @@ export async function uploadMediaVariant(
   buffer: Buffer,
   contentType: string,
 ) {
-  const bucket = await getBucket(mediaBucketName)
+  const bucket = await getBucket()
 
   const result = await bucket.upload({
     fileName,

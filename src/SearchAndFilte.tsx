@@ -21,14 +21,20 @@ function Filter() {
     <div className="flex items-center gap-4">
       <label htmlFor="post-type">Show only:</label>
       <select name="post-type" id="post-type">
-        <option value="someOption">Some option</option>
-        <option value="otherOption">Other option</option>
+        <option value="all" selected={true}>
+          All posts
+        </option>
+        <option value="image">Images</option>
+        <option value="journal">Text posts</option>
+        <option value="profile">Profiles</option>
       </select>
 
       <label htmlFor="post-order">Order by:</label>
       <select name="post-order" id="post-order">
-        <option value="someOption">Some option</option>
-        <option value="otherOption">Other option</option>
+        <option value="newest" selected={true}>
+          Newest
+        </option>
+        <option value="oldest">Oldest</option>
       </select>
     </div>
   )
