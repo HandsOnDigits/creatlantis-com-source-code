@@ -1,4 +1,4 @@
-import { authApi, usersApi, profilesApi, mediaApi } from './lib/api'
+import { authApi, usersApi, profilesApi, mediaApi } from './api'
 
 export async function testUserApi() {
   console.log('Starting API tests...')

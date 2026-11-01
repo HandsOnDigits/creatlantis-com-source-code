@@ -6,6 +6,7 @@ function Search() {
     <div className="flex items-center gap-4">
       <label htmlFor="search">Find:</label>
       <input
+        className="navigation-input"
         type="search"
         placeholder="Search on..."
         name="search"
@@ -20,7 +21,7 @@ function Filter() {
   return (
     <div className="flex items-center gap-4">
       <label htmlFor="post-type">Show only:</label>
-      <select name="post-type" id="post-type">
+      <select name="post-type" id="post-type" className="navigation-input">
         <option value="all" selected={true}>
           All posts
         </option>
@@ -30,7 +31,7 @@ function Filter() {
       </select>
 
       <label htmlFor="post-order">Order by:</label>
-      <select name="post-order" id="post-order">
+      <select name="post-order" id="post-order" className="navigation-input">
         <option value="newest" selected={true}>
           Newest
         </option>

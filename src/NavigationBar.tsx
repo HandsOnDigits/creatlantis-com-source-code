@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { VerticalHR, HorizontalHR, ProfileLink } from './Utilites'
 
@@ -8,6 +9,15 @@ import SearchAndFilter from './SearchAndFilte'
 import test_icon from './assets/images/test_icon.webp'
 
 function NavigationBar() {
+  const navigate = useNavigate()
+
+  const handleSelectChange = (e) => {
+    const path = e.target.value
+    if (path) {
+      navigate(path)
+    }
+  }
+
   // Read initial theme from document class or default to dark
   const [currentTheme, setCurrentTheme] = useState(() => {
     const htmlClass = document.documentElement.className
@@ -29,16 +39,31 @@ function NavigationBar() {
 
   return (
     <nav className="sticky top-0 flex items-center justify-between p-4 shadow-2xs transition-colors duration-200">
-      <div className="flex items-center gap-4">
-        {/* Home Icon */}
+      {/* Home Icon */}
+      <Link to="/">
         <img className="h-auto w-[30vw]" src={test_icon} alt="Statisk logo" />
-
-        <VerticalHR />
-      </div>
+      </Link>
 
       <SearchAndFilter />
 
-      <div className="flex items-center gap-4">
+      <div className="flex gap-4">
+        <VerticalHR />
+
+        {/* Drop-down menu for uploads */}
+        <select
+          onChange={handleSelectChange}
+          defaultValue=""
+          className="submit w-30"
+        >
+          <option value="" disabled>
+            Submit...
+          </option>
+          <option value="/upload/image">Upload Image</option>
+          <option value="/upload/journal">Upload Journal</option>
+        </select>
+      </div>
+
+      <div className="flex items-center gap-4 pl-4">
         <VerticalHR />
 
         {/* Profile Dropdown Container */}

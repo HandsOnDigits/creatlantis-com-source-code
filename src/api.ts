@@ -191,6 +191,8 @@ export const profilesApi = {
 export type MediaStatus =
   'PENDING_UPLOAD' | 'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED' | 'DELETING'
 
+export type MediaUploadStage = 'UPLOADING' | MediaStatus
+
 export type MediaContentType = 'image/jpeg' | 'image/png' | 'image/webp'
 
 export interface CreateMediaUploadInput {
@@ -212,6 +214,25 @@ export interface CreateMediaUploadResponse {
 export interface CompleteMediaUploadResponse {
   id: string
   status: MediaStatus
+}
+
+export interface MediaVariant {
+  format: 'WEBP'
+  width: number
+  height: number
+  size: number
+  url: string
+}
+
+export interface MediaStatusResponse {
+  id: string
+  status: MediaStatus
+  width: number | null
+  height: number | null
+  processingAttempts: number
+  processingError: string | null
+  processedAt: string | null
+  variants: MediaVariant[]
 }
 
 export interface OriginalDownloadResponse {
@@ -262,6 +283,15 @@ export const mediaApi = {
     }
   },
 
+  // GET /api/media/:id/status
+  async getStatus(id: string) {
+    const response = await api.get<MediaApiResponse<MediaStatusResponse>>(
+      `/api/media/${id}/status`,
+    )
+
+    return response.data
+  },
+
   // POST /api/media/:id/complete
   async complete(id: string) {
     const response = await api.post<
@@ -269,6 +299,47 @@ export const mediaApi = {
     >(`/api/media/${id}/complete`)
 
     return response.data
+  },
+
+  // Poll until media processing finishes.
+  async waitForProcessing(
+    id: string,
+    options: {
+      interval?: number
+      timeout?: number
+      onStatusChange?: (status: MediaUploadStage) => void
+    } = {},
+  ): Promise<MediaStatusResponse> {
+    const interval = options.interval ?? 1000
+    const timeout = options.timeout ?? 120_000
+    const startedAt = Date.now()
+
+    let previousStatus: MediaStatus | null = null
+
+    while (Date.now() - startedAt < timeout) {
+      const media = await this.getStatus(id)
+
+      if (media.status !== previousStatus) {
+        options.onStatusChange?.(media.status)
+        previousStatus = media.status
+      }
+
+      if (media.status === 'READY') {
+        return media
+      }
+
+      if (media.status === 'FAILED') {
+        throw new Error(media.processingError ?? 'Image processing failed')
+      }
+
+      if (media.status === 'DELETING') {
+        throw new Error('Media is being deleted')
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, interval))
+    }
+
+    throw new Error('Image processing timed out')
   },
 
   // GET /api/media/:id/original
@@ -280,8 +351,16 @@ export const mediaApi = {
     return response.data
   },
 
-  // Complete upload workflow.
-  async upload(file: File) {
+  // Complete upload and optionally wait for image processing.
+  async upload(
+    file: File,
+    options: {
+      waitForProcessing?: boolean
+      processingInterval?: number
+      processingTimeout?: number
+      onStatusChange?: (status: MediaUploadStage) => void
+    } = {},
+  ) {
     if (!ALLOWED_MEDIA_TYPES.includes(file.type as MediaContentType)) {
       throw new Error('Only JPEG, PNG and WebP images are supported')
     }
@@ -296,15 +375,34 @@ export const mediaApi = {
       size: file.size,
     })
 
+    let completed = false
+
     try {
+      options.onStatusChange?.('UPLOADING')
+
       await this.uploadFile(upload, file)
 
-      return await this.complete(upload.id)
+      const result = await this.complete(upload.id)
+      completed = true
+
+      options.onStatusChange?.(result.status)
+
+      if (!options.waitForProcessing) {
+        return result
+      }
+
+      return await this.waitForProcessing(upload.id, {
+        interval: options.processingInterval,
+        timeout: options.processingTimeout,
+        onStatusChange: options.onStatusChange,
+      })
     } catch (error) {
-      try {
-        await this.cancelUpload(upload.id)
-      } catch (cleanupError) {
-        console.error('Failed to cancel media upload:', cleanupError)
+      if (!completed) {
+        try {
+          await this.cancelUpload(upload.id)
+        } catch (cleanupError) {
+          console.error('Failed to cancel media upload:', cleanupError)
+        }
       }
 
       throw error

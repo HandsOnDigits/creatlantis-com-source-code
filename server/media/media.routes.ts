@@ -8,6 +8,7 @@ import {
   createOriginalDownloadUrl,
   createOriginalUploadUrl,
   getOriginalObjectMetadata,
+  getMediaVariantUrl,
 } from '../storage/b2.client'
 
 const router = Router()
@@ -21,6 +22,62 @@ const createUploadSchema = z.object({
   filename: z.string().trim().min(1).max(255),
   contentType: z.enum(allowedContentTypes),
   size: z.number().int().positive().max(MAX_FILE_SIZE),
+})
+
+// Retrieve media processing status and available variants.
+router.get('/:id/status', requireAuth, async (req, res) => {
+  const mediaId = req.params.id
+  const userId = req.auth?.userId
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'Authentication required',
+    })
+  }
+
+  if (
+    typeof mediaId !== 'string' ||
+    !z.string().uuid().safeParse(mediaId).success
+  ) {
+    return res.status(400).json({
+      error: 'Invalid media ID',
+    })
+  }
+
+  const media = await db.orm.public.Media.where({
+    id: mediaId,
+  }).first()
+
+  if (!media || media.userId !== userId || media.status === 'DELETING') {
+    return res.status(404).json({
+      error: 'Media not found',
+    })
+  }
+
+  const variants = await db.orm.public.MediaVariant.where({ mediaId })
+    .orderBy((variant) => variant.width.asc())
+    .all()
+
+  res.setHeader('Cache-Control', 'no-store')
+
+  return res.status(200).json({
+    data: {
+      id: media.id,
+      status: media.status,
+      width: media.width,
+      height: media.height,
+      processingAttempts: media.processingAttempts,
+      processingError: media.processingError,
+      processedAt: media.processedAt,
+      variants: variants.map((variant) => ({
+        format: variant.format,
+        width: variant.width,
+        height: variant.height,
+        size: Number(variant.size),
+        url: getMediaVariantUrl(variant.objectKey),
+      })),
+    },
+  })
 })
 
 // Retrieve an original image.

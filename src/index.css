@@ -117,6 +117,10 @@ html.green-theme {
     @apply lg:text-[calc(clamp(3.75rem,0.75vw,6.5rem)*var(--font-scale))];
   }
 
+  .submit {
+    @apply bg-green-500 text-center font-medium;
+  }
+
   @layer components {
     /* Basic styling for ALL buttons */
     button {
@@ -237,8 +241,7 @@ html.green-theme {
     @apply bg-bg text-text placeholder-text min-h-screen;
 
     & #category-list,
-    & input,
-    & select {
+    & .navigation-input {
       @apply bg-background-blend;
     }
 
