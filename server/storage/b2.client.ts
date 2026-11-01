@@ -165,3 +165,16 @@ export async function uploadMediaVariant(
     contentLength: result.contentLength,
   }
 }
+
+export async function deleteOriginalObject(fileName: string): Promise<void> {
+  const bucket = await getBucket()
+
+  // Returns null when the object does not exist.
+  const file = await bucket.getFileInfoByName(fileName)
+
+  if (!file) {
+    return
+  }
+
+  await bucket.deleteFileVersion(fileName, file.fileId)
+}

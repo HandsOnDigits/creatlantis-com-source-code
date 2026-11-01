@@ -185,6 +185,134 @@ export const profilesApi = {
 }
 
 // -----------------------------------------------------------------------------
+// Media
+// -----------------------------------------------------------------------------
+
+export type MediaStatus =
+  'PENDING_UPLOAD' | 'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED' | 'DELETING'
+
+export type MediaContentType = 'image/jpeg' | 'image/png' | 'image/webp'
+
+export interface CreateMediaUploadInput {
+  filename: string
+  contentType: MediaContentType
+  size: number
+}
+
+export interface CreateMediaUploadResponse {
+  id: string
+  uploadUrl: string
+  method: 'PUT'
+  headers: {
+    'Content-Type': MediaContentType
+  }
+  expiresIn: number
+}
+
+export interface CompleteMediaUploadResponse {
+  id: string
+  status: MediaStatus
+}
+
+export interface OriginalDownloadResponse {
+  url: string
+  expiresIn: number
+}
+
+interface MediaApiResponse<T> {
+  data: T
+}
+
+const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024
+
+const ALLOWED_MEDIA_TYPES: MediaContentType[] = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]
+
+export const mediaApi = {
+  // POST /api/media/uploads
+  async createUpload(input: CreateMediaUploadInput) {
+    const response = await api.post<
+      MediaApiResponse<CreateMediaUploadResponse>
+    >('/api/media/uploads', input)
+
+    return response.data
+  },
+
+  // DELETE /api/media/uploads/:id
+  async cancelUpload(id: string) {
+    return api.delete<void>(`/api/media/uploads/${id}`)
+  },
+
+  // Upload the actual file directly to Backblaze B2.
+  async uploadFile(upload: CreateMediaUploadResponse, file: File) {
+    const response = await fetch(upload.uploadUrl, {
+      method: upload.method,
+      headers: upload.headers,
+      body: file,
+      credentials: 'omit',
+    })
+
+    if (!response.ok) {
+      const message = await response.text()
+
+      throw new ApiError(message || 'File upload failed', response.status)
+    }
+  },
+
+  // POST /api/media/:id/complete
+  async complete(id: string) {
+    const response = await api.post<
+      MediaApiResponse<CompleteMediaUploadResponse>
+    >(`/api/media/${id}/complete`)
+
+    return response.data
+  },
+
+  // GET /api/media/:id/original
+  async getOriginalDownloadUrl(id: string) {
+    const response = await api.get<MediaApiResponse<OriginalDownloadResponse>>(
+      `/api/media/${id}/original`,
+    )
+
+    return response.data
+  },
+
+  // Complete upload workflow.
+  async upload(file: File) {
+    if (!ALLOWED_MEDIA_TYPES.includes(file.type as MediaContentType)) {
+      throw new Error('Only JPEG, PNG and WebP images are supported')
+    }
+
+    if (file.size <= 0 || file.size > MAX_MEDIA_FILE_SIZE) {
+      throw new Error('File must be between 1 byte and 10 MB')
+    }
+
+    const upload = await this.createUpload({
+      filename: file.name,
+      contentType: file.type as MediaContentType,
+      size: file.size,
+    })
+
+    try {
+      await this.uploadFile(upload, file)
+
+      return await this.complete(upload.id)
+    } catch (error) {
+      try {
+        await this.cancelUpload(upload.id)
+      } catch (cleanupError) {
+        console.error('Failed to cancel media upload:', cleanupError)
+      }
+
+      throw error
+    }
+  },
+}
+
+// -----------------------------------------------------------------------------
 // Authentication
 // -----------------------------------------------------------------------------
 

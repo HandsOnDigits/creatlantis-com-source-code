@@ -8,11 +8,13 @@ import {
   createOriginalDownloadUrl,
   createOriginalUploadUrl,
   getOriginalObjectMetadata,
+  deleteOriginalObject,
 } from '../storage/b2.client'
 
 const router = Router()
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
+const RESERVATION_LIFETIME_MS = 15 * 60 * 1000
 
 const allowedContentTypes = ['image/jpeg', 'image/png', 'image/webp'] as const
 
@@ -22,6 +24,7 @@ const createUploadSchema = z.object({
   size: z.number().int().positive().max(MAX_FILE_SIZE),
 })
 
+// Retrieve an original image.
 router.get('/:id/original', requireAuth, async (req, res) => {
   const mediaId = req.params.id
   const userId = req.auth?.userId
@@ -68,6 +71,7 @@ router.get('/:id/original', requireAuth, async (req, res) => {
   })
 })
 
+// Create a temporary upload reservation.
 router.post('/uploads', requireAuth, async (req, res) => {
   const parsed = createUploadSchema.safeParse(req.body)
 
@@ -90,21 +94,23 @@ router.post('/uploads', requireAuth, async (req, res) => {
     })
   }
 
-  const mediaId = randomUUID()
-  const originalKey = `originals/${mediaId}/source`
+  const reservationId = randomUUID()
+  const objectKey = `originals/${reservationId}/source`
+  const expiresAt = new Date(Date.now() + RESERVATION_LIFETIME_MS).toISOString()
 
-  await db.orm.public.Media.create({
-    id: mediaId,
+  await db.orm.public.UploadReservation.create({
+    id: reservationId,
     userId,
-    originalKey,
-    originalFilename: filename,
-    originalMimeType: contentType,
-    originalSize: BigInt(size),
+    objectKey,
+    filename,
+    contentType,
+    size: BigInt(size),
+    expiresAt,
   })
 
   try {
     const uploadUrl = await createOriginalUploadUrl(
-      originalKey,
+      objectKey,
       contentType,
       size,
     )
@@ -113,7 +119,7 @@ router.post('/uploads', requireAuth, async (req, res) => {
 
     return res.status(201).json({
       data: {
-        id: mediaId,
+        id: reservationId,
         uploadUrl,
         method: 'PUT',
         headers: {
@@ -123,16 +129,16 @@ router.post('/uploads', requireAuth, async (req, res) => {
       },
     })
   } catch (error) {
-    await db.orm.public.Media.where({ id: mediaId }).update({
-      status: 'FAILED',
-    })
+    await db.orm.public.UploadReservation.where({
+      id: reservationId,
+    }).delete()
 
     throw error
   }
 })
 
-router.post('/:id/complete', requireAuth, async (req, res) => {
-  const mediaId = req.params.id
+router.delete('/uploads/:id', requireAuth, async (req, res) => {
+  const reservationId = req.params.id
   const userId = req.auth?.userId
 
   if (!userId) {
@@ -142,46 +148,84 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
   }
 
   if (
-    typeof mediaId !== 'string' ||
-    !z.string().uuid().safeParse(mediaId).success
+    typeof reservationId !== 'string' ||
+    !z.string().uuid().safeParse(reservationId).success
   ) {
     return res.status(400).json({
-      error: 'Invalid media ID',
+      error: 'Invalid upload reservation ID',
     })
   }
 
-  const media = await db.orm.public.Media.where({ id: mediaId }).first()
+  const reservation = await db.orm.public.UploadReservation.where({
+    id: reservationId,
+  }).first()
 
-  if (!media || media.userId !== userId) {
+  if (!reservation || reservation.userId !== userId) {
     return res.status(404).json({
-      error: 'Media not found',
+      error: 'Upload reservation not found',
     })
   }
 
-  // Make completion requests idempotent.
+  // Expire immediately so completion requests are rejected.
+  await db.orm.public.UploadReservation.where({
+    id: reservationId,
+  }).update({
+    expiresAt: new Date().toISOString(),
+  })
+
+  return res.status(204).send()
+})
+
+// Verify the B2 upload and create permanent media metadata.
+router.post('/:id/complete', requireAuth, async (req, res) => {
+  const reservationId = req.params.id
+  const userId = req.auth?.userId
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'Authentication required',
+    })
+  }
+
   if (
-    media.status === 'UPLOADED' ||
-    media.status === 'PROCESSING' ||
-    media.status === 'READY'
+    typeof reservationId !== 'string' ||
+    !z.string().uuid().safeParse(reservationId).success
   ) {
-    return res.status(200).json({
-      data: {
-        id: media.id,
-        status: media.status,
-      },
+    return res.status(400).json({
+      error: 'Invalid upload reservation ID',
     })
   }
 
-  if (media.status !== 'PENDING_UPLOAD') {
-    return res.status(409).json({
-      error: 'Media cannot be completed',
+  // The reservation ID is also used as the eventual Media ID.
+  // This makes completion retries idempotent.
+  const existingMedia = await db.orm.public.Media.where({
+    id: reservationId,
+  }).first()
+
+  await db.orm.public.UploadReservation.where({
+    id: reservationId,
+  }).delete()
+
+  const reservation = await db.orm.public.UploadReservation.where({
+    id: reservationId,
+  }).first()
+
+  if (!reservation || reservation.userId !== userId) {
+    return res.status(404).json({
+      error: 'Upload reservation not found',
+    })
+  }
+
+  if (new Date(reservation.expiresAt).getTime() <= Date.now()) {
+    return res.status(410).json({
+      error: 'Upload reservation has expired',
     })
   }
 
   let metadata
 
   try {
-    metadata = await getOriginalObjectMetadata(media.originalKey)
+    metadata = await getOriginalObjectMetadata(reservation.objectKey)
   } catch {
     return res.status(409).json({
       error: 'The original file has not been uploaded yet',
@@ -189,26 +233,38 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
   }
 
   if (
-    metadata.fileName !== media.originalKey ||
-    metadata.contentType !== media.originalMimeType ||
-    media.originalSize === null ||
-    BigInt(metadata.contentLength) !== media.originalSize
+    metadata.fileName !== reservation.objectKey ||
+    metadata.contentType !== reservation.contentType ||
+    metadata.contentLength == null ||
+    BigInt(metadata.contentLength) !== BigInt(reservation.size) ||
+    !metadata.fileId
   ) {
     return res.status(422).json({
       error: 'Uploaded file does not match the reserved upload',
     })
   }
 
-  await db.orm.public.Media.where({ id: mediaId }).update({
-    status: 'UPLOADED',
+  // Only create permanent Media metadata after B2 verification.
+  await db.orm.public.Media.create({
+    id: reservation.id,
+    userId: reservation.userId,
+    originalKey: reservation.objectKey,
     originalFileId: metadata.fileId,
+    originalFilename: reservation.filename,
+    originalMimeType: reservation.contentType,
+    originalSize: BigInt(reservation.size),
+    status: 'UPLOADED',
   })
+
+  await db.orm.public.UploadReservation.where({
+    id: reservation.id,
+  }).delete()
 
   res.setHeader('Cache-Control', 'no-store')
 
   return res.status(200).json({
     data: {
-      id: mediaId,
+      id: reservation.id,
       status: 'UPLOADED',
     },
   })

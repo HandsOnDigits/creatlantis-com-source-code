@@ -20,6 +20,8 @@ model User {
   updatedAt    temporal.UpdatedAtString
 
   media Media[]
+
+  uploadReservations UploadReservation[]
 }
 
 model Post {
@@ -118,4 +120,22 @@ model PostMedia {
 
   @@id([postId, mediaId])
   @@index([mediaId])
+}
+
+model UploadReservation {
+  id String @id @onCreate(uuid())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+
+  objectKey   String @unique
+  filename    String
+  contentType String
+  size        BigInt
+
+  expiresAt TimestamptzString
+  createdAt TimestamptzString @default(now())
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
 }

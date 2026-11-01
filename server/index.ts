@@ -12,6 +12,7 @@ import usersRoutes from './users/users.routes'
 import profilesRoutes from './profiles/profiles.routes'
 import mediaRoutes from './media/media.routes'
 import postsRoutes from './posts/posts.routes'
+import { startMediaReservationCleanup } from './media/media.cleanup'
 
 const app = express()
 const port = Number(process.env['API_PORT'] ?? 3000)
@@ -70,6 +71,8 @@ app.get('/api/health', async (_req, res) => {
 
 // Centralized error handler - always last
 app.use(errorHandler)
+
+startMediaReservationCleanup()
 
 // Start server
 const server = app.listen(port, () => {

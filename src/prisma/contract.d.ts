@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'03d51c31d7f3d84d95034215afb569ee26234e12bb692a70ea21e9a7d82256a8'>;
+  StorageHashBase<'650f999f9854dffbd1e7d57a89c7276673ff85651846227cac55cc44d50f3b57'>;
 export type ExecutionHash =
-  ExecutionHashBase<'19e4d78cc6a57fb9d70ba0b91014c2a65f3b3ade2463855af1537bd7caadc906'>;
+  ExecutionHashBase<'3238349315b4f23ad817f2c4d20df820b10196e85d2cc09851e646d030e2388f'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -395,6 +395,18 @@ export namespace Models {
     user: public_User;
     readonly [RelationKeys]?: 'user';
   };
+  export type public_UploadReservation = {
+    contentType: FieldOutputTypes['public']['UploadReservation']['contentType'];
+    createdAt: FieldOutputTypes['public']['UploadReservation']['createdAt'];
+    expiresAt: FieldOutputTypes['public']['UploadReservation']['expiresAt'];
+    filename: FieldOutputTypes['public']['UploadReservation']['filename'];
+    id: FieldOutputTypes['public']['UploadReservation']['id'];
+    objectKey: FieldOutputTypes['public']['UploadReservation']['objectKey'];
+    size: FieldOutputTypes['public']['UploadReservation']['size'];
+    userId: FieldOutputTypes['public']['UploadReservation']['userId'];
+    user: public_User;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_User = {
     createdAt: FieldOutputTypes['public']['User']['createdAt'];
     email: FieldOutputTypes['public']['User']['email'];
@@ -407,7 +419,8 @@ export namespace Models {
     media: public_Media[];
     posts: public_Post[];
     sessions: public_Session[];
-    readonly [RelationKeys]?: 'media' | 'posts' | 'sessions';
+    uploadReservations: public_UploadReservation[];
+    readonly [RelationKeys]?: 'media' | 'posts' | 'sessions' | 'uploadReservations';
   };
 }
 
@@ -418,6 +431,7 @@ export declare const models: {
     Post: Models.public_Post;
     PostMedia: Models.public_PostMedia;
     Session: Models.public_Session;
+    UploadReservation: Models.public_UploadReservation;
     User: Models.public_User;
   };
 };
@@ -867,6 +881,95 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly UploadReservation: {
+              columns: {
+                readonly contentType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly expiresAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly filename: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly objectKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly size: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['objectKey'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'UploadReservation_expiresAt_idx_6b6b8c10';
+                  readonly prefix: 'UploadReservation_expiresAt_idx';
+                  readonly columns: readonly ['expiresAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'UploadReservation_userId_createdAt_idx_f726f04a';
+                  readonly prefix: 'UploadReservation_userId_createdAt_idx';
+                  readonly columns: readonly ['userId', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'UploadReservation_userId_idx_a489d58a';
+                  readonly prefix: 'UploadReservation_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'UploadReservation';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly User: {
               columns: {
                 readonly createdAt: {
@@ -975,6 +1078,10 @@ type ContractBase = Omit<
     readonly Post: { readonly namespace: 'public' & NamespaceId; readonly model: 'Post' };
     readonly PostMedia: { readonly namespace: 'public' & NamespaceId; readonly model: 'PostMedia' };
     readonly Session: { readonly namespace: 'public' & NamespaceId; readonly model: 'Session' };
+    readonly UploadReservation: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'UploadReservation';
+    };
     readonly User: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
   };
   readonly domain: {
@@ -1356,6 +1463,73 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly UploadReservation: {
+            readonly fields: {
+              readonly contentType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly expiresAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly filename: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly objectKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly size: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'UploadReservation';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly contentType: { readonly column: 'contentType' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly expiresAt: { readonly column: 'expiresAt' };
+                readonly filename: { readonly column: 'filename' };
+                readonly id: { readonly column: 'id' };
+                readonly objectKey: { readonly column: 'objectKey' };
+                readonly size: { readonly column: 'size' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly User: {
             readonly fields: {
               readonly createdAt: {
@@ -1421,6 +1595,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'Session';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
+              readonly uploadReservations: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'UploadReservation';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -1552,6 +1737,14 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'Session';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'UploadReservation';
             readonly field: 'id';
             readonly namespace: 'public';
           };

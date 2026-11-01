@@ -1,4 +1,4 @@
-import { authApi, usersApi, profilesApi } from './lib/api'
+import { authApi, usersApi, profilesApi, mediaApi } from './lib/api'
 
 export async function testUserApi() {
   console.log('Starting API tests...')
@@ -83,3 +83,33 @@ export async function registerAlice() {
 
   console.log('Registration successful:', result)
 }
+
+export async function testMediaUpload(file: File) {
+  console.log('Starting media upload...', file.name)
+
+  // Create upload, upload to B2 and complete.
+  const result = await mediaApi.upload(file)
+
+  console.log('1. Upload completed:', result)
+
+  // Retrieve temporary download URL.
+  const download = await mediaApi.getOriginalDownloadUrl(result.id)
+
+  console.log('2. Download URL:', download.url)
+  console.log('Expires in:', download.expiresIn, 'seconds')
+
+  return {
+    success: true,
+    mediaId: result.id,
+    status: result.status,
+    downloadUrl: download.url,
+  }
+}
+
+declare global {
+  interface Window {
+    testMediaUpload: typeof testMediaUpload
+  }
+}
+
+window.testMediaUpload = testMediaUpload

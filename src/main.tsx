@@ -3,11 +3,17 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './lib/AuthContext.tsx'
-import { testUserApi, loginAndTestUserApi, registerAlice } from './testUserApi'
+import {
+  testUserApi,
+  loginAndTestUserApi,
+  registerAlice,
+  testMediaUpload,
+} from './testUserApi'
 
 ;(window as any).testUserApi = testUserApi
 ;(window as any).loginAndTestUserApi = loginAndTestUserApi
 ;(window as any).registerAlice = registerAlice
+;(window as any).testMediaUpload = testMediaUpload
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
