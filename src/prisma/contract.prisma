@@ -1,5 +1,11 @@
 // use prisma-8
 
+enum PostType {
+  IMAGE
+  JOURNAL
+  MODEL
+}
+
 model User {
   @@index(
   expression: sql`lower(username)`,
@@ -32,6 +38,7 @@ model Post {
   authorId  Int
   createdAt TimestamptzString @default(now())
   updatedAt temporal.UpdatedAtString
+  type      PostType          @default(IMAGE)
 
   media PostMedia[]
 }

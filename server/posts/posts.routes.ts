@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { db } from '../../src/prisma/db'
 import { getMediaVariantUrl } from '../storage/b2.client'
+import { requireAuth } from '../auth/auth.middleware'
 
 const router = Router()
 
@@ -39,6 +40,7 @@ router.get('/', async (req, res) => {
 
   const posts = await db.orm.public.Post.select(
     'id',
+    'type',
     'title',
     'content',
     'createdAt',
@@ -118,6 +120,94 @@ router.get('/', async (req, res) => {
   })
 })
 
+const createPostSchema = z
+  .object({
+    type: z.enum(['IMAGE', 'JOURNAL', 'MODEL']).default('IMAGE'),
+    title: z.string().trim().min(1).max(200),
+    content: z.string().max(50000).nullable().optional(),
+    mediaIds: z.array(z.string().uuid()).max(20).default([]),
+  })
+  .refine((data) => data.type !== 'MODEL', {
+    message: 'Model posts are not available yet',
+    path: ['type'],
+  })
+  .refine((data) => data.type !== 'IMAGE' || data.mediaIds.length > 0, {
+    message: 'Image posts require at least one image',
+    path: ['mediaIds'],
+  })
+  .refine((data) => data.type !== 'JOURNAL' || data.mediaIds.length === 0, {
+    message: 'Journal posts cannot contain media',
+    path: ['mediaIds'],
+  })
+  .refine((data) => data.type !== 'JOURNAL' || Boolean(data.content?.trim()), {
+    message: 'Journal posts require content',
+    path: ['content'],
+  })
+  .refine((data) => new Set(data.mediaIds).size === data.mediaIds.length, {
+    message: 'Duplicate media IDs are not allowed',
+    path: ['mediaIds'],
+  })
+
+router.post('/', requireAuth, async (req, res) => {
+  const parsed = createPostSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Invalid post data',
+      details: parsed.error.flatten(),
+    })
+  }
+
+  const { type, title, content, mediaIds } = parsed.data
+  const userId = req.auth!.userId
+
+  const post = await db.transaction(async (tx) => {
+    // Validate that every media file belongs to the user and is READY.
+    for (const mediaId of mediaIds) {
+      const media = await tx.orm.public.Media.where({
+        id: mediaId,
+        userId,
+        status: 'READY',
+      })
+        .select('id')
+        .first()
+
+      if (!media) {
+        return null
+      }
+    }
+
+    // Create the post.
+    const createdPost = await tx.orm.public.Post.create({
+      type,
+      title,
+      content: content ?? null,
+      authorId: userId,
+    })
+
+    // Attach media in the supplied order.
+    for (const [position, mediaId] of mediaIds.entries()) {
+      await tx.orm.public.PostMedia.create({
+        postId: createdPost.id,
+        mediaId,
+        position,
+      })
+    }
+
+    return createdPost
+  })
+
+  if (!post) {
+    return res.status(400).json({
+      error: 'One or more media files are unavailable or not ready.',
+    })
+  }
+
+  return res.status(201).json({
+    data: post,
+  })
+})
+
 // Get post with its processed images
 router.get('/:id', async (req, res) => {
   const id = parsePostId(req.params.id)
@@ -127,7 +217,7 @@ router.get('/:id', async (req, res) => {
   }
 
   const post = await db.orm.public.Post.where({ id })
-    .select('id', 'title', 'content', 'createdAt', 'authorId')
+    .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
     .first()
 
   if (!post) {

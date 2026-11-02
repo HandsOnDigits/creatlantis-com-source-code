@@ -185,6 +185,54 @@ export const profilesApi = {
 }
 
 // -----------------------------------------------------------------------------
+// Posts
+// -----------------------------------------------------------------------------
+
+export type PostType = 'IMAGE' | 'JOURNAL' | 'MODEL'
+
+export interface Post {
+  id: number
+  type: PostType
+  title: string
+  content: string | null
+  createdAt: string
+  authorId: number
+}
+
+export interface CreatePostInput {
+  type?: PostType
+  title: string
+  content?: string | null
+  mediaIds?: string[]
+}
+
+export const postsApi = {
+  // GET /api/posts
+  list(page = 1, limit = 10) {
+    return api.get<
+      ApiResponse<{
+        data: Post[]
+        pagination: {
+          page: number
+          limit: number
+          hasMore: boolean
+        }
+      }>
+    >(`/api/posts?page=${page}&limit=${limit}`)
+  },
+
+  // GET /api/posts/:id
+  get(id: number) {
+    return api.get<ApiResponse<Post>>(`/api/posts/${id}`)
+  },
+
+  // POST /api/posts
+  create(input: CreatePostInput) {
+    return api.post<ApiResponse<Post>>('/api/posts', input)
+  },
+}
+
+// -----------------------------------------------------------------------------
 // Media
 // -----------------------------------------------------------------------------
 

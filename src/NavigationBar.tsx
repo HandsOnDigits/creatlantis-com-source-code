@@ -11,7 +11,7 @@ import test_icon from './assets/images/test_icon.webp'
 function NavigationBar() {
   const navigate = useNavigate()
 
-  const handleSelectChange = (e) => {
+  const handleSelectChange = (e: any) => {
     const path = e.target.value
     if (path) {
       navigate(path)

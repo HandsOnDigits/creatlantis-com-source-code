@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'650f999f9854dffbd1e7d57a89c7276673ff85651846227cac55cc44d50f3b57'>;
+  StorageHashBase<'b881182fdc8dd43fdcad3c2462565b0ae8addd8c7cd4ce6b820b614dae128822'>;
 export type ExecutionHash =
   ExecutionHashBase<'3238349315b4f23ad817f2c4d20df820b10196e85d2cc09851e646d030e2388f'>;
 export type ProfileHash =
@@ -284,6 +284,12 @@ type FieldTypeOverrides = {
       readonly MediaVariant: {
         readonly format: { readonly output: 'WEBP' | 'AVIF'; readonly input: 'WEBP' | 'AVIF' };
       };
+      readonly Post: {
+        readonly type: {
+          readonly output: 'IMAGE' | 'JOURNAL' | 'MODEL';
+          readonly input: 'IMAGE' | 'JOURNAL' | 'MODEL';
+        };
+      };
     };
   };
 };
@@ -313,6 +319,12 @@ type ColumnTypeOverrides = {
     };
     readonly MediaVariant: {
       readonly format: { readonly output: 'WEBP' | 'AVIF'; readonly input: 'WEBP' | 'AVIF' };
+    };
+    readonly Post: {
+      readonly type: {
+        readonly output: 'IMAGE' | 'JOURNAL' | 'MODEL';
+        readonly input: 'IMAGE' | 'JOURNAL' | 'MODEL';
+      };
     };
   };
 };
@@ -373,6 +385,7 @@ export namespace Models {
     createdAt: FieldOutputTypes['public']['Post']['createdAt'];
     id: FieldOutputTypes['public']['Post']['id'];
     title: FieldOutputTypes['public']['Post']['title'];
+    type: FieldOutputTypes['public']['Post']['type'];
     updatedAt: FieldOutputTypes['public']['Post']['updatedAt'];
     author: public_User;
     media: public_PostMedia[];
@@ -722,6 +735,16 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'IMAGE'>;
+                  };
+                  readonly many: false;
+                };
                 readonly updatedAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -1059,6 +1082,10 @@ type ContractBase = Omit<
                 'DELETING',
               ];
             };
+            readonly PostType: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['IMAGE', 'JOURNAL', 'MODEL'];
+            };
           };
         };
       };
@@ -1320,6 +1347,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -1359,6 +1390,7 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly id: { readonly column: 'id' };
                 readonly title: { readonly column: 'title' };
+                readonly type: { readonly column: 'type' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
@@ -1649,6 +1681,14 @@ type ContractBase = Omit<
               { readonly name: 'DELETING'; readonly value: 'DELETING' },
             ];
           };
+          readonly PostType: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'IMAGE'; readonly value: 'IMAGE' },
+              { readonly name: 'JOURNAL'; readonly value: 'JOURNAL' },
+              { readonly name: 'MODEL'; readonly value: 'MODEL' },
+            ];
+          };
         };
         readonly enumMemberTypes?: {
           readonly MediaFormat: readonly [
@@ -1662,6 +1702,11 @@ type ContractBase = Omit<
             { readonly name: 'READY'; readonly value: 'READY' },
             { readonly name: 'FAILED'; readonly value: 'FAILED' },
             { readonly name: 'DELETING'; readonly value: 'DELETING' },
+          ];
+          readonly PostType: readonly [
+            { readonly name: 'IMAGE'; readonly value: 'IMAGE' },
+            { readonly name: 'JOURNAL'; readonly value: 'JOURNAL' },
+            { readonly name: 'MODEL'; readonly value: 'MODEL' },
           ];
         };
       };
