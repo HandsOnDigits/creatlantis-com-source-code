@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth, AuthStatus } from './AuthContext'
 
 import { VerticalHR, HorizontalHR, ProfileLink } from './Utilites'
 
@@ -9,8 +10,16 @@ import SearchAndFilter from './SearchAndFilte'
 import test_icon from './assets/images/test_icon.webp'
 
 function NavigationBar() {
-  const navigate = useNavigate()
+  const { user, status, logout } = useAuth()
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      navigate('/login', { replace: true })
+    }
+  }
 
+  const navigate = useNavigate()
   const handleSelectChange = (e: any) => {
     const path = e.target.value
     if (path) {
@@ -70,8 +79,15 @@ function NavigationBar() {
         <div className="drop-down">
           <ProfileLink name="Name" />
           <div className="drop-down-content">
-            <button id="logout">Logout</button>
-            <button id="login">Login</button>
+            {status === AuthStatus.Authenticated ? (
+              <button id="logout" onClick={handleLogout}>
+                Logout
+              </button>
+            ) : (
+              <button id="login" onClick={() => navigate('/login')}>
+                Login
+              </button>
+            )}
 
             <HorizontalHR />
 

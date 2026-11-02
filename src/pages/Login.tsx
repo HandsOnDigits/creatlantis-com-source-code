@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../AuthContext'
+import { useAuth, AuthStatus } from '../AuthContext'
 
 function Login() {
   const { login, status } = useAuth()
@@ -18,7 +18,7 @@ function Login() {
     return <p>Checking session...</p>
   }
 
-  if (status === 'authenticated') {
+  if (status === AuthStatus.Authenticated) {
     return <Navigate to="/" replace />
   }
 

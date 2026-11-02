@@ -45,7 +45,12 @@ type RegisteredUser = Pick<
   'id' | 'email' | 'username' | 'name' | 'createdAt'
 >
 
-type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error'
+export enum AuthStatus {
+  Loading = 'loading',
+  Authenticated = 'authenticated',
+  Unauthenticated = 'unauthenticated',
+  Error = 'error',
+}
 
 interface AuthContextValue {
   user: AuthUser | null
@@ -95,7 +100,7 @@ function restoreSession(): Promise<AuthUser | null> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
-  const [status, setStatus] = useState<AuthStatus>('loading')
+  const [status, setStatus] = useState<AuthStatus>(AuthStatus.Loading)
   const [error, setError] = useState<unknown | null>(null)
 
   // Restore an existing session when the application starts.
@@ -107,13 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!active) return
 
         setUser(restoredUser)
-        setStatus(restoredUser ? 'authenticated' : 'unauthenticated')
+        setStatus(
+          restoredUser ? AuthStatus.Authenticated : AuthStatus.Unauthenticated,
+        )
       })
       .catch((error: unknown) => {
         if (!active) return
 
         setError(error)
-        setStatus('error')
+        setStatus(AuthStatus.Error)
       })
 
     return () => {
@@ -136,13 +143,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await api.get<ApiResponse<AuthUser>>('/api/auth/me')
 
       setUser(me.data)
-      setStatus('authenticated')
+      setStatus(AuthStatus.Authenticated)
 
       return me.data
     } catch (error) {
       clearAccessToken()
       setUser(null)
-      setStatus('unauthenticated')
+      setStatus(AuthStatus.Unauthenticated)
       throw error
     }
   }
@@ -166,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearAccessToken()
       setUser(null)
       setError(null)
-      setStatus('unauthenticated')
+      setStatus(AuthStatus.Unauthenticated)
     }
   }
 

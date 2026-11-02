@@ -1,15 +1,15 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from './AuthContext'
+import { useAuth, AuthStatus } from './AuthContext'
 
 function ProtectedRoute() {
   const { status } = useAuth()
   const location = useLocation()
 
-  if (status === 'loading') {
+  if (status === AuthStatus.Loading) {
     return <p>Checking authentication...</p>
   }
 
-  if (status === 'error') {
+  if (status === AuthStatus.Error) {
     return (
       <div>
         <p>Unable to restore your session.</p>
@@ -18,7 +18,7 @@ function ProtectedRoute() {
     )
   }
 
-  if (status !== 'authenticated') {
+  if (status !== AuthStatus.Authenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
