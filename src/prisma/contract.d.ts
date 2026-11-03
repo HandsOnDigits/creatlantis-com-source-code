@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b881182fdc8dd43fdcad3c2462565b0ae8addd8c7cd4ce6b820b614dae128822'>;
+  StorageHashBase<'cf493bfea1fd3a11305565fd7f38e9963cf2b98dbfcfbd611e3c8ed1e6e3498e'>;
 export type ExecutionHash =
-  ExecutionHashBase<'3238349315b4f23ad817f2c4d20df820b10196e85d2cc09851e646d030e2388f'>;
+  ExecutionHashBase<'a7118df9578aae55587fb3800d60df5a0def480e8fd1500cfbfc19fb3285ede8'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -344,6 +344,25 @@ export type StorageColumnInputTypes = ColumnTypesFromStorage<
 >;
 
 export namespace Models {
+  export type public_Catalog = {
+    createdAt: FieldOutputTypes['public']['Catalog']['createdAt'];
+    description: FieldOutputTypes['public']['Catalog']['description'];
+    id: FieldOutputTypes['public']['Catalog']['id'];
+    name: FieldOutputTypes['public']['Catalog']['name'];
+    slug: FieldOutputTypes['public']['Catalog']['slug'];
+    updatedAt: FieldOutputTypes['public']['Catalog']['updatedAt'];
+    posts: public_CatalogPost[];
+    readonly [RelationKeys]?: 'posts';
+  };
+  export type public_CatalogPost = {
+    catalogId: FieldOutputTypes['public']['CatalogPost']['catalogId'];
+    createdAt: FieldOutputTypes['public']['CatalogPost']['createdAt'];
+    position: FieldOutputTypes['public']['CatalogPost']['position'];
+    postId: FieldOutputTypes['public']['CatalogPost']['postId'];
+    catalog: public_Catalog;
+    post: public_Post;
+    readonly [RelationKeys]?: 'catalog' | 'post';
+  };
   export type public_Media = {
     createdAt: FieldOutputTypes['public']['Media']['createdAt'];
     height: FieldOutputTypes['public']['Media']['height'];
@@ -388,8 +407,9 @@ export namespace Models {
     type: FieldOutputTypes['public']['Post']['type'];
     updatedAt: FieldOutputTypes['public']['Post']['updatedAt'];
     author: public_User;
+    catalogs: public_CatalogPost[];
     media: public_PostMedia[];
-    readonly [RelationKeys]?: 'author' | 'media';
+    readonly [RelationKeys]?: 'author' | 'catalogs' | 'media';
   };
   export type public_PostMedia = {
     mediaId: FieldOutputTypes['public']['PostMedia']['mediaId'];
@@ -439,6 +459,8 @@ export namespace Models {
 
 export declare const models: {
   public: {
+    Catalog: Models.public_Catalog;
+    CatalogPost: Models.public_CatalogPost;
     Media: Models.public_Media;
     MediaVariant: Models.public_MediaVariant;
     Post: Models.public_Post;
@@ -467,6 +489,143 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly Catalog: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly slug: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['slug'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'Catalog_name_idx_ce87e6ba';
+                  readonly prefix: 'Catalog_name_idx';
+                  readonly columns: readonly ['name'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly CatalogPost: {
+              columns: {
+                readonly catalogId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly position: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+                readonly postId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['catalogId', 'postId'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'CatalogPost_catalogId_idx_f0d71193';
+                  readonly prefix: 'CatalogPost_catalogId_idx';
+                  readonly columns: readonly ['catalogId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'CatalogPost_catalogId_position_idx_f3f5029f';
+                  readonly prefix: 'CatalogPost_catalogId_position_idx';
+                  readonly columns: readonly ['catalogId', 'position'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'CatalogPost_postId_idx_a7a72715';
+                  readonly prefix: 'CatalogPost_postId_idx';
+                  readonly columns: readonly ['postId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'CatalogPost';
+                    readonly columns: readonly ['catalogId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Catalog';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'CatalogPost';
+                    readonly columns: readonly ['postId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Post';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly Media: {
               columns: {
                 readonly createdAt: {
@@ -1097,6 +1256,11 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
+    readonly Catalog: { readonly namespace: 'public' & NamespaceId; readonly model: 'Catalog' };
+    readonly CatalogPost: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'CatalogPost';
+    };
     readonly Media: { readonly namespace: 'public' & NamespaceId; readonly model: 'Media' };
     readonly MediaVariant: {
       readonly namespace: 'public' & NamespaceId;
@@ -1115,6 +1279,121 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly Catalog: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly slug: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly posts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CatalogPost';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['catalogId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Catalog';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly description: { readonly column: 'description' };
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly slug: { readonly column: 'slug' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly CatalogPost: {
+            readonly fields: {
+              readonly catalogId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly position: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly postId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly catalog: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Catalog';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['catalogId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly post: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Post' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['postId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'CatalogPost';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly catalogId: { readonly column: 'catalogId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly position: { readonly column: 'position' };
+                readonly postId: { readonly column: 'postId' };
+              };
+            };
+          };
           readonly Media: {
             readonly fields: {
               readonly createdAt: {
@@ -1367,6 +1646,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['authorId'];
                   readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly catalogs: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CatalogPost';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['postId'];
                 };
               };
               readonly media: {
@@ -1744,6 +2034,15 @@ type ContractBase = Omit<
     readonly executionHash: ExecutionHash;
     readonly mutations: {
       readonly defaults: readonly [
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Catalog';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
         {
           readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
           readonly ref: {

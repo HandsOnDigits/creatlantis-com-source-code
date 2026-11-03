@@ -4,6 +4,14 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "Catalog": {
+      "model": "Catalog",
+      "namespace": "public"
+    },
+    "CatalogPost": {
+      "model": "CatalogPost",
+      "namespace": "public"
+    },
     "Media": {
       "model": "Media",
       "namespace": "public"
@@ -98,6 +106,177 @@
           }
         },
         "models": {
+          "Catalog": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "slug": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "posts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "catalogId"
+                  ]
+                },
+                "to": {
+                  "model": "CatalogPost",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "slug": {
+                  "column": "slug"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Catalog"
+            }
+          },
+          "CatalogPost": {
+            "fields": {
+              "catalogId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "position": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "postId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "catalog": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "catalogId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Catalog",
+                  "namespace": "public"
+                }
+              },
+              "post": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "postId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Post",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "catalogId": {
+                  "column": "catalogId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "position": {
+                  "column": "position"
+                },
+                "postId": {
+                  "column": "postId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "CatalogPost"
+            }
+          },
           "Media": {
             "fields": {
               "createdAt": {
@@ -518,6 +697,21 @@
                 },
                 "to": {
                   "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "catalogs": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "postId"
+                  ]
+                },
+                "to": {
+                  "model": "CatalogPost",
                   "namespace": "public"
                 }
               },
@@ -986,6 +1180,179 @@
       "public": {
         "entries": {
           "table": {
+            "Catalog": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "slug": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "name"
+                  ],
+                  "name": "Catalog_name_idx_ce87e6ba",
+                  "prefix": "Catalog_name_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "slug"
+                  ]
+                }
+              ]
+            },
+            "CatalogPost": {
+              "columns": {
+                "catalogId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "position": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "postId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "CatalogPost_catalogId_idx_f0d71193"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "catalogId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "CatalogPost"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Catalog"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "CatalogPost_postId_idx_a7a72715"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "postId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "CatalogPost"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Post"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "catalogId"
+                  ],
+                  "name": "CatalogPost_catalogId_idx_f0d71193",
+                  "prefix": "CatalogPost_catalogId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "catalogId",
+                    "position"
+                  ],
+                  "name": "CatalogPost_catalogId_position_idx_f3f5029f",
+                  "prefix": "CatalogPost_catalogId_position_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "postId"
+                  ],
+                  "name": "CatalogPost_postId_idx_a7a72715",
+                  "prefix": "CatalogPost_postId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "catalogId",
+                  "postId"
+                ]
+              },
+              "uniques": []
+            },
             "Media": {
               "checks": [
                 {
@@ -1761,12 +2128,27 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b881182fdc8dd43fdcad3c2462565b0ae8addd8c7cd4ce6b820b614dae128822"
+    "storageHash": "cf493bfea1fd3a11305565fd7f38e9963cf2b98dbfcfbd611e3c8ed1e6e3498e"
   },
   "execution": {
-    "executionHash": "3238349315b4f23ad817f2c4d20df820b10196e85d2cc09851e646d030e2388f",
+    "executionHash": "a7118df9578aae55587fb3800d60df5a0def480e8fd1500cfbfc19fb3285ede8",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Catalog",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
         {
           "onCreate": {
             "id": "uuidv4",

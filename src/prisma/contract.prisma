@@ -1,11 +1,5 @@
 // use prisma-8
 
-enum PostType {
-  IMAGE
-  JOURNAL
-  MODEL
-}
-
 model User {
   @@index(
   expression: sql`lower(username)`,
@@ -30,19 +24,6 @@ model User {
   uploadReservations UploadReservation[]
 }
 
-model Post {
-  id        Int               @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User              @relation(fields: [authorId], references: [id])
-  authorId  Int
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.UpdatedAtString
-  type      PostType          @default(IMAGE)
-
-  media PostMedia[]
-}
-
 model Session {
   id               String            @id @onCreate(uuid())
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -50,20 +31,6 @@ model Session {
   refreshTokenHash String            @unique
   expiresAt        TimestamptzString
   createdAt        TimestamptzString @default(now())
-}
-
-enum MediaStatus {
-  PENDING_UPLOAD
-  UPLOADED
-  PROCESSING
-  READY
-  FAILED
-  DELETING
-}
-
-enum MediaFormat {
-  WEBP
-  AVIF
 }
 
 model Media {
@@ -97,6 +64,20 @@ model Media {
   @@index([status, nextAttemptAt])
 }
 
+enum MediaStatus {
+  PENDING_UPLOAD
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+  DELETING
+}
+
+enum MediaFormat {
+  WEBP
+  AVIF
+}
+
 model MediaVariant {
   id String @id @onCreate(uuid())
 
@@ -114,6 +95,26 @@ model MediaVariant {
 
   @@unique([mediaId, format, width])
   @@index([mediaId])
+}
+
+enum PostType {
+  IMAGE
+  JOURNAL
+  MODEL
+}
+
+model Post {
+  id        Int               @id @default(autoincrement())
+  title     String
+  content   String?
+  author    User              @relation(fields: [authorId], references: [id])
+  authorId  Int
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+  type      PostType          @default(IMAGE)
+
+  media    PostMedia[]
+  catalogs CatalogPost[]
 }
 
 model PostMedia {
@@ -142,4 +143,32 @@ model UploadReservation {
 
   @@index([userId, createdAt])
   @@index([expiresAt])
+}
+
+model Catalog {
+  id          Int           @id @default(autoincrement())
+  name        String
+  slug        String        @unique
+  description String?
+  posts       CatalogPost[]
+
+  createdAt TimestamptzString @default(now())
+  updatedAt   temporal.UpdatedAtString
+
+  @@index([name])
+}
+
+model CatalogPost {
+  catalog   Catalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  catalogId Int
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId Int
+
+  position  Int               @default(0)
+  createdAt TimestamptzString @default(now())
+
+  @@id([catalogId, postId])
+  @@index([postId])
+  @@index([catalogId, position])
 }
