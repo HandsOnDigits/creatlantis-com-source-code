@@ -6,6 +6,9 @@ import cookieParser from 'cookie-parser'
 import { rateLimit } from 'express-rate-limit'
 import { db } from '../src/prisma/db'
 
+import authRoutes from './auth/auth.routes'
+import mfaRoutes from './auth/mfa.routes'
+
 const app = express()
 
 const PORT = Number(process.env['ADMIN_API_PORT'] ?? 3001)
@@ -35,6 +38,8 @@ const apiLimiter = rateLimit({
 })
 
 app.use('/api', apiLimiter)
+app.use('/api/auth', authRoutes)
+app.use('/api/mfa', mfaRoutes)
 
 app.get('/api/health', async (_req, res, next) => {
   try {

@@ -1,21 +1,24 @@
 import type { CookieOptions, Response } from 'express'
 
-const COOKIE_NAME =
-  process.env['ADMIN_SESSION_COOKIE'] ?? '__Host-creatlantis_admin'
-
 const isProduction = process.env['NODE_ENV'] === 'production'
+
+const COOKIE_NAME =
+  process.env['ADMIN_SESSION_COOKIE'] ??
+  (isProduction ? '__Host-creatlantis_admin' : 'creatlantis_admin')
 
 const cookieOptions: CookieOptions = {
   httpOnly: true,
-  secure: true,
+  secure: isProduction,
   sameSite: 'strict',
   path: '/',
-  maxAge: 24 * 60 * 60 * 1000,
+  maxAge:
+    Number(process.env['ADMIN_SESSION_TTL_DAYS'] ?? 1) * 24 * 60 * 60 * 1000,
 }
 
-if (!isProduction && COOKIE_NAME.startsWith('__Host-')) {
-  // __Host- cookies require Secure, even during local development.
-  // Use a non-prefixed cookie name for HTTP localhost.
+if (isProduction && !COOKIE_NAME.startsWith('__Host-')) {
+  throw new Error(
+    'Production admin session cookie must use the __Host- prefix.',
+  )
 }
 
 export function setAdminSessionCookie(res: Response, token: string): void {
@@ -25,7 +28,7 @@ export function setAdminSessionCookie(res: Response, token: string): void {
 export function clearAdminSessionCookie(res: Response): void {
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    secure: true,
+    secure: isProduction,
     sameSite: 'strict',
     path: '/',
   })
