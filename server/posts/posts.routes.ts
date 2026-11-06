@@ -7,6 +7,15 @@ import { requireAuth } from '../auth/auth.middleware'
 
 const router = Router()
 
+function parseCatalogId(value: unknown): number | null {
+  if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
+    return null
+  }
+
+  const id = Number(value)
+  return Number.isSafeInteger(id) ? id : null
+}
+
 function parsePostId(value: string | string[] | undefined): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
     return null
@@ -38,21 +47,69 @@ router.get('/', async (req, res) => {
   const pageSize = limit.data
   const offset = (page.data - 1) * pageSize
 
-  const posts = await db.orm.public.Post.select(
-    'id',
-    'type',
-    'title',
-    'content',
-    'createdAt',
-    'authorId',
-  )
-    .orderBy([(post) => post.createdAt.desc(), (post) => post.id.desc()])
-    .limit(pageSize + 1)
-    .offset(offset)
-    .all()
+  const catalogId =
+    req.query.catalogId === undefined
+      ? null
+      : parseCatalogId(req.query.catalogId)
 
-  const hasMore = posts.length > pageSize
-  const pagePosts = posts.slice(0, pageSize)
+  if (req.query.catalogId !== undefined && catalogId === null) {
+    return res.status(400).json({
+      error: 'Invalid catalog ID',
+    })
+  }
+
+  let pagePosts
+  let hasMore: boolean
+
+  if (catalogId !== null) {
+    const catalog = await db.orm.public.Catalog.where({ id: catalogId })
+      .select('id')
+      .first()
+
+    if (!catalog) {
+      return res.status(404).json({
+        error: 'Catalog not found',
+      })
+    }
+
+    const catalogPosts = await db.orm.public.CatalogPost.where({
+      catalogId,
+    })
+      .orderBy([(item) => item.position.asc(), (item) => item.postId.asc()])
+      .limit(pageSize + 1)
+      .offset(offset)
+      .all()
+
+    hasMore = catalogPosts.length > pageSize
+
+    const pageCatalogPosts = catalogPosts.slice(0, pageSize)
+
+    const loadedPosts = await Promise.all(
+      pageCatalogPosts.map((item) =>
+        db.orm.public.Post.where({ id: item.postId })
+          .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
+          .first(),
+      ),
+    )
+
+    pagePosts = loadedPosts.filter((post) => post !== null)
+  } else {
+    const posts = await db.orm.public.Post.select(
+      'id',
+      'type',
+      'title',
+      'content',
+      'createdAt',
+      'authorId',
+    )
+      .orderBy([(post) => post.createdAt.desc(), (post) => post.id.desc()])
+      .limit(pageSize + 1)
+      .offset(offset)
+      .all()
+
+    hasMore = posts.length > pageSize
+    pagePosts = posts.slice(0, pageSize)
+  }
 
   const data = await Promise.all(
     pagePosts.map(async (post) => {

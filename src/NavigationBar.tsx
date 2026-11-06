@@ -10,7 +10,7 @@ import SearchAndFilter from './SearchAndFilte'
 import test_icon from './assets/images/test_icon.webp'
 
 function NavigationBar() {
-  const { user, status, logout } = useAuth()
+  const { status, logout } = useAuth()
   const handleLogout = async () => {
     try {
       await logout()
