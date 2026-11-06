@@ -5,10 +5,17 @@ import { rateLimit } from 'express-rate-limit'
 import { z } from 'zod'
 
 import { confirmMfaEnrollment } from './services/mfa-confirmation.service'
-import { requireAdminSession } from './middleware/auth.middleware'
+import {
+  requireAdminSession,
+  requireMfaVerifiedAdmin,
+} from './middleware/auth.middleware'
 import { startMfaEnrollment } from './services/mfa-enrollment.service'
 import { verifyAdminMfa } from './services/mfa-verification.service'
-import { verifyRecoveryCode } from './services/recovery-codes.service'
+import {
+  generateRecoveryCodes,
+  replaceRecoveryCodes,
+  verifyRecoveryCode,
+} from './services/recovery-codes.service'
 
 const mfaRoutes = Router()
 
@@ -214,6 +221,45 @@ mfaRoutes.post(
         mfaVerified: true,
       })
     } catch (error) {
+      next(error)
+    }
+  },
+)
+
+mfaRoutes.post(
+  '/recovery-codes/replace',
+  mfaConfirmationLimiter,
+  requireMfaVerifiedAdmin,
+  async (req, res, next) => {
+    try {
+      const adminId = req.adminAuth?.adminId
+
+      if (!adminId) {
+        res.status(401).json({
+          error: 'Authentication required.',
+        })
+        return
+      }
+
+      const codes = await replaceRecoveryCodes(adminId)
+
+      res.setHeader('Cache-Control', 'no-store')
+
+      res.status(200).json({
+        recoveryCodes: codes,
+      })
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message ===
+          'MFA must be enabled before generating recovery codes.'
+      ) {
+        res.status(409).json({
+          error: error.message,
+        })
+        return
+      }
+
       next(error)
     }
   },

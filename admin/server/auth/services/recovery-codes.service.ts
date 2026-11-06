@@ -149,3 +149,57 @@ export async function verifyRecoveryCode(
     throw error
   }
 }
+
+export async function replaceRecoveryCodes(adminId: string): Promise<string[]> {
+  return db.transaction(async (tx) => {
+    const mfa = await tx.orm.public.AdminMfa.whereUnique({ adminId }).first()
+
+    if (!mfa?.enabledAt) {
+      throw new Error('MFA must be enabled before generating recovery codes.')
+    }
+
+    const previousTimestamp = mfa.recoveryCodesGeneratedAt
+
+    const nextTimestamp = new Date(
+      Math.max(
+        Date.now(),
+        previousTimestamp === null ? 0 : Date.parse(previousTimestamp) + 1,
+      ),
+    ).toISOString()
+
+    const claimed = await tx.orm.public.AdminMfa.where({
+      adminId,
+      enabledAt: mfa.enabledAt,
+      recoveryCodesGeneratedAt: previousTimestamp,
+    }).update({
+      recoveryCodesGeneratedAt: nextTimestamp,
+    })
+
+    if (!claimed) {
+      throw new Error('Recovery codes changed. Please try again.')
+    }
+
+    const existingCodes = await tx.orm.public.AdminRecoveryCode.where({
+      adminId,
+    }).all()
+
+    for (const existingCode of existingCodes) {
+      await tx.orm.public.AdminRecoveryCode.whereUnique({
+        id: existingCode.id,
+      }).delete()
+    }
+
+    const codes = Array.from({ length: RECOVERY_CODE_COUNT }, () =>
+      randomBytes(16).toString('base64url'),
+    )
+
+    for (const code of codes) {
+      await tx.orm.public.AdminRecoveryCode.create({
+        adminId,
+        codeHash: hashRecoveryCode(code),
+      })
+    }
+
+    return codes
+  })
+}

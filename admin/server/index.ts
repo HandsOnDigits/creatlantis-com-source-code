@@ -8,6 +8,7 @@ import { db } from '../src/prisma/db'
 
 import authRoutes from './auth/auth.routes'
 import mfaRoutes from './auth/mfa.routes'
+import sessionRoutes from './auth/session.routes'
 
 const app = express()
 
@@ -40,6 +41,7 @@ const apiLimiter = rateLimit({
 app.use('/api', apiLimiter)
 app.use('/api/auth', authRoutes)
 app.use('/api/mfa', mfaRoutes)
+app.use('/api/sessions', sessionRoutes)
 
 app.get('/api/health', async (_req, res, next) => {
   try {
