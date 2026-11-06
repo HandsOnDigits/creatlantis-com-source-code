@@ -4,6 +4,7 @@ import { requireMfaVerifiedAdmin } from './middleware/auth.middleware'
 import { listAdminSessions } from './services/session-management.service'
 import { revokeAdminSessionById } from './services/session-management.service'
 import { revokeOtherAdminSessions } from './services/session-management.service'
+import { recordAdminAuditEvent } from '../audit/audit.service'
 
 const sessionRoutes = Router()
 
@@ -66,6 +67,13 @@ sessionRoutes.delete(
         return
       }
 
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_SESSION_REVOKED',
+        targetType: 'ADMIN_SESSION',
+        targetId: sessionId,
+      })
+
       res.status(200).json({
         success: true,
       })
@@ -93,6 +101,12 @@ sessionRoutes.post(
         auth.adminId,
         auth.sessionId,
       )
+
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_OTHER_SESSIONS_REVOKED',
+        targetType: 'ADMIN_SESSIONS',
+      })
 
       res.status(200).json({
         success: true,

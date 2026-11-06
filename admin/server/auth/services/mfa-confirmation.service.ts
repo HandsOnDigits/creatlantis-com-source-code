@@ -2,7 +2,8 @@ import { db } from '../../../src/prisma/db'
 
 import { decryptMfaSecret } from './mfa-crypto'
 import { verifyTotpCode } from './mfa-totp'
-import { verifyAdminSessionMfa } from './admin-session'
+
+class MfaEnrollmentRejected extends Error {}
 
 export async function confirmMfaEnrollment(
   adminId: string,
@@ -39,20 +40,68 @@ export async function confirmMfaEnrollment(
     return false
   }
 
-  // Compare-and-set prevents two concurrent requests from
-  // accepting the same TOTP time step.
-  const updated = await db.orm.public.AdminMfa.where({
-    adminId,
-    enabledAt: null,
-    lastAcceptedTimeStep: mfa.lastAcceptedTimeStep,
-  }).update({
-    enabledAt: new Date().toISOString(),
-    lastAcceptedTimeStep: BigInt(verification.timeStep),
-  })
+  const acceptedTimeStep = verification.timeStep
 
-  if (!updated) {
-    return false
+  try {
+    return await db.transaction(async (tx) => {
+      const now = new Date().toISOString()
+
+      const session = await tx.orm.public.AdminSession.whereUnique({
+        id: sessionId,
+      }).first()
+
+      if (
+        !session ||
+        session.adminId !== adminId ||
+        session.revokedAt !== null ||
+        Date.parse(session.expiresAt) <= Date.now()
+      ) {
+        throw new MfaEnrollmentRejected()
+      }
+
+      const admin = await tx.orm.public.AdminAccount.whereUnique({
+        id: adminId,
+      }).first()
+
+      if (!admin || !admin.active || admin.disabledAt !== null) {
+        throw new MfaEnrollmentRejected()
+      }
+
+      const mfaUpdated = await tx.orm.public.AdminMfa.where({
+        adminId,
+        enabledAt: null,
+        lastAcceptedTimeStep: mfa.lastAcceptedTimeStep,
+      }).update({
+        enabledAt: now,
+        lastAcceptedTimeStep: BigInt(acceptedTimeStep),
+      })
+
+      if (!mfaUpdated) {
+        throw new MfaEnrollmentRejected()
+      }
+
+      const sessionUpdated = await tx.orm.public.AdminSession.where({
+        id: sessionId,
+        adminId,
+        revokedAt: null,
+        expiresAt: session.expiresAt,
+        mfaVerifiedAt: session.mfaVerifiedAt,
+      }).update({
+        mfaVerifiedAt: now,
+        lastSeenAt: now,
+      })
+
+      if (!sessionUpdated) {
+        throw new MfaEnrollmentRejected()
+      }
+
+      return true
+    })
+  } catch (error) {
+    if (error instanceof MfaEnrollmentRejected) {
+      return false
+    }
+
+    throw error
   }
-
-  return verifyAdminSessionMfa(sessionId, adminId)
 }

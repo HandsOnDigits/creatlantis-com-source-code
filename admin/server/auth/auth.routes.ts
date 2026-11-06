@@ -8,7 +8,8 @@ import {
   setAdminSessionCookie,
 } from './auth.cookies'
 import { adminLoginSchema } from './schemas/auth.schemas'
-import { revokeAdminSession } from './services/admin-session'
+import { getAdminSession, revokeAdminSession } from './services/admin-session'
+import { recordAdminAuditEvent } from '../audit/audit.service'
 
 import { db } from '../../src/prisma/db'
 import { requireAdminSession } from './middleware/auth.middleware'
@@ -47,6 +48,13 @@ authRoutes.post('/login', loginLimiter, async (req, res, next) => {
       })
       return
     }
+
+    await recordAdminAuditEvent({
+      adminId: result.admin.id,
+      event: 'ADMIN_PASSWORD_AUTHENTICATED',
+      targetType: 'ADMIN_ACCOUNT',
+      targetId: result.admin.id,
+    })
 
     setAdminSessionCookie(res, result.token)
 
@@ -113,7 +121,18 @@ authRoutes.post('/logout', async (req, res, next) => {
     const token: unknown = req.cookies?.[getAdminSessionCookieName()]
 
     if (token) {
+      const session = await getAdminSession(token)
+
       await revokeAdminSession(token)
+
+      if (session) {
+        await recordAdminAuditEvent({
+          adminId: session.admin.id,
+          event: 'ADMIN_LOGOUT',
+          targetType: 'ADMIN_SESSION',
+          targetId: session.session.id,
+        })
+      }
     }
 
     clearAdminSessionCookie(res)

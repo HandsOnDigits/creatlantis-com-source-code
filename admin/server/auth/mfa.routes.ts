@@ -16,6 +16,7 @@ import {
   replaceRecoveryCodes,
   verifyRecoveryCode,
 } from './services/recovery-codes.service'
+import { recordAdminAuditEvent } from '../audit/audit.service'
 
 const mfaRoutes = Router()
 
@@ -109,6 +110,13 @@ mfaRoutes.post(
         parsed.data.token,
       )
 
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_MFA_ENROLLED',
+        targetType: 'ADMIN_ACCOUNT',
+        targetId: auth.adminId,
+      })
+
       if (!confirmed) {
         res.status(400).json({
           error: 'MFA verification failed. Check the code and try again.',
@@ -157,6 +165,13 @@ mfaRoutes.post(
         auth.sessionId,
         parsed.data.token,
       )
+
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_MFA_VERIFIED',
+        targetType: 'ADMIN_ACCOUNT',
+        targetId: auth.adminId,
+      })
 
       if (!verified) {
         res.status(400).json({
@@ -207,6 +222,13 @@ mfaRoutes.post(
         parsed.data.code,
       )
 
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_RECOVERY_CODE_USED',
+        targetType: 'ADMIN_ACCOUNT',
+        targetId: auth.adminId,
+      })
+
       if (!verified) {
         res.status(400).json({
           error: 'Recovery code verification failed.',
@@ -242,6 +264,13 @@ mfaRoutes.post(
       }
 
       const codes = await replaceRecoveryCodes(adminId)
+
+      await recordAdminAuditEvent({
+        adminId,
+        event: 'ADMIN_RECOVERY_CODES_REPLACED',
+        targetType: 'ADMIN_ACCOUNT',
+        targetId: adminId,
+      })
 
       res.setHeader('Cache-Control', 'no-store')
 

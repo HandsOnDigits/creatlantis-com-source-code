@@ -25,5 +25,6 @@ dist-ssr
 node_modules/
 dist/
 .env
+.env.*
 migrations/
 contract-test**

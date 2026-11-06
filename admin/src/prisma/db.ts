@@ -6,10 +6,14 @@ import { contractFromJson } from '@prisma/orm-postgres/static'
 import type { Contract } from './contract.d'
 import contractJson from './contract.json' with { type: 'json' }
 
-const databaseUrl = process.env['DATABASE_URL']
+const databaseUrl = process.env['ADMIN_DATABASE_URL']
 
 if (!databaseUrl) {
   throw new Error('DATABASE_URL is not configured.')
+}
+
+if (!databaseUrl) {
+  throw new Error('ADMIN_DATABASE_URL is not configured.')
 }
 
 const databaseName = decodeURIComponent(

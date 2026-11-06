@@ -45,6 +45,12 @@ export async function authenticateAdminPassword(
     return { success: false }
   }
 
+  await db.orm.public.AdminAccount.whereUnique({
+    id: admin.id,
+  }).update({
+    lastLoginAt: new Date().toISOString(),
+  })
+
   const mfa = await db.orm.public.AdminMfa.whereUnique({
     adminId: admin.id,
   }).first()
