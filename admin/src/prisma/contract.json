@@ -1,0 +1,2414 @@
+{
+  "schemaVersion": "1",
+  "targetFamily": "sql",
+  "target": "postgres",
+  "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
+  "roots": {
+    "AdminAccount": {
+      "model": "AdminAccount",
+      "namespace": "public"
+    },
+    "AdminAuditLog": {
+      "model": "AdminAuditLog",
+      "namespace": "public"
+    },
+    "AdminMfa": {
+      "model": "AdminMfa",
+      "namespace": "public"
+    },
+    "AdminPasskey": {
+      "model": "AdminPasskey",
+      "namespace": "public"
+    },
+    "AdminRecoveryCode": {
+      "model": "AdminRecoveryCode",
+      "namespace": "public"
+    },
+    "AdminSession": {
+      "model": "AdminSession",
+      "namespace": "public"
+    },
+    "ModerationAction": {
+      "model": "ModerationAction",
+      "namespace": "public"
+    },
+    "Report": {
+      "model": "Report",
+      "namespace": "public"
+    }
+  },
+  "domain": {
+    "namespaces": {
+      "public": {
+        "enum": {
+          "AdminReportStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "PENDING",
+                "value": "PENDING"
+              },
+              {
+                "name": "REVIEWING",
+                "value": "REVIEWING"
+              },
+              {
+                "name": "RESOLVED",
+                "value": "RESOLVED"
+              },
+              {
+                "name": "DISMISSED",
+                "value": "DISMISSED"
+              }
+            ]
+          },
+          "AdminRole": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "MODERATOR",
+                "value": "MODERATOR"
+              },
+              {
+                "name": "ADMIN",
+                "value": "ADMIN"
+              },
+              {
+                "name": "SUPER_ADMIN",
+                "value": "SUPER_ADMIN"
+              }
+            ]
+          },
+          "ModerationActionType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "CONTENT_REMOVED",
+                "value": "CONTENT_REMOVED"
+              },
+              {
+                "name": "CONTENT_RESTORED",
+                "value": "CONTENT_RESTORED"
+              },
+              {
+                "name": "USER_SUSPENDED",
+                "value": "USER_SUSPENDED"
+              },
+              {
+                "name": "USER_BANNED",
+                "value": "USER_BANNED"
+              },
+              {
+                "name": "USER_UNSUSPENDED",
+                "value": "USER_UNSUSPENDED"
+              },
+              {
+                "name": "REPORT_RESOLVED",
+                "value": "REPORT_RESOLVED"
+              },
+              {
+                "name": "REPORT_DISMISSED",
+                "value": "REPORT_DISMISSED"
+              }
+            ]
+          },
+          "ReportReason": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "SPAM",
+                "value": "SPAM"
+              },
+              {
+                "name": "HARASSMENT",
+                "value": "HARASSMENT"
+              },
+              {
+                "name": "HATE_SPEECH",
+                "value": "HATE_SPEECH"
+              },
+              {
+                "name": "INAPPROPRIATE_CONTENT",
+                "value": "INAPPROPRIATE_CONTENT"
+              },
+              {
+                "name": "VIOLENCE",
+                "value": "VIOLENCE"
+              },
+              {
+                "name": "IMPERSONATION",
+                "value": "IMPERSONATION"
+              },
+              {
+                "name": "COPYRIGHT",
+                "value": "COPYRIGHT"
+              },
+              {
+                "name": "OTHER",
+                "value": "OTHER"
+              }
+            ]
+          },
+          "ReportTargetType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "USER",
+                "value": "USER"
+              },
+              {
+                "name": "POST",
+                "value": "POST"
+              },
+              {
+                "name": "COMMENT",
+                "value": "COMMENT"
+              },
+              {
+                "name": "MEDIA",
+                "value": "MEDIA"
+              }
+            ]
+          }
+        },
+        "models": {
+          "AdminAccount": {
+            "fields": {
+              "active": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "disabledAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "email": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastLoginAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "passwordHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "role": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "AdminRole",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "assignedReports": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "assignedToAdminId"
+                  ]
+                },
+                "to": {
+                  "model": "Report",
+                  "namespace": "public"
+                }
+              },
+              "auditLogs": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "adminId"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAuditLog",
+                  "namespace": "public"
+                }
+              },
+              "mfa": {
+                "cardinality": "1:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "adminId"
+                  ]
+                },
+                "to": {
+                  "model": "AdminMfa",
+                  "namespace": "public"
+                }
+              },
+              "moderationActions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "adminId"
+                  ]
+                },
+                "to": {
+                  "model": "ModerationAction",
+                  "namespace": "public"
+                }
+              },
+              "passkeys": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "adminId"
+                  ]
+                },
+                "to": {
+                  "model": "AdminPasskey",
+                  "namespace": "public"
+                }
+              },
+              "recoveryCodes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "adminId"
+                  ]
+                },
+                "to": {
+                  "model": "AdminRecoveryCode",
+                  "namespace": "public"
+                }
+              },
+              "sessions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "adminId"
+                  ]
+                },
+                "to": {
+                  "model": "AdminSession",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "active": {
+                  "column": "active"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "disabledAt": {
+                  "column": "disabledAt"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastLoginAt": {
+                  "column": "lastLoginAt"
+                },
+                "passwordHash": {
+                  "column": "passwordHash"
+                },
+                "role": {
+                  "column": "role"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AdminAccount"
+            }
+          },
+          "AdminAuditLog": {
+            "fields": {
+              "adminId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "event": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "metadata": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "requestId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "targetId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "targetType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "admin": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "adminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAccount",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "adminId": {
+                  "column": "adminId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "event": {
+                  "column": "event"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "metadata": {
+                  "column": "metadata"
+                },
+                "requestId": {
+                  "column": "requestId"
+                },
+                "targetId": {
+                  "column": "targetId"
+                },
+                "targetType": {
+                  "column": "targetType"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AdminAuditLog"
+            }
+          },
+          "AdminMfa": {
+            "fields": {
+              "adminId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "enabledAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "encryptionKeyVersion": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastAcceptedTimeStep": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "secretAuthTag": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bytea@1",
+                  "kind": "scalar"
+                }
+              },
+              "secretCiphertext": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bytea@1",
+                  "kind": "scalar"
+                }
+              },
+              "secretNonce": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bytea@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "admin": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "adminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAccount",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "adminId": {
+                  "column": "adminId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "enabledAt": {
+                  "column": "enabledAt"
+                },
+                "encryptionKeyVersion": {
+                  "column": "encryptionKeyVersion"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastAcceptedTimeStep": {
+                  "column": "lastAcceptedTimeStep"
+                },
+                "secretAuthTag": {
+                  "column": "secretAuthTag"
+                },
+                "secretCiphertext": {
+                  "column": "secretCiphertext"
+                },
+                "secretNonce": {
+                  "column": "secretNonce"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AdminMfa"
+            }
+          },
+          "AdminPasskey": {
+            "fields": {
+              "adminId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "credentialId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastUsedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "publicKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bytea@1",
+                  "kind": "scalar"
+                }
+              },
+              "signCount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "transports": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "admin": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "adminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAccount",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "adminId": {
+                  "column": "adminId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "credentialId": {
+                  "column": "credentialId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastUsedAt": {
+                  "column": "lastUsedAt"
+                },
+                "publicKey": {
+                  "column": "publicKey"
+                },
+                "signCount": {
+                  "column": "signCount"
+                },
+                "transports": {
+                  "column": "transports"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AdminPasskey"
+            }
+          },
+          "AdminRecoveryCode": {
+            "fields": {
+              "adminId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "codeHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "usedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "admin": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "adminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAccount",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "adminId": {
+                  "column": "adminId"
+                },
+                "codeHash": {
+                  "column": "codeHash"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "usedAt": {
+                  "column": "usedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AdminRecoveryCode"
+            }
+          },
+          "AdminSession": {
+            "fields": {
+              "adminId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastSeenAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "mfaVerifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "refreshTokenHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "revokedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "admin": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "adminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAccount",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "adminId": {
+                  "column": "adminId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "expiresAt": {
+                  "column": "expiresAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastSeenAt": {
+                  "column": "lastSeenAt"
+                },
+                "mfaVerifiedAt": {
+                  "column": "mfaVerifiedAt"
+                },
+                "refreshTokenHash": {
+                  "column": "refreshTokenHash"
+                },
+                "revokedAt": {
+                  "column": "revokedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AdminSession"
+            }
+          },
+          "ModerationAction": {
+            "fields": {
+              "action": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ModerationActionType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "adminId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "details": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reportId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "targetId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "targetType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ReportTargetType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              }
+            },
+            "relations": {
+              "admin": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "adminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAccount",
+                  "namespace": "public"
+                }
+              },
+              "report": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "reportId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Report",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "action": {
+                  "column": "action"
+                },
+                "adminId": {
+                  "column": "adminId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "details": {
+                  "column": "details"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "reason": {
+                  "column": "reason"
+                },
+                "reportId": {
+                  "column": "reportId"
+                },
+                "targetId": {
+                  "column": "targetId"
+                },
+                "targetType": {
+                  "column": "targetType"
+                }
+              },
+              "namespaceId": "public",
+              "table": "ModerationAction"
+            }
+          },
+          "Report": {
+            "fields": {
+              "assignedToAdminId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "evidence": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ReportReason",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "reporterUserId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "AdminReportStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "targetId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "targetType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ReportTargetType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "actions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "reportId"
+                  ]
+                },
+                "to": {
+                  "model": "ModerationAction",
+                  "namespace": "public"
+                }
+              },
+              "assignedTo": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "assignedToAdminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAccount",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "assignedToAdminId": {
+                  "column": "assignedToAdminId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "evidence": {
+                  "column": "evidence"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "reason": {
+                  "column": "reason"
+                },
+                "reporterUserId": {
+                  "column": "reporterUserId"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "targetId": {
+                  "column": "targetId"
+                },
+                "targetType": {
+                  "column": "targetType"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Report"
+            }
+          }
+        }
+      }
+    }
+  },
+  "storage": {
+    "namespaces": {
+      "public": {
+        "entries": {
+          "table": {
+            "AdminAccount": {
+              "checks": [
+                {
+                  "expression": "\"role\" IN ('MODERATOR', 'ADMIN', 'SUPER_ADMIN')",
+                  "name": "AdminAccount_role_check_1c2b19ba",
+                  "prefix": "AdminAccount_role_check"
+                }
+              ],
+              "columns": {
+                "active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "disabledAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "lastLoginAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "passwordHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "role": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "AdminRole",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "expression": "lower(email)",
+                  "name": "AdminAccount_email_lower_key_f84d49fd",
+                  "prefix": "AdminAccount_email_lower_key",
+                  "unique": true
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "AdminAuditLog": {
+              "columns": {
+                "adminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "event": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "metadata": {
+                  "codecId": "pg/json@1",
+                  "dataType": "pg/json",
+                  "nullable": true
+                },
+                "requestId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "targetId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "targetType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "AdminAuditLog_adminId_idx_530179db"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "adminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAuditLog"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAccount"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "adminId",
+                    "createdAt"
+                  ],
+                  "name": "AdminAuditLog_adminId_createdAt_idx_5015ed56",
+                  "prefix": "AdminAuditLog_adminId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "adminId"
+                  ],
+                  "name": "AdminAuditLog_adminId_idx_530179db",
+                  "prefix": "AdminAuditLog_adminId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "event",
+                    "createdAt"
+                  ],
+                  "name": "AdminAuditLog_event_createdAt_idx_3fbd860a",
+                  "prefix": "AdminAuditLog_event_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "targetType",
+                    "targetId"
+                  ],
+                  "name": "AdminAuditLog_targetType_targetId_idx_7a5ee9cb",
+                  "prefix": "AdminAuditLog_targetType_targetId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "AdminMfa": {
+              "columns": {
+                "adminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "enabledAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "encryptionKeyVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "lastAcceptedTimeStep": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": true
+                },
+                "secretAuthTag": {
+                  "codecId": "pg/bytea@1",
+                  "dataType": "pg/bytea",
+                  "nullable": true
+                },
+                "secretCiphertext": {
+                  "codecId": "pg/bytea@1",
+                  "dataType": "pg/bytea",
+                  "nullable": true
+                },
+                "secretNonce": {
+                  "codecId": "pg/bytea@1",
+                  "dataType": "pg/bytea",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "unique": [
+                      "adminId"
+                    ]
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "adminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminMfa"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAccount"
+                  }
+                }
+              ],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "adminId"
+                  ]
+                }
+              ]
+            },
+            "AdminPasskey": {
+              "checks": [
+                {
+                  "expression": "array_position(\"transports\", NULL) IS NULL",
+                  "name": "AdminPasskey_transports_elem_not_null_59ec2476",
+                  "prefix": "AdminPasskey_transports_elem_not_null"
+                }
+              ],
+              "columns": {
+                "adminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "credentialId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "lastUsedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "publicKey": {
+                  "codecId": "pg/bytea@1",
+                  "dataType": "pg/bytea",
+                  "nullable": false
+                },
+                "signCount": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0"
+                  },
+                  "nullable": false
+                },
+                "transports": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "AdminPasskey_adminId_idx_530179db"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "adminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminPasskey"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAccount"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "adminId"
+                  ],
+                  "name": "AdminPasskey_adminId_idx_530179db",
+                  "prefix": "AdminPasskey_adminId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "credentialId"
+                  ]
+                }
+              ]
+            },
+            "AdminRecoveryCode": {
+              "columns": {
+                "adminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "codeHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "usedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "AdminRecoveryCode_adminId_idx_530179db"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "adminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminRecoveryCode"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAccount"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "adminId"
+                  ],
+                  "name": "AdminRecoveryCode_adminId_idx_530179db",
+                  "prefix": "AdminRecoveryCode_adminId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "adminId",
+                    "usedAt"
+                  ],
+                  "name": "AdminRecoveryCode_adminId_usedAt_idx_1fe9a727",
+                  "prefix": "AdminRecoveryCode_adminId_usedAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "codeHash"
+                  ]
+                }
+              ]
+            },
+            "AdminSession": {
+              "columns": {
+                "adminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "expiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "lastSeenAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "mfaVerifiedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "refreshTokenHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "revokedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "AdminSession_adminId_idx_530179db"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "adminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminSession"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAccount"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "adminId",
+                    "expiresAt"
+                  ],
+                  "name": "AdminSession_adminId_expiresAt_idx_aee3463f",
+                  "prefix": "AdminSession_adminId_expiresAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "adminId"
+                  ],
+                  "name": "AdminSession_adminId_idx_530179db",
+                  "prefix": "AdminSession_adminId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "expiresAt"
+                  ],
+                  "name": "AdminSession_expiresAt_idx_6b6b8c10",
+                  "prefix": "AdminSession_expiresAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "refreshTokenHash"
+                  ]
+                }
+              ]
+            },
+            "ModerationAction": {
+              "checks": [
+                {
+                  "expression": "\"action\" IN ('CONTENT_REMOVED', 'CONTENT_RESTORED', 'USER_SUSPENDED', 'USER_BANNED', 'USER_UNSUSPENDED', 'REPORT_RESOLVED', 'REPORT_DISMISSED')",
+                  "name": "ModerationAction_action_check_fdcc00f1",
+                  "prefix": "ModerationAction_action_check"
+                },
+                {
+                  "expression": "\"targetType\" IN ('USER', 'POST', 'COMMENT', 'MEDIA')",
+                  "name": "ModerationAction_targetType_check_81f51ca1",
+                  "prefix": "ModerationAction_targetType_check"
+                }
+              ],
+              "columns": {
+                "action": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ModerationActionType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "adminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "details": {
+                  "codecId": "pg/json@1",
+                  "dataType": "pg/json",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reportId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "targetId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "targetType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ReportTargetType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "ModerationAction_adminId_idx_530179db"
+                  },
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "adminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ModerationAction"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAccount"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "ModerationAction_reportId_idx_d163019e"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "reportId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ModerationAction"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Report"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "adminId",
+                    "createdAt"
+                  ],
+                  "name": "ModerationAction_adminId_createdAt_idx_5015ed56",
+                  "prefix": "ModerationAction_adminId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "adminId"
+                  ],
+                  "name": "ModerationAction_adminId_idx_530179db",
+                  "prefix": "ModerationAction_adminId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "reportId"
+                  ],
+                  "name": "ModerationAction_reportId_idx_d163019e",
+                  "prefix": "ModerationAction_reportId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "targetType",
+                    "targetId"
+                  ],
+                  "name": "ModerationAction_targetType_targetId_idx_7a5ee9cb",
+                  "prefix": "ModerationAction_targetType_targetId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "Report": {
+              "checks": [
+                {
+                  "expression": "\"reason\" IN ('SPAM', 'HARASSMENT', 'HATE_SPEECH', 'INAPPROPRIATE_CONTENT', 'VIOLENCE', 'IMPERSONATION', 'COPYRIGHT', 'OTHER')",
+                  "name": "Report_reason_check_623793e6",
+                  "prefix": "Report_reason_check"
+                },
+                {
+                  "expression": "\"status\" IN ('PENDING', 'REVIEWING', 'RESOLVED', 'DISMISSED')",
+                  "name": "Report_status_check_381dfb05",
+                  "prefix": "Report_status_check"
+                },
+                {
+                  "expression": "\"targetType\" IN ('USER', 'POST', 'COMMENT', 'MEDIA')",
+                  "name": "Report_targetType_check_81f51ca1",
+                  "prefix": "Report_targetType_check"
+                }
+              ],
+              "columns": {
+                "assignedToAdminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "evidence": {
+                  "codecId": "pg/json@1",
+                  "dataType": "pg/json",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ReportReason",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "reporterUserId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PENDING"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "AdminReportStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "targetId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "targetType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ReportTargetType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Report_assignedToAdminId_idx_edc45a52"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "assignedToAdminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Report"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAccount"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "assignedToAdminId"
+                  ],
+                  "name": "Report_assignedToAdminId_idx_edc45a52",
+                  "prefix": "Report_assignedToAdminId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "assignedToAdminId",
+                    "status"
+                  ],
+                  "name": "Report_assignedToAdminId_status_idx_4f62a45d",
+                  "prefix": "Report_assignedToAdminId_status_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "reporterUserId",
+                    "createdAt"
+                  ],
+                  "name": "Report_reporterUserId_createdAt_idx_ab6195fa",
+                  "prefix": "Report_reporterUserId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status",
+                    "createdAt"
+                  ],
+                  "name": "Report_status_createdAt_idx_58610442",
+                  "prefix": "Report_status_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "targetType",
+                    "targetId"
+                  ],
+                  "name": "Report_targetType_targetId_idx_7a5ee9cb",
+                  "prefix": "Report_targetType_targetId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            }
+          },
+          "valueSet": {
+            "AdminReportStatus": {
+              "kind": "valueSet",
+              "values": [
+                "PENDING",
+                "REVIEWING",
+                "RESOLVED",
+                "DISMISSED"
+              ]
+            },
+            "AdminRole": {
+              "kind": "valueSet",
+              "values": [
+                "MODERATOR",
+                "ADMIN",
+                "SUPER_ADMIN"
+              ]
+            },
+            "ModerationActionType": {
+              "kind": "valueSet",
+              "values": [
+                "CONTENT_REMOVED",
+                "CONTENT_RESTORED",
+                "USER_SUSPENDED",
+                "USER_BANNED",
+                "USER_UNSUSPENDED",
+                "REPORT_RESOLVED",
+                "REPORT_DISMISSED"
+              ]
+            },
+            "ReportReason": {
+              "kind": "valueSet",
+              "values": [
+                "SPAM",
+                "HARASSMENT",
+                "HATE_SPEECH",
+                "INAPPROPRIATE_CONTENT",
+                "VIOLENCE",
+                "IMPERSONATION",
+                "COPYRIGHT",
+                "OTHER"
+              ]
+            },
+            "ReportTargetType": {
+              "kind": "valueSet",
+              "values": [
+                "USER",
+                "POST",
+                "COMMENT",
+                "MEDIA"
+              ]
+            }
+          }
+        },
+        "id": "public",
+        "kind": "postgres-schema"
+      }
+    },
+    "storageHash": "9ed8b92150bb350a693702ad3884f22647fede2e35b7cecc1356b7d3efcd373b"
+  },
+  "execution": {
+    "executionHash": "177ed3a44a9751e821aeb30ee922d805b5df85cfe65c5ee26201373d9791f553",
+    "mutations": {
+      "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminAccount",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminAccount",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminAuditLog",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminMfa",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminMfa",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminPasskey",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminRecoveryCode",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminSession",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "ModerationAction",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Report",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Report",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        }
+      ]
+    }
+  },
+  "capabilities": {
+    "postgres": {
+      "distinctOn": true,
+      "forKeyShare": true,
+      "forNoKeyUpdate": true,
+      "jsonAgg": true,
+      "lateral": true,
+      "limit": true,
+      "orderBy": true,
+      "returning": true
+    },
+    "sql": {
+      "checkConstraint": true,
+      "defaultInInsert": true,
+      "enums": true,
+      "forShare": true,
+      "forUpdate": true,
+      "insertOnConflictSkip": true,
+      "insertOnConflictWithoutTarget": true,
+      "lateral": true,
+      "lockNowait": true,
+      "lockOf": true,
+      "lockSkipLocked": true,
+      "returning": true,
+      "scalarList": true
+    }
+  },
+  "extensions": {},
+  "meta": {},
+  "_generated": {
+    "warning": "⚠️  GENERATED FILE - DO NOT EDIT",
+    "message": "This file is automatically generated by \"prisma contract emit\".",
+    "regenerate": "To regenerate, run: prisma contract emit"
+  }
+}

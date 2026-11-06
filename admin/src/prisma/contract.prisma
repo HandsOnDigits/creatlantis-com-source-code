@@ -1,0 +1,207 @@
+// use prisma-8
+
+enum AdminRole {
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AdminReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportTargetType {
+  USER
+  POST
+  COMMENT
+  MEDIA
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  INAPPROPRIATE_CONTENT
+  VIOLENCE
+  IMPERSONATION
+  COPYRIGHT
+  OTHER
+}
+
+enum ModerationActionType {
+  CONTENT_REMOVED
+  CONTENT_RESTORED
+  USER_SUSPENDED
+  USER_BANNED
+  USER_UNSUSPENDED
+  REPORT_RESOLVED
+  REPORT_DISMISSED
+}
+
+model AdminAccount {
+  id           String             @id @onCreate(uuid())
+  email        String
+  passwordHash String
+  role         AdminRole
+  active       Boolean            @default(true)
+  disabledAt   TimestamptzString?
+  lastLoginAt  TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+
+  sessions          AdminSession[]
+  mfa               AdminMfa?
+  passkeys          AdminPasskey[]
+  recoveryCodes     AdminRecoveryCode[]
+  assignedReports   Report[]            @relation("ReportAssignee")
+  moderationActions ModerationAction[]
+  auditLogs         AdminAuditLog[]
+
+  @@index(
+  expression: sql`lower(email)`,
+  unique: true,
+  name: "AdminAccount_email_lower_key"
+  )
+}
+
+model AdminSession {
+  id      String       @id @onCreate(uuid())
+  admin   AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId String
+
+  refreshTokenHash String @unique
+
+  expiresAt     TimestamptzString
+  mfaVerifiedAt TimestamptzString?
+  revokedAt     TimestamptzString?
+  lastSeenAt    TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([adminId, expiresAt])
+  @@index([expiresAt])
+}
+
+model AdminMfa {
+  id      String       @id @onCreate(uuid())
+  admin   AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId String       @unique
+
+  secretCiphertext     Bytes?
+  secretNonce          Bytes?
+  secretAuthTag        Bytes?
+  encryptionKeyVersion Int?
+
+  lastAcceptedTimeStep BigInt?
+  enabledAt            TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+}
+
+model AdminPasskey {
+  id      String       @id @onCreate(uuid())
+  admin   AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId String
+
+  credentialId String   @unique
+  publicKey    Bytes
+  signCount    BigInt   @default(0)
+  transports   String[]
+
+  createdAt  TimestamptzString  @default(now())
+  lastUsedAt TimestamptzString?
+
+  @@index([adminId])
+}
+
+model AdminRecoveryCode {
+  id      String       @id @onCreate(uuid())
+  admin   AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId String
+
+  codeHash String             @unique
+  usedAt   TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([adminId, usedAt])
+}
+
+model Report {
+  id String @id @onCreate(uuid())
+
+  // References a public User.id, but intentionally has no relation.
+  reporterUserId Int?
+
+  // References public entities using their IDs as scalar values.
+  targetType ReportTargetType
+  targetId   String
+
+  reason      ReportReason
+  description String?
+  evidence    Json?
+
+  status AdminReportStatus @default(PENDING)
+
+  assignedToAdminId String?
+
+  assignedTo AdminAccount? @relation("ReportAssignee", fields: [assignedToAdminId], references: [id], onDelete: SetNull)
+
+  actions ModerationAction[]
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@index([reporterUserId, createdAt])
+  @@index([assignedToAdminId, status])
+}
+
+model ModerationAction {
+  id String @id @onCreate(uuid())
+
+  admin   AdminAccount @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  adminId String
+
+  report   Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  reportId String?
+
+  action     ModerationActionType
+  targetType ReportTargetType
+  targetId   String
+
+  reason  String?
+  details Json?
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([targetType, targetId])
+  @@index([reportId])
+}
+
+model AdminAuditLog {
+  id String @id @onCreate(uuid())
+
+  admin   AdminAccount? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  adminId String?
+
+  event      String
+  targetType String?
+  targetId   String?
+
+  metadata  Json?
+  requestId String?
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([event, createdAt])
+  @@index([targetType, targetId])
+}
