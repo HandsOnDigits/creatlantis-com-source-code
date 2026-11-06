@@ -26,5 +26,6 @@ node_modules/
 dist/
 .env
 .env.*
+!.env.example
 migrations/
 contract-test**
