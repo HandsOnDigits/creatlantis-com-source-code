@@ -538,6 +538,13 @@
                   "kind": "scalar"
                 }
               },
+              "recoveryCodesGeneratedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "secretAuthTag": {
                 "nullable": true,
                 "type": {
@@ -604,6 +611,9 @@
                 },
                 "lastAcceptedTimeStep": {
                   "column": "lastAcceptedTimeStep"
+                },
+                "recoveryCodesGeneratedAt": {
+                  "column": "recoveryCodesGeneratedAt"
                 },
                 "secretAuthTag": {
                   "column": "secretAuthTag"
@@ -1479,6 +1489,11 @@
                   "dataType": "pg/int8",
                   "nullable": true
                 },
+                "recoveryCodesGeneratedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "secretAuthTag": {
                   "codecId": "pg/bytea@1",
                   "dataType": "pg/bytea",
@@ -2235,7 +2250,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "9ed8b92150bb350a693702ad3884f22647fede2e35b7cecc1356b7d3efcd373b"
+    "storageHash": "1d4f1ca45f2c5f9a18a89eccf80b92ffa140fceb4e1c92e268dd65141dd42152"
   },
   "execution": {
     "executionHash": "177ed3a44a9751e821aeb30ee922d805b5df85cfe65c5ee26201373d9791f553",

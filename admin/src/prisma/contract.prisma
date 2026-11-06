@@ -91,10 +91,11 @@ model AdminMfa {
   admin   AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
   adminId String       @unique
 
-  secretCiphertext     Bytes?
-  secretNonce          Bytes?
-  secretAuthTag        Bytes?
-  encryptionKeyVersion Int?
+  secretCiphertext         Bytes?
+  secretNonce              Bytes?
+  secretAuthTag            Bytes?
+  encryptionKeyVersion     Int?
+  recoveryCodesGeneratedAt TimestamptzString?
 
   lastAcceptedTimeStep BigInt?
   enabledAt            TimestamptzString?

@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'9ed8b92150bb350a693702ad3884f22647fede2e35b7cecc1356b7d3efcd373b'>;
+  StorageHashBase<'1d4f1ca45f2c5f9a18a89eccf80b92ffa140fceb4e1c92e268dd65141dd42152'>;
 export type ExecutionHash =
   ExecutionHashBase<'177ed3a44a9751e821aeb30ee922d805b5df85cfe65c5ee26201373d9791f553'>;
 export type ProfileHash =
@@ -475,6 +475,7 @@ export namespace Models {
     encryptionKeyVersion: FieldOutputTypes['public']['AdminMfa']['encryptionKeyVersion'];
     id: FieldOutputTypes['public']['AdminMfa']['id'];
     lastAcceptedTimeStep: FieldOutputTypes['public']['AdminMfa']['lastAcceptedTimeStep'];
+    recoveryCodesGeneratedAt: FieldOutputTypes['public']['AdminMfa']['recoveryCodesGeneratedAt'];
     secretAuthTag: FieldOutputTypes['public']['AdminMfa']['secretAuthTag'];
     secretCiphertext: FieldOutputTypes['public']['AdminMfa']['secretCiphertext'];
     secretNonce: FieldOutputTypes['public']['AdminMfa']['secretNonce'];
@@ -783,6 +784,12 @@ type ContractBase = Omit<
                 readonly lastAcceptedTimeStep: {
                   readonly dataType: 'pg/int8';
                   readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recoveryCodesGeneratedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -1627,6 +1634,13 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
               };
+              readonly recoveryCodesGeneratedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly secretAuthTag: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bytea@1' };
@@ -1671,6 +1685,7 @@ type ContractBase = Omit<
                 readonly encryptionKeyVersion: { readonly column: 'encryptionKeyVersion' };
                 readonly id: { readonly column: 'id' };
                 readonly lastAcceptedTimeStep: { readonly column: 'lastAcceptedTimeStep' };
+                readonly recoveryCodesGeneratedAt: { readonly column: 'recoveryCodesGeneratedAt' };
                 readonly secretAuthTag: { readonly column: 'secretAuthTag' };
                 readonly secretCiphertext: { readonly column: 'secretCiphertext' };
                 readonly secretNonce: { readonly column: 'secretNonce' };
