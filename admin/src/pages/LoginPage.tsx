@@ -596,16 +596,31 @@ export default function LoginPage() {
                       void handleRecoveryCodeVerification()
                     }}
                   >
-                    <label htmlFor="recovery-code">Recovery code</label>
+                    <label
+                      htmlFor="recovery-code"
+                      className="mb-2 block text-sm font-medium text-gray-300"
+                    >
+                      Recovery code
+                    </label>
 
                     <input
                       id="recovery-code"
                       type="text"
                       value={recoveryCode}
-                      onChange={(event) => setRecoveryCode(event.target.value)}
+                      onChange={(event) =>
+                        setRecoveryCode(
+                          event.target.value
+                            .replace(/[^A-Za-z0-9_-]/g, '')
+                            .slice(0, 22),
+                        )
+                      }
                       autoComplete="off"
+                      spellCheck={false}
                       maxLength={22}
                       required
+                      disabled={totpLoading}
+                      placeholder="Enter your recovery code"
+                      className="border-admin-border bg-admin-bg focus:border-admin-accent focus:ring-admin-accent/20 w-full rounded-lg border px-4 py-3 text-center font-mono text-sm tracking-wider text-white outline-none placeholder:text-gray-500 focus:ring-2"
                     />
 
                     <button
