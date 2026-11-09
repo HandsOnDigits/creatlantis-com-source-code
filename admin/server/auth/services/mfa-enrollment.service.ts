@@ -4,11 +4,18 @@ import { encryptMfaSecret } from './mfa-crypto'
 import { createTotpEnrollment } from './mfa-totp'
 
 export async function startMfaEnrollment(adminId: string, email: string) {
-  const existing = await db.orm.public.AdminMfa.whereUnique({ adminId }).first()
+  const [existing, passkeys] = await Promise.all([
+    db.orm.public.AdminMfa.whereUnique({ adminId }).first(),
+    db.orm.public.AdminPasskey.where({ adminId }).all(),
+  ])
 
-  // An enabled MFA configuration must never be replaced
-  // through the ordinary enrollment flow.
-  if (existing?.enabledAt !== null && existing?.enabledAt !== undefined) {
+  if (passkeys.length > 0) {
+    throw new Error(
+      'A passkey is already registered. TOTP enrollment is unavailable.',
+    )
+  }
+
+  if (existing?.enabledAt != null) {
     throw new Error('MFA is already enabled.')
   }
 

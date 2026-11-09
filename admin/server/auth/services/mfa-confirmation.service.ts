@@ -67,6 +67,14 @@ export async function confirmMfaEnrollment(
         throw new MfaEnrollmentRejected()
       }
 
+      const existingPasskeys = await tx.orm.public.AdminPasskey.where({
+        adminId,
+      }).all()
+
+      if (existingPasskeys.length > 0) {
+        throw new MfaEnrollmentRejected()
+      }
+
       const mfaUpdated = await tx.orm.public.AdminMfa.where({
         adminId,
         enabledAt: null,

@@ -80,10 +80,18 @@ export async function verifyPasskeyRegistration(
         tx.orm.public.AdminPasskey.where({ adminId }).all(),
       ])
 
-      const hasExistingFactor =
-        mfa?.enabledAt != null || existingPasskeys.length > 0
+      // TOTP and passkeys are mutually exclusive MFA methods.
+      // Even an unfinished TOTP enrollment reserves that choice.
+      if (mfa !== null) {
+        throw new PasskeyRegistrationRejected()
+      }
 
-      if (hasExistingFactor && currentSession.mfaVerifiedAt === null) {
+      // Additional passkeys are allowed only after verifying
+      // the administrator's existing passkey-based MFA.
+      if (
+        existingPasskeys.length > 0 &&
+        currentSession.mfaVerifiedAt === null
+      ) {
         throw new PasskeyRegistrationRejected()
       }
 

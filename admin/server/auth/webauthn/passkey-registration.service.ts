@@ -16,6 +16,16 @@ export async function createPasskeyRegistrationOptions(
     throw new Error('Administrator account is unavailable.')
   }
 
+  const existingMfa = await db.orm.public.AdminMfa.whereUnique({
+    adminId,
+  }).first()
+
+  if (existingMfa) {
+    throw new Error(
+      'A TOTP configuration already exists. Passkey enrollment is unavailable.',
+    )
+  }
+
   const existingPasskeys = await db.orm.public.AdminPasskey.where({
     adminId,
   }).all()

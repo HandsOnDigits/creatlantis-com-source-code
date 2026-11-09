@@ -1,6 +1,7 @@
 ﻿import { useState, type FormEvent } from 'react'
 import { authenticateAdminPasskey, registerAdminPasskey } from '../lib/passkeys'
-
+import { startTotpEnrollment, confirmTotpEnrollment } from '../lib/totp'
+import type { TotpEnrollment } from '../lib/totp'
 import { useNavigate } from 'react-router-dom'
 import { getAdminSession } from '../lib/admin-session'
 
@@ -19,13 +20,21 @@ interface LoginResponse {
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [totpCode, setTotpCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [passkeyLoading, setPasskeyLoading] = useState(false)
+  const [totpLoading, setTotpLoading] = useState(false)
   const [error, setError] = useState('')
   const [nextStep, setNextStep] = useState('')
   const [availableMethods, setAvailableMethods] = useState<
     ('TOTP' | 'PASSKEY')[]
   >([])
+  const [selectedEnrollmentMethod, setSelectedEnrollmentMethod] = useState<
+    'TOTP' | 'PASSKEY' | null
+  >(null)
+  const [totpEnrollment, setTotpEnrollment] = useState<TotpEnrollment | null>(
+    null,
+  )
 
   const navigate = useNavigate()
 
@@ -45,6 +54,8 @@ export default function LoginPage() {
     setError('')
     setNextStep('')
     setAvailableMethods([])
+    setSelectedEnrollmentMethod(null)
+    setTotpEnrollment(null)
     setLoading(true)
 
     try {
@@ -76,6 +87,7 @@ export default function LoginPage() {
 
   async function handlePasskeyRegistration() {
     setError('')
+    setSelectedEnrollmentMethod('PASSKEY')
     setPasskeyLoading(true)
 
     try {
@@ -87,6 +99,46 @@ export default function LoginPage() {
       )
     } finally {
       setPasskeyLoading(false)
+    }
+  }
+
+  async function handleTotpEnrollment() {
+    setError('')
+    setTotpLoading(true)
+
+    try {
+      const enrollment = await startTotpEnrollment()
+      setTotpEnrollment(enrollment)
+      setSelectedEnrollmentMethod('TOTP')
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to start authenticator enrollment.',
+      )
+    } finally {
+      setTotpLoading(false)
+    }
+  }
+
+  async function handleTotpEnrollmentConfirmation(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault()
+
+    setError('')
+    setTotpLoading(true)
+
+    try {
+      await confirmTotpEnrollment(totpCode)
+      await completeAuthentication()
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Authenticator enrollment failed.',
+      )
+      setTotpCode('')
+    } finally {
+      setTotpLoading(false)
     }
   }
 
@@ -106,6 +158,47 @@ export default function LoginPage() {
     }
   }
 
+  async function handleTotpVerification(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    setError('')
+    setTotpLoading(true)
+
+    try {
+      const response = await fetch(
+        'http://localhost:3001/api/mfa/verification',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ token: totpCode }),
+        },
+      )
+
+      const data = (await response.json()) as {
+        success?: boolean
+        error?: string
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? 'Authenticator verification failed.')
+      }
+
+      await completeAuthentication()
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Authenticator verification failed.',
+      )
+      setTotpCode('')
+    } finally {
+      setTotpLoading(false)
+    }
+  }
+
   return (
     <main className="bg-admin-bg flex min-h-screen items-center justify-center px-6 py-12 text-white">
       <section className="border-admin-border bg-admin-panel w-full max-w-md rounded-2xl border p-8 shadow-2xl">
@@ -115,7 +208,6 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-2xl font-semibold tracking-tight">CreAtlantis</h1>
-
           <p className="text-admin-muted mt-1 text-sm">Administration portal</p>
         </div>
 
@@ -164,7 +256,9 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading || passkeyLoading || nextStep !== ''}
+            disabled={
+              loading || passkeyLoading || totpLoading || nextStep !== ''
+            }
             className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? 'Signing in...' : 'Sign in'}
@@ -172,65 +266,184 @@ export default function LoginPage() {
         </form>
 
         {nextStep === 'MFA_ENROLLMENT_REQUIRED' && (
-          <div className="border-admin-border mt-6 space-y-3 rounded-lg border p-4">
+          <div className="border-admin-border mt-6 space-y-4 rounded-lg border p-4">
             <h2 className="text-sm font-semibold">
-              Set up multi-factor authentication
+              Choose your authentication method
             </h2>
 
             <p className="text-admin-muted text-sm">
-              Register a passkey using Windows Hello, your device, or a
-              compatible security key.
+              You must choose exactly one method. You cannot combine a passkey
+              with an authenticator app.
             </p>
 
-            <button
-              type="button"
-              onClick={handlePasskeyRegistration}
-              disabled={passkeyLoading}
-              className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {passkeyLoading ? 'Registering passkey...' : 'Register a passkey'}
-            </button>
+            {!selectedEnrollmentMethod && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePasskeyRegistration}
+                  disabled={passkeyLoading || totpLoading}
+                  className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {passkeyLoading ? 'Registering passkey...' : 'Use a passkey'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTotpEnrollment}
+                  disabled={passkeyLoading || totpLoading}
+                  className="border-admin-border w-full rounded-lg border px-4 py-3 text-sm font-semibold transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {totpLoading
+                    ? 'Preparing authenticator...'
+                    : 'Use an authenticator app'}
+                </button>
+              </>
+            )}
+
+            {selectedEnrollmentMethod === 'PASSKEY' && (
+              <p className="text-admin-muted text-sm">
+                Passkey registration has been selected. Complete the
+                registration prompt to continue.
+              </p>
+            )}
+
+            {selectedEnrollmentMethod === 'TOTP' && totpEnrollment && (
+              <div className="space-y-4">
+                <p className="text-admin-muted text-sm">
+                  Scan this QR code with your authenticator app, such as
+                  Microsoft Authenticator, Google Authenticator, or 1Password.
+                </p>
+
+                <div className="flex justify-center rounded-lg bg-white p-4">
+                  <img
+                    src={totpEnrollment.qrCodeDataUrl}
+                    alt="Authenticator enrollment QR code"
+                    className="size-48"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="totpSecret"
+                    className="mb-2 block text-sm font-medium text-gray-300"
+                  >
+                    Or enter this setup key manually
+                  </label>
+
+                  <code
+                    id="totpSecret"
+                    className="bg-admin-bg block rounded-lg p-3 text-sm break-all select-all"
+                  >
+                    {totpEnrollment.secret}
+                  </code>
+                </div>
+
+                <form
+                  onSubmit={handleTotpEnrollmentConfirmation}
+                  className="space-y-3"
+                >
+                  <label
+                    htmlFor="totpEnrollmentCode"
+                    className="block text-sm font-medium text-gray-300"
+                  >
+                    Enter the six-digit code from your app
+                  </label>
+
+                  <input
+                    id="totpEnrollmentCode"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    value={totpCode}
+                    onChange={(event) =>
+                      setTotpCode(
+                        event.target.value.replace(/\D/g, '').slice(0, 6),
+                      )
+                    }
+                    required
+                    disabled={totpLoading}
+                    placeholder="000000"
+                    className="border-admin-border bg-admin-bg focus:border-admin-accent w-full rounded-lg border px-4 py-3 text-center text-xl tracking-[0.4em] outline-none"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={totpCode.length !== 6 || totpLoading}
+                    className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {totpLoading ? 'Confirming...' : 'Confirm authenticator'}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         )}
 
-        {nextStep === 'MFA_VERIFICATION_REQUIRED' &&
-          availableMethods.includes('PASSKEY') && (
-            <div className="border-admin-border mt-6 space-y-3 rounded-lg border p-4">
-              <h2 className="text-sm font-semibold">Verify your identity</h2>
+        {nextStep === 'MFA_VERIFICATION_REQUIRED' && (
+          <div className="border-admin-border mt-6 space-y-5 rounded-lg border p-4">
+            <h2 className="text-sm font-semibold">Verify your identity</h2>
 
-              <p className="text-admin-muted text-sm">
-                Use your registered passkey to complete authentication.
-              </p>
+            {availableMethods.includes('PASSKEY') && (
+              <div className="space-y-3">
+                <p className="text-admin-muted text-sm">
+                  Use your registered passkey.
+                </p>
 
-              <button
-                type="button"
-                onClick={handlePasskeyAuthentication}
-                disabled={passkeyLoading}
-                className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {passkeyLoading
-                  ? 'Verifying passkey...'
-                  : 'Sign in with passkey'}
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={handlePasskeyAuthentication}
+                  disabled={passkeyLoading || totpLoading}
+                  className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {passkeyLoading
+                    ? 'Verifying passkey...'
+                    : 'Sign in with passkey'}
+                </button>
+              </div>
+            )}
 
-        {nextStep === 'MFA_VERIFICATION_REQUIRED' &&
-          !availableMethods.includes('PASSKEY') &&
-          availableMethods.includes('TOTP') && (
-            <p className="text-admin-muted border-admin-border mt-6 rounded-lg border p-4 text-sm">
-              Authenticator verification is required. The TOTP verification
-              interface has not been added yet.
-            </p>
-          )}
+            {availableMethods.includes('TOTP') && (
+              <form onSubmit={handleTotpVerification} className="space-y-3">
+                <label
+                  htmlFor="totpCode"
+                  className="block text-sm font-medium text-gray-300"
+                >
+                  Six-digit verification code
+                </label>
 
-        {nextStep === 'AUTHENTICATED' && (
-          <p
-            role="status"
-            className="border-admin-accent/30 bg-admin-accent/10 text-admin-accent mt-5 rounded-lg border p-3 text-sm"
-          >
-            Multi-factor authentication successful.
-          </p>
+                <input
+                  id="totpCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  value={totpCode}
+                  onChange={(event) =>
+                    setTotpCode(
+                      event.target.value.replace(/\D/g, '').slice(0, 6),
+                    )
+                  }
+                  required
+                  disabled={totpLoading || passkeyLoading}
+                  placeholder="000000"
+                  className="border-admin-border bg-admin-bg focus:border-admin-accent w-full rounded-lg border px-4 py-3 text-center text-xl tracking-[0.4em] outline-none"
+                />
+
+                <button
+                  type="submit"
+                  disabled={
+                    totpCode.length !== 6 || totpLoading || passkeyLoading
+                  }
+                  className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {totpLoading ? 'Verifying code...' : 'Verify code'}
+                </button>
+              </form>
+            )}
+          </div>
         )}
 
         {error && (
@@ -241,15 +454,6 @@ export default function LoginPage() {
             {error}
           </p>
         )}
-
-        {nextStep &&
-          nextStep !== 'MFA_ENROLLMENT_REQUIRED' &&
-          nextStep !== 'MFA_VERIFICATION_REQUIRED' &&
-          nextStep !== 'AUTHENTICATED' && (
-            <p role="status" className="mt-5 rounded-lg border p-3 text-sm">
-              Password accepted. Next step: {nextStep}
-            </p>
-          )}
 
         <p className="border-admin-border text-admin-muted mt-8 border-t pt-5 text-center text-xs">
           Restricted administrative access

@@ -12,7 +12,6 @@ import {
 import { startMfaEnrollment } from './services/mfa-enrollment.service'
 import { verifyAdminMfa } from './services/mfa-verification.service'
 import {
-  generateRecoveryCodes,
   replaceRecoveryCodes,
   verifyRecoveryCode,
 } from './services/recovery-codes.service'
@@ -69,7 +68,12 @@ mfaRoutes.post('/enrollment', requireAdminSession, async (req, res, next) => {
       secret: enrollment.secret,
     })
   } catch (error) {
-    if (error instanceof Error && error.message === 'MFA is already enabled.') {
+    if (
+      error instanceof Error &&
+      (error.message === 'MFA is already enabled.' ||
+        error.message ===
+          'A passkey is already registered. TOTP enrollment is unavailable.')
+    ) {
       res.status(409).json({
         error: error.message,
       })
@@ -110,19 +114,19 @@ mfaRoutes.post(
         parsed.data.token,
       )
 
-      await recordAdminAuditEvent({
-        adminId: auth.adminId,
-        event: 'ADMIN_MFA_ENROLLED',
-        targetType: 'ADMIN_ACCOUNT',
-        targetId: auth.adminId,
-      })
-
       if (!confirmed) {
         res.status(400).json({
           error: 'MFA verification failed. Check the code and try again.',
         })
         return
       }
+
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_MFA_ENROLLED',
+        targetType: 'ADMIN_ACCOUNT',
+        targetId: auth.adminId,
+      })
 
       res.setHeader('Cache-Control', 'no-store')
 
@@ -166,19 +170,19 @@ mfaRoutes.post(
         parsed.data.token,
       )
 
-      await recordAdminAuditEvent({
-        adminId: auth.adminId,
-        event: 'ADMIN_MFA_VERIFIED',
-        targetType: 'ADMIN_ACCOUNT',
-        targetId: auth.adminId,
-      })
-
       if (!verified) {
         res.status(400).json({
           error: 'MFA verification failed. Check the code and try again.',
         })
         return
       }
+
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_MFA_VERIFIED',
+        targetType: 'ADMIN_ACCOUNT',
+        targetId: auth.adminId,
+      })
 
       res.setHeader('Cache-Control', 'no-store')
 
@@ -222,19 +226,19 @@ mfaRoutes.post(
         parsed.data.code,
       )
 
-      await recordAdminAuditEvent({
-        adminId: auth.adminId,
-        event: 'ADMIN_RECOVERY_CODE_USED',
-        targetType: 'ADMIN_ACCOUNT',
-        targetId: auth.adminId,
-      })
-
       if (!verified) {
         res.status(400).json({
           error: 'Recovery code verification failed.',
         })
         return
       }
+
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_RECOVERY_CODE_USED',
+        targetType: 'ADMIN_ACCOUNT',
+        targetId: auth.adminId,
+      })
 
       res.setHeader('Cache-Control', 'no-store')
 
