@@ -3,6 +3,8 @@ import argon2 from 'argon2'
 import { db } from '../../../src/prisma/db'
 import { createAdminSession } from './admin-session'
 
+export type AdminMfaMethod = 'TOTP' | 'PASSKEY'
+
 export type AdminLoginResult =
   | {
       success: true
@@ -13,6 +15,7 @@ export type AdminLoginResult =
         role: string
       }
       nextStep: 'MFA_ENROLLMENT_REQUIRED' | 'MFA_VERIFICATION_REQUIRED'
+      availableMethods: AdminMfaMethod[]
     }
   | {
       success: false
@@ -37,7 +40,6 @@ export async function authenticateAdminPassword(
   try {
     passwordValid = await argon2.verify(admin.passwordHash, password)
   } catch {
-    // An invalid or corrupted stored hash must not authenticate.
     passwordValid = false
   }
 
@@ -51,17 +53,33 @@ export async function authenticateAdminPassword(
     lastLoginAt: new Date().toISOString(),
   })
 
-  const mfa = await db.orm.public.AdminMfa.whereUnique({
-    adminId: admin.id,
-  }).first()
+  const [mfa, passkeys] = await Promise.all([
+    db.orm.public.AdminMfa.whereUnique({
+      adminId: admin.id,
+    }).first(),
 
-  const mfaEnabled = Boolean(
+    db.orm.public.AdminPasskey.where({
+      adminId: admin.id,
+    }).all(),
+  ])
+
+  const totpEnabled = Boolean(
     mfa?.enabledAt &&
     mfa.secretCiphertext &&
     mfa.secretNonce &&
     mfa.secretAuthTag &&
     mfa.encryptionKeyVersion !== null,
   )
+
+  const availableMethods: AdminMfaMethod[] = []
+
+  if (totpEnabled) {
+    availableMethods.push('TOTP')
+  }
+
+  if (passkeys.length > 0) {
+    availableMethods.push('PASSKEY')
+  }
 
   const { token } = await createAdminSession(admin.id)
 
@@ -73,8 +91,10 @@ export async function authenticateAdminPassword(
       email: admin.email,
       role: admin.role,
     },
-    nextStep: mfaEnabled
-      ? 'MFA_VERIFICATION_REQUIRED'
-      : 'MFA_ENROLLMENT_REQUIRED',
+    nextStep:
+      availableMethods.length > 0
+        ? 'MFA_VERIFICATION_REQUIRED'
+        : 'MFA_ENROLLMENT_REQUIRED',
+    availableMethods,
   }
 }

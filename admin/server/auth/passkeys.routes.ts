@@ -4,6 +4,9 @@ import { rateLimit } from 'express-rate-limit'
 import { db } from '../../src/prisma/db'
 import { requireAdminSession } from './middleware/auth.middleware'
 import { createPasskeyRegistrationOptions } from './webauthn/passkey-registration.service'
+import type { RegistrationResponseJSON } from '@simplewebauthn/server'
+import { verifyPasskeyRegistration } from './webauthn/passkey-verification.service'
+import { recordAdminAuditEvent } from '../audit/audit.service'
 
 const passkeyRoutes = Router()
 
@@ -61,6 +64,53 @@ passkeyRoutes.post(
       res.setHeader('Cache-Control', 'no-store')
 
       res.status(200).json(options)
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+passkeyRoutes.post(
+  '/registration/verify',
+  passkeyLimiter,
+  requireAdminSession,
+  async (req, res, next) => {
+    try {
+      const auth = req.adminAuth
+
+      if (!auth) {
+        res.status(401).json({
+          error: 'Authentication required.',
+        })
+        return
+      }
+
+      const verified = await verifyPasskeyRegistration(
+        auth.adminId,
+        auth.sessionId,
+        req.body as RegistrationResponseJSON,
+      )
+
+      if (!verified) {
+        res.status(400).json({
+          error: 'Passkey registration could not be verified.',
+        })
+        return
+      }
+
+      await recordAdminAuditEvent({
+        adminId: auth.adminId,
+        event: 'ADMIN_PASSKEY_REGISTERED',
+        targetType: 'ADMIN_ACCOUNT',
+        targetId: auth.adminId,
+      })
+
+      res.setHeader('Cache-Control', 'no-store')
+
+      res.json({
+        success: true,
+        mfaVerified: true,
+      })
     } catch (error) {
       next(error)
     }

@@ -1,4 +1,5 @@
 ﻿import { useState, type FormEvent } from 'react'
+import { registerAdminPasskey } from '../lib/passkeys'
 
 interface LoginResponse {
   admin?: {
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [passkeyLoading, setPasskeyLoading] = useState(false)
   const [error, setError] = useState('')
   const [nextStep, setNextStep] = useState('')
 
@@ -48,6 +50,22 @@ export default function LoginPage() {
       )
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handlePasskeyRegistration() {
+    setError('')
+    setPasskeyLoading(true)
+
+    try {
+      await registerAdminPasskey()
+      setNextStep('AUTHENTICATED')
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Passkey registration failed.',
+      )
+    } finally {
+      setPasskeyLoading(false)
     }
   }
 
@@ -107,12 +125,43 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || passkeyLoading || nextStep !== ''}
             className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        {nextStep === 'MFA_ENROLLMENT_REQUIRED' && (
+          <div className="border-admin-border mt-6 space-y-3 rounded-lg border p-4">
+            <h2 className="text-sm font-semibold">
+              Set up multi-factor authentication
+            </h2>
+
+            <p className="text-admin-muted text-sm">
+              Register a passkey using Windows Hello, your device, or a
+              compatible security key.
+            </p>
+
+            <button
+              type="button"
+              onClick={handlePasskeyRegistration}
+              disabled={passkeyLoading}
+              className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {passkeyLoading ? 'Registering passkey...' : 'Register a passkey'}
+            </button>
+          </div>
+        )}
+
+        {nextStep === 'AUTHENTICATED' && (
+          <p
+            role="status"
+            className="border-admin-accent/30 bg-admin-accent/10 text-admin-accent mt-5 rounded-lg border p-3 text-sm"
+          >
+            Passkey registered and authentication verified.
+          </p>
+        )}
 
         {error && (
           <p
@@ -123,14 +172,16 @@ export default function LoginPage() {
           </p>
         )}
 
-        {nextStep && (
-          <p
-            role="status"
-            className="border-admin-accent/30 bg-admin-accent/10 text-admin-accent mt-5 rounded-lg border p-3 text-sm"
-          >
-            Password accepted. Next step: {nextStep}
-          </p>
-        )}
+        {nextStep &&
+          nextStep !== 'MFA_ENROLLMENT_REQUIRED' &&
+          nextStep !== 'AUTHENTICATED' && (
+            <p
+              role="status"
+              className="border-admin-accent/30 bg-admin-accent/10 text-admin-accent mt-5 rounded-lg border p-3 text-sm"
+            >
+              Password accepted. Next step: {nextStep}
+            </p>
+          )}
 
         <p className="border-admin-border text-admin-muted mt-8 border-t pt-5 text-center text-xs">
           Restricted administrative access
