@@ -90,7 +90,11 @@ authRoutes.get('/session', requireAdminSession, async (req, res, next) => {
       return
     }
 
-    const [mfa, passkeys] = await Promise.all([
+    const [selection, mfa, passkeys] = await Promise.all([
+      db.orm.public.AdminMfaMethodSelection.whereUnique({
+        adminId: admin.id,
+      }).first(),
+
       db.orm.public.AdminMfa.whereUnique({
         adminId: admin.id,
       }).first(),
@@ -100,14 +104,51 @@ authRoutes.get('/session', requireAdminSession, async (req, res, next) => {
       }).all(),
     ])
 
-    const totpEnabled = Boolean(mfa?.enabledAt)
-    const passkeyEnabled = passkeys.length > 0
-    const mfaEnabled = totpEnabled || passkeyEnabled
+    // Existing MFA configuration without a persistent selection
+    // indicates inconsistent database state.
+    if (!selection && (mfa !== null || passkeys.length > 0)) {
+      res.status(403).json({
+        error: 'MFA configuration is inconsistent.',
+        code: 'MFA_CONFIGURATION_INVALID',
+      })
+      return
+    }
 
-    const availableMethods = [
-      ...(totpEnabled ? ['TOTP'] : []),
-      ...(passkeyEnabled ? ['PASSKEY'] : []),
-    ]
+    let mfaEnabled = false
+    let availableMethods: ('TOTP' | 'PASSKEY')[] = []
+
+    if (selection?.method === 'TOTP') {
+      if (passkeys.length > 0) {
+        res.status(403).json({
+          error: 'MFA configuration is inconsistent.',
+          code: 'MFA_CONFIGURATION_INVALID',
+        })
+        return
+      }
+
+      availableMethods = ['TOTP']
+
+      mfaEnabled = Boolean(
+        mfa?.enabledAt &&
+        mfa.secretCiphertext &&
+        mfa.secretNonce &&
+        mfa.secretAuthTag &&
+        mfa.encryptionKeyVersion !== null,
+      )
+    } else if (selection?.method === 'PASSKEY') {
+      if (mfa !== null) {
+        res.status(403).json({
+          error: 'MFA configuration is inconsistent.',
+          code: 'MFA_CONFIGURATION_INVALID',
+        })
+        return
+      }
+
+      availableMethods = ['PASSKEY']
+      mfaEnabled = passkeys.length > 0
+    }
+
+    const mfaVerified = auth.mfaVerified && mfaEnabled
 
     res.setHeader('Cache-Control', 'no-store')
 
@@ -118,10 +159,10 @@ authRoutes.get('/session', requireAdminSession, async (req, res, next) => {
         role: admin.role,
       },
       mfaEnabled,
-      mfaVerified: auth.mfaVerified,
+      mfaVerified,
       nextStep: !mfaEnabled
         ? 'MFA_ENROLLMENT_REQUIRED'
-        : auth.mfaVerified
+        : mfaVerified
           ? 'AUTHENTICATED'
           : 'MFA_VERIFICATION_REQUIRED',
       availableMethods,

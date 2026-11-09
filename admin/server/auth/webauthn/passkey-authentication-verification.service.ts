@@ -12,28 +12,40 @@ export async function verifyPasskeyAuthentication(
   sessionId: string,
   response: AuthenticationResponseJSON,
 ): Promise<boolean> {
-  const session = await db.orm.public.AdminSession.whereUnique({
-    id: sessionId,
-  }).first()
+  const [session, selection, mfa, passkey] = await Promise.all([
+    db.orm.public.AdminSession.whereUnique({
+      id: sessionId,
+    }).first(),
+
+    db.orm.public.AdminMfaMethodSelection.whereUnique({
+      adminId,
+    }).first(),
+
+    db.orm.public.AdminMfa.whereUnique({
+      adminId,
+    }).first(),
+
+    db.orm.public.AdminPasskey.whereUnique({
+      credentialId: response.id,
+    }).first(),
+  ])
 
   if (
+    selection?.method !== 'PASSKEY' ||
+    mfa !== null ||
+    !passkey ||
+    passkey.adminId !== adminId ||
     !session ||
     session.adminId !== adminId ||
     session.revokedAt !== null ||
+    !Number.isFinite(Date.parse(session.expiresAt)) ||
     Date.parse(session.expiresAt) <= Date.now() ||
     session.webauthnChallengeType !== 'AUTHENTICATION' ||
     !session.webauthnChallenge ||
     !session.webauthnChallengeExpiresAt ||
+    !Number.isFinite(Date.parse(session.webauthnChallengeExpiresAt)) ||
     Date.parse(session.webauthnChallengeExpiresAt) <= Date.now()
   ) {
-    return false
-  }
-
-  const passkey = await db.orm.public.AdminPasskey.whereUnique({
-    credentialId: response.id,
-  }).first()
-
-  if (!passkey || passkey.adminId !== adminId) {
     return false
   }
 
@@ -69,8 +81,6 @@ export async function verifyPasskeyAuthentication(
 
   try {
     return await db.transaction(async (tx) => {
-      const now = new Date().toISOString()
-
       const currentSession = await tx.orm.public.AdminSession.whereUnique({
         id: sessionId,
       }).first()
@@ -79,27 +89,62 @@ export async function verifyPasskeyAuthentication(
         !currentSession ||
         currentSession.adminId !== adminId ||
         currentSession.revokedAt !== null ||
+        !Number.isFinite(Date.parse(currentSession.expiresAt)) ||
         Date.parse(currentSession.expiresAt) <= Date.now() ||
+        currentSession.expiresAt !== session.expiresAt ||
         currentSession.webauthnChallenge !== session.webauthnChallenge ||
         currentSession.webauthnChallengeType !== 'AUTHENTICATION' ||
+        !currentSession.webauthnChallengeExpiresAt ||
+        !Number.isFinite(
+          Date.parse(currentSession.webauthnChallengeExpiresAt),
+        ) ||
+        Date.parse(currentSession.webauthnChallengeExpiresAt) <= Date.now() ||
         currentSession.webauthnChallengeExpiresAt !==
           session.webauthnChallengeExpiresAt
       ) {
         throw new PasskeyAuthenticationRejected()
       }
 
-      const admin = await tx.orm.public.AdminAccount.whereUnique({
-        id: adminId,
-      }).first()
+      const [admin, selection, mfa, currentPasskey] = await Promise.all([
+        tx.orm.public.AdminAccount.whereUnique({
+          id: adminId,
+        }).first(),
 
-      if (!admin || !admin.active || admin.disabledAt !== null) {
+        tx.orm.public.AdminMfaMethodSelection.whereUnique({
+          adminId,
+        }).first(),
+
+        tx.orm.public.AdminMfa.whereUnique({
+          adminId,
+        }).first(),
+
+        tx.orm.public.AdminPasskey.whereUnique({
+          credentialId: response.id,
+        }).first(),
+      ])
+
+      if (
+        !admin ||
+        !admin.active ||
+        admin.disabledAt !== null ||
+        selection?.method !== 'PASSKEY' ||
+        mfa !== null ||
+        !currentPasskey ||
+        currentPasskey.id !== passkey.id ||
+        currentPasskey.adminId !== adminId ||
+        currentPasskey.signCount !== passkey.signCount
+      ) {
         throw new PasskeyAuthenticationRejected()
       }
+
+      const now = new Date().toISOString()
 
       const updatedSession = await tx.orm.public.AdminSession.where({
         id: sessionId,
         adminId,
         revokedAt: null,
+        expiresAt: session.expiresAt,
+        mfaVerifiedAt: currentSession.mfaVerifiedAt,
         webauthnChallenge: session.webauthnChallenge,
         webauthnChallengeType: 'AUTHENTICATION',
         webauthnChallengeExpiresAt: session.webauthnChallengeExpiresAt,

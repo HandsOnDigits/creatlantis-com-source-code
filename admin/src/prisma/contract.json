@@ -16,6 +16,10 @@
       "model": "AdminMfa",
       "namespace": "public"
     },
+    "AdminMfaMethodSelection": {
+      "model": "AdminMfaMethodSelection",
+      "namespace": "public"
+    },
     "AdminPasskey": {
       "model": "AdminPasskey",
       "namespace": "public"
@@ -41,6 +45,19 @@
     "namespaces": {
       "public": {
         "enum": {
+          "AdminMfaMethod": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "TOTP",
+                "value": "TOTP"
+              },
+              {
+                "name": "PASSKEY",
+                "value": "PASSKEY"
+              }
+            ]
+          },
           "AdminReportStatus": {
             "codecId": "pg/text@1",
             "members": [
@@ -301,6 +318,22 @@
                 },
                 "to": {
                   "model": "AdminMfa",
+                  "namespace": "public"
+                }
+              },
+              "mfaMethodSelection": {
+                "cardinality": "1:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "adminId"
+                  ]
+                },
+                "to": {
+                  "model": "AdminMfaMethodSelection",
                   "namespace": "public"
                 }
               },
@@ -643,6 +676,80 @@
               },
               "namespaceId": "public",
               "table": "AdminMfa"
+            }
+          },
+          "AdminMfaMethodSelection": {
+            "fields": {
+              "adminId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "method": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "AdminMfaMethod",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              }
+            },
+            "relations": {
+              "admin": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "adminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AdminAccount",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "adminId": {
+                  "column": "adminId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "method": {
+                  "column": "method"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AdminMfaMethodSelection"
             }
           },
           "AdminPasskey": {
@@ -1602,6 +1709,84 @@
                 }
               ]
             },
+            "AdminMfaMethodSelection": {
+              "checks": [
+                {
+                  "expression": "\"method\" IN ('TOTP', 'PASSKEY')",
+                  "name": "AdminMfaMethodSelection_method_check_706c06d2",
+                  "prefix": "AdminMfaMethodSelection_method_check"
+                }
+              ],
+              "columns": {
+                "adminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "method": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "AdminMfaMethod",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "unique": [
+                      "adminId"
+                    ]
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "adminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminMfaMethodSelection"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AdminAccount"
+                  }
+                }
+              ],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "adminId"
+                  ]
+                }
+              ]
+            },
             "AdminPasskey": {
               "checks": [
                 {
@@ -2270,6 +2455,13 @@
             }
           },
           "valueSet": {
+            "AdminMfaMethod": {
+              "kind": "valueSet",
+              "values": [
+                "TOTP",
+                "PASSKEY"
+              ]
+            },
             "AdminReportStatus": {
               "kind": "valueSet",
               "values": [
@@ -2334,10 +2526,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5b7df2288061d41bf390d92117f77eacac9c7dff262bb79de43141a976aa570a"
+    "storageHash": "cf67b3026c0a3ec4e7d95c2408d99e39e1f6a2527fbcc983ea6cc2facbb41176"
   },
   "execution": {
-    "executionHash": "177ed3a44a9751e821aeb30ee922d805b5df85cfe65c5ee26201373d9791f553",
+    "executionHash": "a9a136a681d49939032874c3b7159fe57ec5984ee7ade59ae73001ac6051d7a4",
     "mutations": {
       "defaults": [
         {
@@ -2400,6 +2592,17 @@
           "ref": {
             "entry": "AdminMfa",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AdminMfaMethodSelection",
+            "field": "id",
             "namespace": "public"
           }
         },

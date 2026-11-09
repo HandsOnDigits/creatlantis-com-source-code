@@ -3,32 +3,45 @@ import { db } from '../../../src/prisma/db'
 import { decryptMfaSecret } from './mfa-crypto'
 import { verifyTotpCode } from './mfa-totp'
 
+import { generateRecoveryCodesInTransaction } from './recovery-codes.service'
+
 class MfaEnrollmentRejected extends Error {}
 
 export async function confirmMfaEnrollment(
   adminId: string,
   sessionId: string,
   token: string,
-): Promise<boolean> {
-  const mfa = await db.orm.public.AdminMfa.whereUnique({ adminId }).first()
+): Promise<string[] | null> {
+  const [mfa, selection] = await Promise.all([
+    db.orm.public.AdminMfa.whereUnique({ adminId }).first(),
+    db.orm.public.AdminMfaMethodSelection.whereUnique({ adminId }).first(),
+  ])
 
   if (
     !mfa ||
+    !selection ||
+    selection.method !== 'TOTP' ||
     mfa.enabledAt !== null ||
-    !mfa.secretCiphertext ||
-    !mfa.secretNonce ||
-    !mfa.secretAuthTag ||
+    mfa.secretCiphertext === null ||
+    mfa.secretNonce === null ||
+    mfa.secretAuthTag === null ||
     mfa.encryptionKeyVersion === null
   ) {
-    return false
+    return null
   }
 
-  const secret = decryptMfaSecret(
-    mfa.secretCiphertext,
-    mfa.secretNonce,
-    mfa.secretAuthTag,
-    mfa.encryptionKeyVersion,
-  )
+  let secret: string
+
+  try {
+    secret = decryptMfaSecret(
+      mfa.secretCiphertext,
+      mfa.secretNonce,
+      mfa.secretAuthTag,
+      mfa.encryptionKeyVersion,
+    )
+  } catch {
+    return null
+  }
 
   const verification = await verifyTotpCode(
     secret,
@@ -37,7 +50,7 @@ export async function confirmMfaEnrollment(
   )
 
   if (!verification.valid || verification.timeStep === null) {
-    return false
+    return null
   }
 
   const acceptedTimeStep = verification.timeStep
@@ -54,6 +67,7 @@ export async function confirmMfaEnrollment(
         !session ||
         session.adminId !== adminId ||
         session.revokedAt !== null ||
+        !Number.isFinite(Date.parse(session.expiresAt)) ||
         Date.parse(session.expiresAt) <= Date.now()
       ) {
         throw new MfaEnrollmentRejected()
@@ -64,6 +78,15 @@ export async function confirmMfaEnrollment(
       }).first()
 
       if (!admin || !admin.active || admin.disabledAt !== null) {
+        throw new MfaEnrollmentRejected()
+      }
+
+      const currentSelection =
+        await tx.orm.public.AdminMfaMethodSelection.whereUnique({
+          adminId,
+        }).first()
+
+      if (currentSelection?.method !== 'TOTP') {
         throw new MfaEnrollmentRejected()
       }
 
@@ -79,6 +102,10 @@ export async function confirmMfaEnrollment(
         adminId,
         enabledAt: null,
         lastAcceptedTimeStep: mfa.lastAcceptedTimeStep,
+        secretCiphertext: mfa.secretCiphertext,
+        secretNonce: mfa.secretNonce,
+        secretAuthTag: mfa.secretAuthTag,
+        encryptionKeyVersion: mfa.encryptionKeyVersion,
       }).update({
         enabledAt: now,
         lastAcceptedTimeStep: BigInt(acceptedTimeStep),
@@ -103,11 +130,11 @@ export async function confirmMfaEnrollment(
         throw new MfaEnrollmentRejected()
       }
 
-      return true
+      return generateRecoveryCodesInTransaction(tx, adminId)
     })
   } catch (error) {
     if (error instanceof MfaEnrollmentRejected) {
-      return false
+      return null
     }
 
     throw error

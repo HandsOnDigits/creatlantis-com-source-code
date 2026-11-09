@@ -19,37 +19,43 @@ export async function verifyPasskeyRegistration(
     !session ||
     session.adminId !== adminId ||
     session.revokedAt !== null ||
+    !Number.isFinite(Date.parse(session.expiresAt)) ||
     Date.parse(session.expiresAt) <= Date.now() ||
     session.webauthnChallengeType !== 'REGISTRATION' ||
     !session.webauthnChallenge ||
     !session.webauthnChallengeExpiresAt ||
+    !Number.isFinite(Date.parse(session.webauthnChallengeExpiresAt)) ||
     Date.parse(session.webauthnChallengeExpiresAt) <= Date.now()
   ) {
     return false
   }
 
-  const verification = await verifyRegistrationResponse({
-    response,
-    expectedChallenge: session.webauthnChallenge,
-    expectedOrigin: webauthnConfig.origin,
-    expectedRPID: webauthnConfig.rpID,
-    requireUserVerification: true,
-  })
+  let verification
 
-  if (!verification.verified || !verification.registrationInfo) {
+  try {
+    verification = await verifyRegistrationResponse({
+      response,
+      expectedChallenge: session.webauthnChallenge,
+      expectedOrigin: webauthnConfig.origin,
+      expectedRPID: webauthnConfig.rpID,
+      requireUserVerification: true,
+    })
+  } catch {
+    return false
+  }
+
+  if (
+    !verification.verified ||
+    !verification.registrationInfo ||
+    !verification.registrationInfo.userVerified
+  ) {
     return false
   }
 
   const credential = verification.registrationInfo.credential
 
-  if (!verification.registrationInfo.userVerified) {
-    return false
-  }
-
   try {
     return await db.transaction(async (tx) => {
-      const now = new Date().toISOString()
-
       const currentSession = await tx.orm.public.AdminSession.whereUnique({
         id: sessionId,
       }).first()
@@ -58,11 +64,15 @@ export async function verifyPasskeyRegistration(
         !currentSession ||
         currentSession.adminId !== adminId ||
         currentSession.revokedAt !== null ||
+        currentSession.expiresAt !== session.expiresAt ||
+        !Number.isFinite(Date.parse(currentSession.expiresAt)) ||
         Date.parse(currentSession.expiresAt) <= Date.now() ||
         currentSession.webauthnChallenge !== session.webauthnChallenge ||
         currentSession.webauthnChallengeType !== 'REGISTRATION' ||
         currentSession.webauthnChallengeExpiresAt !==
-          session.webauthnChallengeExpiresAt
+          session.webauthnChallengeExpiresAt ||
+        !currentSession.webauthnChallengeExpiresAt ||
+        Date.parse(currentSession.webauthnChallengeExpiresAt) <= Date.now()
       ) {
         throw new PasskeyRegistrationRejected()
       }
@@ -75,19 +85,24 @@ export async function verifyPasskeyRegistration(
         throw new PasskeyRegistrationRejected()
       }
 
-      const [mfa, existingPasskeys] = await Promise.all([
-        tx.orm.public.AdminMfa.where({ adminId }).first(),
-        tx.orm.public.AdminPasskey.where({ adminId }).all(),
+      const [selection, mfa, existingPasskeys] = await Promise.all([
+        tx.orm.public.AdminMfaMethodSelection.whereUnique({
+          adminId,
+        }).first(),
+
+        tx.orm.public.AdminMfa.whereUnique({
+          adminId,
+        }).first(),
+
+        tx.orm.public.AdminPasskey.where({
+          adminId,
+        }).all(),
       ])
 
-      // TOTP and passkeys are mutually exclusive MFA methods.
-      // Even an unfinished TOTP enrollment reserves that choice.
-      if (mfa !== null) {
+      if (selection?.method !== 'PASSKEY' || mfa !== null) {
         throw new PasskeyRegistrationRejected()
       }
 
-      // Additional passkeys are allowed only after verifying
-      // the administrator's existing passkey-based MFA.
       if (
         existingPasskeys.length > 0 &&
         currentSession.mfaVerifiedAt === null
@@ -95,10 +110,14 @@ export async function verifyPasskeyRegistration(
         throw new PasskeyRegistrationRejected()
       }
 
+      const now = new Date().toISOString()
+
       const updatedSession = await tx.orm.public.AdminSession.where({
         id: sessionId,
         adminId,
         revokedAt: null,
+        expiresAt: session.expiresAt,
+        mfaVerifiedAt: currentSession.mfaVerifiedAt,
         webauthnChallenge: session.webauthnChallenge,
         webauthnChallengeType: 'REGISTRATION',
         webauthnChallengeExpiresAt: session.webauthnChallengeExpiresAt,

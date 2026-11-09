@@ -46,14 +46,20 @@ enum WebAuthnChallengeType {
   AUTHENTICATION
 }
 
+enum AdminMfaMethod {
+  TOTP
+  PASSKEY
+}
+
 model AdminAccount {
-  id           String             @id @onCreate(uuid())
-  email        String
-  passwordHash String
-  role         AdminRole
-  active       Boolean            @default(true)
-  disabledAt   TimestamptzString?
-  lastLoginAt  TimestamptzString?
+  id                 String                   @id @onCreate(uuid())
+  email              String
+  passwordHash       String
+  role               AdminRole
+  active             Boolean                  @default(true)
+  disabledAt         TimestamptzString?
+  lastLoginAt        TimestamptzString?
+  mfaMethodSelection AdminMfaMethodSelection?
 
   createdAt TimestamptzString @default(now())
   updatedAt temporal.UpdatedAtString
@@ -71,6 +77,17 @@ model AdminAccount {
   unique: true,
   name: "AdminAccount_email_lower_key"
   )
+}
+
+model AdminMfaMethodSelection {
+  id String @id @onCreate(uuid())
+
+  admin   AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId String       @unique
+
+  method AdminMfaMethod
+
+  createdAt TimestamptzString @default(now())
 }
 
 model AdminSession {

@@ -1,7 +1,13 @@
 ﻿import { useState, type FormEvent } from 'react'
 import { authenticateAdminPasskey, registerAdminPasskey } from '../lib/passkeys'
-import { startTotpEnrollment, confirmTotpEnrollment } from '../lib/totp'
+
+import {
+  startTotpEnrollment,
+  confirmTotpEnrollment,
+  verifyRecoveryCode,
+} from '../lib/totp'
 import type { TotpEnrollment } from '../lib/totp'
+
 import { useNavigate } from 'react-router-dom'
 import { getAdminSession } from '../lib/admin-session'
 
@@ -24,7 +30,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [passkeyLoading, setPasskeyLoading] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [nextStep, setNextStep] = useState('')
   const [availableMethods, setAvailableMethods] = useState<
     ('TOTP' | 'PASSKEY')[]
@@ -35,6 +41,12 @@ export default function LoginPage() {
   const [totpEnrollment, setTotpEnrollment] = useState<TotpEnrollment | null>(
     null,
   )
+  const [recoveryCode, setRecoveryCode] = useState('')
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false)
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
+  const [recoveryCodesAcknowledged, setRecoveryCodesAcknowledged] =
+    useState(false)
+  const [recoveryCodesCopied, setRecoveryCodesCopied] = useState(false)
 
   const navigate = useNavigate()
 
@@ -56,7 +68,13 @@ export default function LoginPage() {
     setAvailableMethods([])
     setSelectedEnrollmentMethod(null)
     setTotpEnrollment(null)
+    setRecoveryCodes(null)
+    setRecoveryCodesAcknowledged(false)
+    setRecoveryCode('')
+    setUseRecoveryCode(false)
+    setTotpCode('')
     setLoading(true)
+    setRecoveryCodesCopied(false)
 
     try {
       const response = await fetch('http://localhost:3001/api/auth/login', {
@@ -105,6 +123,9 @@ export default function LoginPage() {
   async function handleTotpEnrollment() {
     setError('')
     setTotpLoading(true)
+    setRecoveryCodesCopied(false)
+    setRecoveryCodes(null)
+    setRecoveryCodesAcknowledged(false)
 
     try {
       const enrollment = await startTotpEnrollment()
@@ -130,8 +151,11 @@ export default function LoginPage() {
     setTotpLoading(true)
 
     try {
-      await confirmTotpEnrollment(totpCode)
-      await completeAuthentication()
+      const codes = await confirmTotpEnrollment(totpCode)
+
+      setRecoveryCodes(codes.recoveryCodes)
+      setRecoveryCodesAcknowledged(false)
+      setTotpCode('')
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Authenticator enrollment failed.',
@@ -194,6 +218,45 @@ export default function LoginPage() {
           : 'Authenticator verification failed.',
       )
       setTotpCode('')
+    } finally {
+      setTotpLoading(false)
+    }
+  }
+
+  async function handleRecoveryCodesContinue() {
+    if (!recoveryCodesAcknowledged) {
+      return
+    }
+
+    setError('')
+    setTotpLoading(true)
+
+    try {
+      await completeAuthentication()
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to complete authentication.',
+      )
+    } finally {
+      setTotpLoading(false)
+    }
+  }
+
+  async function handleRecoveryCodeVerification() {
+    setTotpLoading(true)
+    setError(null)
+
+    try {
+      await verifyRecoveryCode(recoveryCode.trim())
+      await completeAuthentication()
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Recovery code verification failed.',
+      )
     } finally {
       setTotpLoading(false)
     }
@@ -307,75 +370,145 @@ export default function LoginPage() {
               </p>
             )}
 
-            {selectedEnrollmentMethod === 'TOTP' && totpEnrollment && (
+            {selectedEnrollmentMethod === 'TOTP' &&
+              totpEnrollment &&
+              !recoveryCodes && (
+                <div className="space-y-4">
+                  <p className="text-admin-muted text-sm">
+                    Scan this QR code with your authenticator app, such as
+                    Microsoft Authenticator, Google Authenticator, or 1Password.
+                  </p>
+
+                  <div className="flex justify-center rounded-lg bg-white p-4">
+                    <img
+                      src={totpEnrollment.qrCodeDataUrl}
+                      alt="Authenticator enrollment QR code"
+                      className="size-48"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="totpSecret"
+                      className="mb-2 block text-sm font-medium text-gray-300"
+                    >
+                      Or enter this setup key manually
+                    </label>
+
+                    <code
+                      id="totpSecret"
+                      className="bg-admin-bg block rounded-lg p-3 text-sm break-all select-all"
+                    >
+                      {totpEnrollment.secret}
+                    </code>
+                  </div>
+
+                  <form
+                    onSubmit={handleTotpEnrollmentConfirmation}
+                    className="space-y-3"
+                  >
+                    <label
+                      htmlFor="totpEnrollmentCode"
+                      className="block text-sm font-medium text-gray-300"
+                    >
+                      Enter the six-digit code from your app
+                    </label>
+
+                    <input
+                      id="totpEnrollmentCode"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      value={totpCode}
+                      onChange={(event) =>
+                        setTotpCode(
+                          event.target.value.replace(/\D/g, '').slice(0, 6),
+                        )
+                      }
+                      required
+                      disabled={totpLoading}
+                      placeholder="000000"
+                      className="border-admin-border bg-admin-bg focus:border-admin-accent w-full rounded-lg border px-4 py-3 text-center text-xl tracking-[0.4em] outline-none"
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={totpCode.length !== 6 || totpLoading}
+                      className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {totpLoading ? 'Confirming...' : 'Confirm authenticator'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+            {recoveryCodes && (
               <div className="space-y-4">
-                <p className="text-admin-muted text-sm">
-                  Scan this QR code with your authenticator app, such as
-                  Microsoft Authenticator, Google Authenticator, or 1Password.
-                </p>
-
-                <div className="flex justify-center rounded-lg bg-white p-4">
-                  <img
-                    src={totpEnrollment.qrCodeDataUrl}
-                    alt="Authenticator enrollment QR code"
-                    className="size-48"
-                  />
-                </div>
-
                 <div>
-                  <label
-                    htmlFor="totpSecret"
-                    className="mb-2 block text-sm font-medium text-gray-300"
-                  >
-                    Or enter this setup key manually
-                  </label>
+                  <h3 className="text-sm font-semibold text-amber-300">
+                    Save your recovery codes
+                  </h3>
 
-                  <code
-                    id="totpSecret"
-                    className="bg-admin-bg block rounded-lg p-3 text-sm break-all select-all"
-                  >
-                    {totpEnrollment.secret}
-                  </code>
+                  <p className="text-admin-muted mt-2 text-sm">
+                    These codes can each be used once if you lose access to your
+                    authenticator. They will not be shown again.
+                  </p>
                 </div>
 
-                <form
-                  onSubmit={handleTotpEnrollmentConfirmation}
-                  className="space-y-3"
-                >
-                  <label
-                    htmlFor="totpEnrollmentCode"
-                    className="block text-sm font-medium text-gray-300"
-                  >
-                    Enter the six-digit code from your app
-                  </label>
+                <div className="bg-admin-bg grid grid-cols-2 gap-2 rounded-lg p-4">
+                  {recoveryCodes.map((code) => (
+                    <code
+                      key={code}
+                      className="rounded bg-white/5 px-2 py-2 text-center text-sm select-all"
+                    >
+                      {code}
+                    </code>
+                  ))}
+                </div>
 
-                  <input
-                    id="totpEnrollmentCode"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    pattern="[0-9]{6}"
-                    maxLength={6}
-                    value={totpCode}
-                    onChange={(event) =>
-                      setTotpCode(
-                        event.target.value.replace(/\D/g, '').slice(0, 6),
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(
+                        recoveryCodes.join('\n'),
+                      )
+                      setRecoveryCodesCopied(true)
+                      setError(null)
+                    } catch {
+                      setRecoveryCodesCopied(false)
+                      setError(
+                        'Unable to copy recovery codes. Please save them manually.',
                       )
                     }
-                    required
-                    disabled={totpLoading}
-                    placeholder="000000"
-                    className="border-admin-border bg-admin-bg focus:border-admin-accent w-full rounded-lg border px-4 py-3 text-center text-xl tracking-[0.4em] outline-none"
-                  />
+                  }}
+                  className="border-admin-border w-full rounded-lg border px-4 py-3 text-sm font-semibold hover:bg-white/5"
+                >
+                  {recoveryCodesCopied ? 'Copied!' : 'Copy recovery codes'}
+                </button>
 
-                  <button
-                    type="submit"
-                    disabled={totpCode.length !== 6 || totpLoading}
-                    className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {totpLoading ? 'Confirming...' : 'Confirm authenticator'}
-                  </button>
-                </form>
+                <label className="flex items-start gap-3 text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={recoveryCodesAcknowledged}
+                    onChange={(event) =>
+                      setRecoveryCodesAcknowledged(event.target.checked)
+                    }
+                    className="mt-1"
+                  />
+                  I have saved these recovery codes in a secure location.
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleRecoveryCodesContinue}
+                  disabled={!recoveryCodesAcknowledged || totpLoading}
+                  className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {totpLoading ? 'Continuing...' : 'Continue to administration'}
+                </button>
               </div>
             )}
           </div>
@@ -404,7 +537,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            {availableMethods.includes('TOTP') && (
+            {availableMethods.includes('TOTP') && !useRecoveryCode && (
               <form onSubmit={handleTotpVerification} className="space-y-3">
                 <label
                   htmlFor="totpCode"
@@ -442,6 +575,61 @@ export default function LoginPage() {
                   {totpLoading ? 'Verifying code...' : 'Verify code'}
                 </button>
               </form>
+            )}
+
+            {availableMethods.includes('TOTP') && (
+              <div className="mt-4">
+                {!useRecoveryCode ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseRecoveryCode(true)
+                      setError(null)
+                    }}
+                  >
+                    Use a recovery code instead
+                  </button>
+                ) : (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      void handleRecoveryCodeVerification()
+                    }}
+                  >
+                    <label htmlFor="recovery-code">Recovery code</label>
+
+                    <input
+                      id="recovery-code"
+                      type="text"
+                      value={recoveryCode}
+                      onChange={(event) => setRecoveryCode(event.target.value)}
+                      autoComplete="off"
+                      maxLength={22}
+                      required
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={
+                        totpLoading || recoveryCode.trim().length !== 22
+                      }
+                    >
+                      {totpLoading ? 'Verifying...' : 'Verify recovery code'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUseRecoveryCode(false)
+                        setRecoveryCode('')
+                        setError(null)
+                      }}
+                    >
+                      Back to authenticator code
+                    </button>
+                  </form>
+                )}
+              </div>
             )}
           </div>
         )}

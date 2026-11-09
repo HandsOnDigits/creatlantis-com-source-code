@@ -16,19 +16,50 @@ export async function createPasskeyRegistrationOptions(
     throw new Error('Administrator account is unavailable.')
   }
 
-  const existingMfa = await db.orm.public.AdminMfa.whereUnique({
-    adminId,
-  }).first()
+  const [selection, existingMfa, existingPasskeys] = await Promise.all([
+    db.orm.public.AdminMfaMethodSelection.whereUnique({ adminId }).first(),
+    db.orm.public.AdminMfa.whereUnique({ adminId }).first(),
+    db.orm.public.AdminPasskey.where({ adminId }).all(),
+  ])
 
-  if (existingMfa) {
+  if (selection !== null && selection.method !== 'PASSKEY') {
+    throw new Error(
+      'TOTP has already been selected. Passkey enrollment is unavailable.',
+    )
+  }
+
+  if (existingMfa !== null) {
     throw new Error(
       'A TOTP configuration already exists. Passkey enrollment is unavailable.',
     )
   }
 
-  const existingPasskeys = await db.orm.public.AdminPasskey.where({
-    adminId,
-  }).all()
+  // Reserve PASSKEY. The unique adminId constraint prevents another
+  // MFA method from being selected concurrently.
+  if (selection === null) {
+    try {
+      await db.orm.public.AdminMfaMethodSelection.create({
+        adminId,
+        method: 'PASSKEY',
+      })
+    } catch (error) {
+      // Another request may have reserved a method concurrently.
+      const currentSelection =
+        await db.orm.public.AdminMfaMethodSelection.whereUnique({
+          adminId,
+        }).first()
+
+      if (currentSelection === null) {
+        throw error
+      }
+
+      if (currentSelection.method !== 'PASSKEY') {
+        throw new Error(
+          'TOTP has already been selected. Passkey enrollment is unavailable.',
+        )
+      }
+    }
+  }
 
   const options = await generateRegistrationOptions({
     rpName: webauthnConfig.rpName,

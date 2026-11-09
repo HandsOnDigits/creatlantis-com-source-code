@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5b7df2288061d41bf390d92117f77eacac9c7dff262bb79de43141a976aa570a'>;
+  StorageHashBase<'cf67b3026c0a3ec4e7d95c2408d99e39e1f6a2527fbcc983ea6cc2facbb41176'>;
 export type ExecutionHash =
-  ExecutionHashBase<'177ed3a44a9751e821aeb30ee922d805b5df85cfe65c5ee26201373d9791f553'>;
+  ExecutionHashBase<'a9a136a681d49939032874c3b7159fe57ec5984ee7ade59ae73001ac6051d7a4'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -279,6 +279,12 @@ type FieldTypeOverrides = {
           readonly input: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
         };
       };
+      readonly AdminMfaMethodSelection: {
+        readonly method: {
+          readonly output: 'TOTP' | 'PASSKEY';
+          readonly input: 'TOTP' | 'PASSKEY';
+        };
+      };
       readonly AdminSession: {
         readonly webauthnChallengeType: {
           readonly output: 'REGISTRATION' | 'AUTHENTICATION';
@@ -363,6 +369,9 @@ type ColumnTypeOverrides = {
         readonly output: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
         readonly input: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
       };
+    };
+    readonly AdminMfaMethodSelection: {
+      readonly method: { readonly output: 'TOTP' | 'PASSKEY'; readonly input: 'TOTP' | 'PASSKEY' };
     };
     readonly AdminSession: {
       readonly webauthnChallengeType: {
@@ -455,6 +464,7 @@ export namespace Models {
     assignedReports: public_Report[];
     auditLogs: public_AdminAuditLog[];
     mfa: public_AdminMfa | null;
+    mfaMethodSelection: public_AdminMfaMethodSelection | null;
     moderationActions: public_ModerationAction[];
     passkeys: public_AdminPasskey[];
     recoveryCodes: public_AdminRecoveryCode[];
@@ -463,6 +473,7 @@ export namespace Models {
       | 'assignedReports'
       | 'auditLogs'
       | 'mfa'
+      | 'mfaMethodSelection'
       | 'moderationActions'
       | 'passkeys'
       | 'recoveryCodes'
@@ -492,6 +503,14 @@ export namespace Models {
     secretCiphertext: FieldOutputTypes['public']['AdminMfa']['secretCiphertext'];
     secretNonce: FieldOutputTypes['public']['AdminMfa']['secretNonce'];
     updatedAt: FieldOutputTypes['public']['AdminMfa']['updatedAt'];
+    admin: public_AdminAccount;
+    readonly [RelationKeys]?: 'admin';
+  };
+  export type public_AdminMfaMethodSelection = {
+    adminId: FieldOutputTypes['public']['AdminMfaMethodSelection']['adminId'];
+    createdAt: FieldOutputTypes['public']['AdminMfaMethodSelection']['createdAt'];
+    id: FieldOutputTypes['public']['AdminMfaMethodSelection']['id'];
+    method: FieldOutputTypes['public']['AdminMfaMethodSelection']['method'];
     admin: public_AdminAccount;
     readonly [RelationKeys]?: 'admin';
   };
@@ -568,6 +587,7 @@ export declare const models: {
     AdminAccount: Models.public_AdminAccount;
     AdminAuditLog: Models.public_AdminAuditLog;
     AdminMfa: Models.public_AdminMfa;
+    AdminMfaMethodSelection: Models.public_AdminMfaMethodSelection;
     AdminPasskey: Models.public_AdminPasskey;
     AdminRecoveryCode: Models.public_AdminRecoveryCode;
     AdminSession: Models.public_AdminSession;
@@ -841,6 +861,52 @@ type ContractBase = Omit<
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'AdminMfa';
+                    readonly columns: readonly ['adminId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'AdminAccount';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly AdminMfaMethodSelection: {
+              columns: {
+                readonly adminId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly method: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['adminId'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'AdminMfaMethodSelection';
                     readonly columns: readonly ['adminId'];
                   };
                   readonly target: {
@@ -1342,6 +1408,10 @@ type ContractBase = Omit<
             };
           };
           readonly valueSet: {
+            readonly AdminMfaMethod: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['TOTP', 'PASSKEY'];
+            };
             readonly AdminReportStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['PENDING', 'REVIEWING', 'RESOLVED', 'DISMISSED'];
@@ -1403,6 +1473,10 @@ type ContractBase = Omit<
       readonly model: 'AdminAuditLog';
     };
     readonly AdminMfa: { readonly namespace: 'public' & NamespaceId; readonly model: 'AdminMfa' };
+    readonly AdminMfaMethodSelection: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AdminMfaMethodSelection';
+    };
     readonly AdminPasskey: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'AdminPasskey';
@@ -1503,6 +1577,18 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'AdminMfa';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['adminId'];
+                };
+              };
+              readonly mfaMethodSelection: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AdminMfaMethodSelection';
                 };
                 readonly cardinality: '1:1';
                 readonly nullable: true;
@@ -1727,6 +1813,53 @@ type ContractBase = Omit<
                 readonly secretCiphertext: { readonly column: 'secretCiphertext' };
                 readonly secretNonce: { readonly column: 'secretNonce' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly AdminMfaMethodSelection: {
+            readonly fields: {
+              readonly adminId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly method: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly admin: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AdminAccount';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['adminId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'AdminMfaMethodSelection';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly adminId: { readonly column: 'adminId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly method: { readonly column: 'method' };
               };
             };
           };
@@ -2137,6 +2270,13 @@ type ContractBase = Omit<
           };
         };
         readonly enum: {
+          readonly AdminMfaMethod: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'TOTP'; readonly value: 'TOTP' },
+              { readonly name: 'PASSKEY'; readonly value: 'PASSKEY' },
+            ];
+          };
           readonly AdminReportStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -2197,6 +2337,10 @@ type ContractBase = Omit<
           };
         };
         readonly enumMemberTypes?: {
+          readonly AdminMfaMethod: readonly [
+            { readonly name: 'TOTP'; readonly value: 'TOTP' },
+            { readonly name: 'PASSKEY'; readonly value: 'PASSKEY' },
+          ];
           readonly AdminReportStatus: readonly [
             { readonly name: 'PENDING'; readonly value: 'PENDING' },
             { readonly name: 'REVIEWING'; readonly value: 'REVIEWING' },
@@ -2312,6 +2456,14 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'AdminMfa';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'AdminMfaMethodSelection';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },

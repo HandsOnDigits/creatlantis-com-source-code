@@ -10,17 +10,35 @@ export async function createPasskeyAuthenticationOptions(
   adminId: string,
   sessionId: string,
 ) {
-  const admin = await db.orm.public.AdminAccount.whereUnique({
-    id: adminId,
-  }).first()
+  const [admin, selection, mfa, passkeys] = await Promise.all([
+    db.orm.public.AdminAccount.whereUnique({
+      id: adminId,
+    }).first(),
+
+    db.orm.public.AdminMfaMethodSelection.whereUnique({
+      adminId,
+    }).first(),
+
+    db.orm.public.AdminMfa.whereUnique({
+      adminId,
+    }).first(),
+
+    db.orm.public.AdminPasskey.where({
+      adminId,
+    }).all(),
+  ])
 
   if (!admin || !admin.active || admin.disabledAt !== null) {
     throw new Error('Administrator account is unavailable.')
   }
 
-  const passkeys = await db.orm.public.AdminPasskey.where({
-    adminId,
-  }).all()
+  if (selection?.method !== 'PASSKEY') {
+    throw new Error('Passkey is not the selected MFA method.')
+  }
+
+  if (mfa !== null) {
+    throw new Error('Conflicting MFA configuration.')
+  }
 
   if (passkeys.length === 0) {
     throw new Error('No passkeys are registered for this administrator.')

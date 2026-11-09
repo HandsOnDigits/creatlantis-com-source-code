@@ -108,13 +108,13 @@ mfaRoutes.post(
         return
       }
 
-      const confirmed = await confirmMfaEnrollment(
+      const recoveryCodes = await confirmMfaEnrollment(
         auth.adminId,
         auth.sessionId,
         parsed.data.token,
       )
 
-      if (!confirmed) {
+      if (!recoveryCodes) {
         res.status(400).json({
           error: 'MFA verification failed. Check the code and try again.',
         })
@@ -133,6 +133,7 @@ mfaRoutes.post(
       res.status(200).json({
         success: true,
         mfaEnabled: true,
+        recoveryCodes,
       })
     } catch (error) {
       next(error)
@@ -268,13 +269,6 @@ mfaRoutes.post(
       }
 
       const codes = await replaceRecoveryCodes(adminId)
-
-      await recordAdminAuditEvent({
-        adminId,
-        event: 'ADMIN_RECOVERY_CODES_REPLACED',
-        targetType: 'ADMIN_ACCOUNT',
-        targetId: adminId,
-      })
 
       res.setHeader('Cache-Control', 'no-store')
 

@@ -1,8 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 
-import { verifyAdminSessionMfa } from './admin-session'
-
 import { db } from '../../../src/prisma/db'
+import { recordAdminAuditEventInTransaction } from '../../audit/audit.service'
 
 const RECOVERY_CODE_COUNT = 10
 
@@ -10,53 +9,84 @@ function hashRecoveryCode(code: string): string {
   return createHash('sha256').update(code, 'utf8').digest('hex')
 }
 
+export async function generateRecoveryCodesInTransaction(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  adminId: string,
+): Promise<string[]> {
+  const [selection, mfa, passkey] = await Promise.all([
+    tx.orm.public.AdminMfaMethodSelection.whereUnique({
+      adminId,
+    }).first(),
+
+    tx.orm.public.AdminMfa.whereUnique({
+      adminId,
+    }).first(),
+
+    tx.orm.public.AdminPasskey.where({
+      adminId,
+    }).first(),
+  ])
+
+  if (
+    selection?.method !== 'TOTP' ||
+    passkey !== null ||
+    !mfa ||
+    mfa.enabledAt === null ||
+    mfa.secretCiphertext === null ||
+    mfa.secretNonce === null ||
+    mfa.secretAuthTag === null ||
+    mfa.encryptionKeyVersion === null
+  ) {
+    throw new Error('An enabled TOTP method is required.')
+  }
+
+  const existingCode = await tx.orm.public.AdminRecoveryCode.where({
+    adminId,
+  }).first()
+
+  if (existingCode || mfa.recoveryCodesGeneratedAt !== null) {
+    throw new Error('Recovery codes have already been generated.')
+  }
+
+  const now = new Date().toISOString()
+
+  const claimed = await tx.orm.public.AdminMfa.where({
+    adminId,
+    enabledAt: mfa.enabledAt,
+    recoveryCodesGeneratedAt: null,
+  }).update({
+    recoveryCodesGeneratedAt: now,
+  })
+
+  if (!claimed) {
+    throw new Error('Recovery codes have already been generated.')
+  }
+
+  const codes = Array.from({ length: RECOVERY_CODE_COUNT }, () =>
+    randomBytes(16).toString('base64url'),
+  )
+
+  for (const code of codes) {
+    await tx.orm.public.AdminRecoveryCode.create({
+      adminId,
+      codeHash: hashRecoveryCode(code),
+    })
+  }
+
+  await recordAdminAuditEventInTransaction(tx, {
+    adminId,
+    event: 'ADMIN_RECOVERY_CODES_GENERATED',
+    targetType: 'ADMIN_ACCOUNT',
+    targetId: adminId,
+  })
+
+  return codes
+}
+
 export async function generateRecoveryCodes(
   adminId: string,
 ): Promise<string[]> {
-  return db.transaction(async (tx) => {
-    const mfa = await tx.orm.public.AdminMfa.whereUnique({ adminId }).first()
-
-    if (!mfa?.enabledAt) {
-      throw new Error('MFA must be enabled before generating recovery codes.')
-    }
-
-    // Also detect codes created before the generation guard existed.
-    const existingCode = await tx.orm.public.AdminRecoveryCode.where({
-      adminId,
-    }).first()
-
-    if (existingCode || mfa.recoveryCodesGeneratedAt !== null) {
-      throw new Error('Recovery codes have already been generated.')
-    }
-
-    const now = new Date().toISOString()
-
-    // Only one concurrent request can claim generation.
-    const claimed = await tx.orm.public.AdminMfa.where({
-      adminId,
-      enabledAt: mfa.enabledAt,
-      recoveryCodesGeneratedAt: null,
-    }).update({
-      recoveryCodesGeneratedAt: now,
-    })
-
-    if (!claimed) {
-      throw new Error('Recovery codes have already been generated.')
-    }
-
-    const codes = Array.from({ length: RECOVERY_CODE_COUNT }, () =>
-      randomBytes(16).toString('base64url'),
-    )
-
-    for (const code of codes) {
-      await tx.orm.public.AdminRecoveryCode.create({
-        adminId,
-        codeHash: hashRecoveryCode(code),
-      })
-    }
-
-    return codes
-  })
+  return db.transaction((tx) => generateRecoveryCodesInTransaction(tx, adminId))
 }
 
 class RecoveryCodeRejected extends Error {}
@@ -74,9 +104,29 @@ export async function verifyRecoveryCode(
 
   try {
     return await db.transaction(async (tx) => {
-      const mfa = await tx.orm.public.AdminMfa.whereUnique({ adminId }).first()
+      const [selection, mfa, passkey] = await Promise.all([
+        tx.orm.public.AdminMfaMethodSelection.whereUnique({
+          adminId,
+        }).first(),
 
-      if (!mfa?.enabledAt) {
+        tx.orm.public.AdminMfa.whereUnique({
+          adminId,
+        }).first(),
+
+        tx.orm.public.AdminPasskey.where({
+          adminId,
+        }).first(),
+      ])
+
+      if (
+        selection?.method !== 'TOTP' ||
+        passkey !== null ||
+        !mfa?.enabledAt ||
+        !mfa.secretCiphertext ||
+        !mfa.secretNonce ||
+        !mfa.secretAuthTag ||
+        mfa.recoveryCodesGeneratedAt === null
+      ) {
         throw new RecoveryCodeRejected()
       }
 
@@ -100,11 +150,14 @@ export async function verifyRecoveryCode(
         id: adminId,
       }).first()
 
+      const expiration = session ? Date.parse(session.expiresAt) : Number.NaN
+
       if (
         !session ||
         session.adminId !== adminId ||
         session.revokedAt !== null ||
-        Date.parse(session.expiresAt) <= Date.now() ||
+        !Number.isFinite(expiration) ||
+        expiration <= Date.now() ||
         !admin ||
         !admin.active ||
         admin.disabledAt !== null
@@ -130,6 +183,8 @@ export async function verifyRecoveryCode(
         id: sessionId,
         adminId,
         revokedAt: null,
+        expiresAt: session.expiresAt,
+        mfaVerifiedAt: session.mfaVerifiedAt,
       }).update({
         mfaVerifiedAt: now,
         lastSeenAt: now,
@@ -152,10 +207,30 @@ export async function verifyRecoveryCode(
 
 export async function replaceRecoveryCodes(adminId: string): Promise<string[]> {
   return db.transaction(async (tx) => {
-    const mfa = await tx.orm.public.AdminMfa.whereUnique({ adminId }).first()
+    const [selection, mfa, passkey] = await Promise.all([
+      tx.orm.public.AdminMfaMethodSelection.whereUnique({
+        adminId,
+      }).first(),
 
-    if (!mfa?.enabledAt) {
-      throw new Error('MFA must be enabled before generating recovery codes.')
+      tx.orm.public.AdminMfa.whereUnique({
+        adminId,
+      }).first(),
+
+      tx.orm.public.AdminPasskey.where({
+        adminId,
+      }).first(),
+    ])
+
+    if (
+      selection?.method !== 'TOTP' ||
+      passkey !== null ||
+      !mfa?.enabledAt ||
+      !mfa.secretCiphertext ||
+      !mfa.secretNonce ||
+      !mfa.secretAuthTag ||
+      mfa.recoveryCodesGeneratedAt === null
+    ) {
+      throw new Error('An enabled TOTP method is required.')
     }
 
     const previousTimestamp = mfa.recoveryCodesGeneratedAt

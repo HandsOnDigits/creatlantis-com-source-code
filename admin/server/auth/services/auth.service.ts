@@ -47,13 +47,11 @@ export async function authenticateAdminPassword(
     return { success: false }
   }
 
-  await db.orm.public.AdminAccount.whereUnique({
-    id: admin.id,
-  }).update({
-    lastLoginAt: new Date().toISOString(),
-  })
+  const [selection, mfa, passkeys] = await Promise.all([
+    db.orm.public.AdminMfaMethodSelection.whereUnique({
+      adminId: admin.id,
+    }).first(),
 
-  const [mfa, passkeys] = await Promise.all([
     db.orm.public.AdminMfa.whereUnique({
       adminId: admin.id,
     }).first(),
@@ -63,23 +61,53 @@ export async function authenticateAdminPassword(
     }).all(),
   ])
 
-  const totpEnabled = Boolean(
-    mfa?.enabledAt &&
-    mfa.secretCiphertext &&
-    mfa.secretNonce &&
-    mfa.secretAuthTag &&
-    mfa.encryptionKeyVersion !== null,
-  )
-
-  const availableMethods: AdminMfaMethod[] = []
-
-  if (totpEnabled) {
-    availableMethods.push('TOTP')
+  // Existing MFA configuration without a selection indicates
+  // inconsistent state. Do not allow login to continue.
+  if (!selection && (mfa !== null || passkeys.length > 0)) {
+    return { success: false }
   }
 
-  if (passkeys.length > 0) {
-    availableMethods.push('PASSKEY')
+  let availableMethods: AdminMfaMethod[] = []
+  let nextStep: 'MFA_ENROLLMENT_REQUIRED' | 'MFA_VERIFICATION_REQUIRED' =
+    'MFA_ENROLLMENT_REQUIRED'
+
+  if (selection?.method === 'TOTP') {
+    // A TOTP selection must never coexist with passkeys.
+    if (passkeys.length > 0) {
+      return { success: false }
+    }
+
+    availableMethods = ['TOTP']
+
+    const totpEnabled = Boolean(
+      mfa?.enabledAt &&
+      mfa.secretCiphertext &&
+      mfa.secretNonce &&
+      mfa.secretAuthTag &&
+      mfa.encryptionKeyVersion !== null,
+    )
+
+    if (totpEnabled) {
+      nextStep = 'MFA_VERIFICATION_REQUIRED'
+    }
+  } else if (selection?.method === 'PASSKEY') {
+    // A passkey selection must never coexist with TOTP configuration.
+    if (mfa !== null) {
+      return { success: false }
+    }
+
+    availableMethods = ['PASSKEY']
+
+    if (passkeys.length > 0) {
+      nextStep = 'MFA_VERIFICATION_REQUIRED'
+    }
   }
+
+  await db.orm.public.AdminAccount.whereUnique({
+    id: admin.id,
+  }).update({
+    lastLoginAt: new Date().toISOString(),
+  })
 
   const { token } = await createAdminSession(admin.id)
 
@@ -91,10 +119,7 @@ export async function authenticateAdminPassword(
       email: admin.email,
       role: admin.role,
     },
-    nextStep:
-      availableMethods.length > 0
-        ? 'MFA_VERIFICATION_REQUIRED'
-        : 'MFA_ENROLLMENT_REQUIRED',
+    nextStep,
     availableMethods,
   }
 }

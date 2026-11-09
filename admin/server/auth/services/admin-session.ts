@@ -24,6 +24,43 @@ function isExpired(expiresAt: string): boolean {
   return !Number.isFinite(timestamp) || timestamp <= Date.now()
 }
 
+async function isSelectedMfaMethodReady(adminId: string): Promise<boolean> {
+  const [selection, mfa, passkeys] = await Promise.all([
+    db.orm.public.AdminMfaMethodSelection.whereUnique({
+      adminId,
+    }).first(),
+
+    db.orm.public.AdminMfa.whereUnique({
+      adminId,
+    }).first(),
+
+    db.orm.public.AdminPasskey.where({
+      adminId,
+    }).all(),
+  ])
+
+  if (!selection) {
+    return false
+  }
+
+  if (selection.method === 'TOTP') {
+    return Boolean(
+      passkeys.length === 0 &&
+      mfa?.enabledAt &&
+      mfa.secretCiphertext &&
+      mfa.secretNonce &&
+      mfa.secretAuthTag &&
+      mfa.encryptionKeyVersion !== null,
+    )
+  }
+
+  if (selection.method === 'PASSKEY') {
+    return mfa === null && passkeys.length > 0
+  }
+
+  return false
+}
+
 /**
  * Creates a password-authenticated session.
  * MFA remains unverified until explicitly completed.
@@ -46,7 +83,7 @@ export async function createAdminSession(adminId: string) {
 
 /**
  * Finds a valid session and checks that its admin account
- * is still active.
+ * is still active and its selected MFA method is configured.
  */
 export async function getAdminSession(token: unknown) {
   if (!isValidSessionToken(token)) {
@@ -71,10 +108,12 @@ export async function getAdminSession(token: unknown) {
     return null
   }
 
+  const mfaReady = await isSelectedMfaMethodReady(admin.id)
+
   return {
     session,
     admin,
-    mfaVerified: session.mfaVerifiedAt !== null,
+    mfaVerified: session.mfaVerifiedAt !== null && mfaReady,
   }
 }
 
@@ -107,12 +146,17 @@ export async function verifyAdminSessionMfa(
     return false
   }
 
+  if (!(await isSelectedMfaMethodReady(adminId))) {
+    return false
+  }
+
   const now = new Date().toISOString()
 
   const updated = await db.orm.public.AdminSession.where({
     id: sessionId,
     adminId,
     revokedAt: null,
+    expiresAt: session.expiresAt,
   }).update({
     mfaVerifiedAt: now,
     lastSeenAt: now,
