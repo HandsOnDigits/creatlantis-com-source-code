@@ -49,12 +49,6 @@ authRoutes.post('/login', loginLimiter, async (req, res, next) => {
       return
     }
 
-    res.status(200).json({
-      admin: result.admin,
-      nextStep: result.nextStep,
-      availableMethods: result.availableMethods,
-    })
-
     await recordAdminAuditEvent({
       adminId: result.admin.id,
       event: 'ADMIN_PASSWORD_AUTHENTICATED',
@@ -67,6 +61,7 @@ authRoutes.post('/login', loginLimiter, async (req, res, next) => {
     res.status(200).json({
       admin: result.admin,
       nextStep: result.nextStep,
+      availableMethods: result.availableMethods,
     })
   } catch (error) {
     next(error)

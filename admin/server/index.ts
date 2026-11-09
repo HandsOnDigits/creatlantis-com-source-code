@@ -72,9 +72,13 @@ app.use(
     err: unknown,
     _req: express.Request,
     res: express.Response,
-    _next: express.NextFunction,
+    next: express.NextFunction,
   ) => {
     console.error('Admin API error:', err)
+
+    if (res.headersSent) {
+      return next(err)
+    }
 
     res.status(500).json({
       error: 'Internal server error.',
