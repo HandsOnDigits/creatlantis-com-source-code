@@ -1,7 +1,17 @@
 import { db } from '../../../src/prisma/db'
 
+import { Buffer } from 'node:buffer'
+
 import { decryptMfaSecret } from './mfa-crypto'
 import { verifyTotpCode } from './mfa-totp'
+
+function sameBytes(left: Uint8Array | null, right: Uint8Array | null): boolean {
+  if (left === null || right === null) {
+    return left === right
+  }
+
+  return Buffer.from(left).equals(Buffer.from(right))
+}
 
 class MfaVerificationRejected extends Error {}
 
@@ -107,9 +117,9 @@ export async function verifyAdminMfa(
         currentMfa.enabledAt !== mfa.enabledAt ||
         currentMfa.encryptionKeyVersion !== mfa.encryptionKeyVersion ||
         currentMfa.lastAcceptedTimeStep !== mfa.lastAcceptedTimeStep ||
-        currentMfa.secretCiphertext !== mfa.secretCiphertext ||
-        currentMfa.secretNonce !== mfa.secretNonce ||
-        currentMfa.secretAuthTag !== mfa.secretAuthTag
+        !sameBytes(currentMfa.secretCiphertext, mfa.secretCiphertext) ||
+        !sameBytes(currentMfa.secretNonce, mfa.secretNonce) ||
+        !sameBytes(currentMfa.secretAuthTag, mfa.secretAuthTag)
       ) {
         throw new MfaVerificationRejected()
       }
