@@ -169,6 +169,19 @@
                 "value": "MEDIA"
               }
             ]
+          },
+          "WebAuthnChallengeType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "REGISTRATION",
+                "value": "REGISTRATION"
+              },
+              {
+                "name": "AUTHENTICATION",
+                "value": "AUTHENTICATION"
+              }
+            ]
           }
         },
         "models": {
@@ -878,6 +891,33 @@
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
+              },
+              "webauthnChallenge": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "webauthnChallengeExpiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "webauthnChallengeType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "WebAuthnChallengeType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
               }
             },
             "relations": {
@@ -923,6 +963,15 @@
                 },
                 "revokedAt": {
                   "column": "revokedAt"
+                },
+                "webauthnChallenge": {
+                  "column": "webauthnChallenge"
+                },
+                "webauthnChallengeExpiresAt": {
+                  "column": "webauthnChallengeExpiresAt"
+                },
+                "webauthnChallengeType": {
+                  "column": "webauthnChallengeType"
                 }
               },
               "namespaceId": "public",
@@ -1746,6 +1795,13 @@
               ]
             },
             "AdminSession": {
+              "checks": [
+                {
+                  "expression": "\"webauthnChallengeType\" IN ('REGISTRATION', 'AUTHENTICATION')",
+                  "name": "AdminSession_webauthnChallengeType_check_6bdc2eb8",
+                  "prefix": "AdminSession_webauthnChallengeType_check"
+                }
+              ],
               "columns": {
                 "adminId": {
                   "codecId": "pg/text@1",
@@ -1790,6 +1846,27 @@
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
                   "nullable": true
+                },
+                "webauthnChallenge": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "webauthnChallengeExpiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "webauthnChallengeType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "WebAuthnChallengeType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
                 }
               },
               "foreignKeys": [
@@ -2243,6 +2320,13 @@
                 "COMMENT",
                 "MEDIA"
               ]
+            },
+            "WebAuthnChallengeType": {
+              "kind": "valueSet",
+              "values": [
+                "REGISTRATION",
+                "AUTHENTICATION"
+              ]
             }
           }
         },
@@ -2250,7 +2334,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1d4f1ca45f2c5f9a18a89eccf80b92ffa140fceb4e1c92e268dd65141dd42152"
+    "storageHash": "5b7df2288061d41bf390d92117f77eacac9c7dff262bb79de43141a976aa570a"
   },
   "execution": {
     "executionHash": "177ed3a44a9751e821aeb30ee922d805b5df85cfe65c5ee26201373d9791f553",

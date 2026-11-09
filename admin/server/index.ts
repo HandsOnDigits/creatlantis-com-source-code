@@ -9,6 +9,7 @@ import { db } from '../src/prisma/db'
 import authRoutes from './auth/auth.routes'
 import mfaRoutes from './auth/mfa.routes'
 import sessionRoutes from './auth/session.routes'
+import passkeyRoutes from './auth/passkeys.routes'
 
 const app = express()
 
@@ -42,6 +43,7 @@ app.use('/api', apiLimiter)
 app.use('/api/auth', authRoutes)
 app.use('/api/mfa', mfaRoutes)
 app.use('/api/sessions', sessionRoutes)
+app.use('/api/passkeys', passkeyRoutes)
 
 app.get('/api/health', async (_req, res, next) => {
   try {

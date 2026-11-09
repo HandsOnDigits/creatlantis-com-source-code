@@ -41,6 +41,11 @@ enum ModerationActionType {
   REPORT_DISMISSED
 }
 
+enum WebAuthnChallengeType {
+  REGISTRATION
+  AUTHENTICATION
+}
+
 model AdminAccount {
   id           String             @id @onCreate(uuid())
   email        String
@@ -81,6 +86,10 @@ model AdminSession {
   lastSeenAt    TimestamptzString?
 
   createdAt TimestamptzString @default(now())
+
+  webauthnChallenge          String?
+  webauthnChallengeType      WebAuthnChallengeType?
+  webauthnChallengeExpiresAt TimestamptzString?
 
   @@index([adminId, expiresAt])
   @@index([expiresAt])

@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1d4f1ca45f2c5f9a18a89eccf80b92ffa140fceb4e1c92e268dd65141dd42152'>;
+  StorageHashBase<'5b7df2288061d41bf390d92117f77eacac9c7dff262bb79de43141a976aa570a'>;
 export type ExecutionHash =
   ExecutionHashBase<'177ed3a44a9751e821aeb30ee922d805b5df85cfe65c5ee26201373d9791f553'>;
 export type ProfileHash =
@@ -279,6 +279,12 @@ type FieldTypeOverrides = {
           readonly input: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
         };
       };
+      readonly AdminSession: {
+        readonly webauthnChallengeType: {
+          readonly output: 'REGISTRATION' | 'AUTHENTICATION';
+          readonly input: 'REGISTRATION' | 'AUTHENTICATION';
+        };
+      };
       readonly ModerationAction: {
         readonly action: {
           readonly output:
@@ -356,6 +362,12 @@ type ColumnTypeOverrides = {
       readonly role: {
         readonly output: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
         readonly input: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
+      };
+    };
+    readonly AdminSession: {
+      readonly webauthnChallengeType: {
+        readonly output: 'REGISTRATION' | 'AUTHENTICATION';
+        readonly input: 'REGISTRATION' | 'AUTHENTICATION';
       };
     };
     readonly ModerationAction: {
@@ -513,6 +525,9 @@ export namespace Models {
     mfaVerifiedAt: FieldOutputTypes['public']['AdminSession']['mfaVerifiedAt'];
     refreshTokenHash: FieldOutputTypes['public']['AdminSession']['refreshTokenHash'];
     revokedAt: FieldOutputTypes['public']['AdminSession']['revokedAt'];
+    webauthnChallenge: FieldOutputTypes['public']['AdminSession']['webauthnChallenge'];
+    webauthnChallengeExpiresAt: FieldOutputTypes['public']['AdminSession']['webauthnChallengeExpiresAt'];
+    webauthnChallengeType: FieldOutputTypes['public']['AdminSession']['webauthnChallengeType'];
     admin: public_AdminAccount;
     readonly [RelationKeys]?: 'admin';
   };
@@ -1033,6 +1048,24 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly webauthnChallenge: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly webauthnChallengeExpiresAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly webauthnChallengeType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
               };
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [{ readonly columns: readonly ['refreshTokenHash'] }];
@@ -1345,6 +1378,10 @@ type ContractBase = Omit<
             readonly ReportTargetType: {
               readonly kind: 'valueSet';
               readonly values: readonly ['USER', 'POST', 'COMMENT', 'MEDIA'];
+            };
+            readonly WebAuthnChallengeType: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['REGISTRATION', 'AUTHENTICATION'];
             };
           };
         };
@@ -1868,6 +1905,21 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly webauthnChallenge: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly webauthnChallengeExpiresAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly webauthnChallengeType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
             };
             readonly relations: {
               readonly admin: {
@@ -1895,6 +1947,11 @@ type ContractBase = Omit<
                 readonly mfaVerifiedAt: { readonly column: 'mfaVerifiedAt' };
                 readonly refreshTokenHash: { readonly column: 'refreshTokenHash' };
                 readonly revokedAt: { readonly column: 'revokedAt' };
+                readonly webauthnChallenge: { readonly column: 'webauthnChallenge' };
+                readonly webauthnChallengeExpiresAt: {
+                  readonly column: 'webauthnChallengeExpiresAt';
+                };
+                readonly webauthnChallengeType: { readonly column: 'webauthnChallengeType' };
               };
             };
           };
@@ -2131,6 +2188,13 @@ type ContractBase = Omit<
               { readonly name: 'MEDIA'; readonly value: 'MEDIA' },
             ];
           };
+          readonly WebAuthnChallengeType: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'REGISTRATION'; readonly value: 'REGISTRATION' },
+              { readonly name: 'AUTHENTICATION'; readonly value: 'AUTHENTICATION' },
+            ];
+          };
         };
         readonly enumMemberTypes?: {
           readonly AdminReportStatus: readonly [
@@ -2168,6 +2232,10 @@ type ContractBase = Omit<
             { readonly name: 'POST'; readonly value: 'POST' },
             { readonly name: 'COMMENT'; readonly value: 'COMMENT' },
             { readonly name: 'MEDIA'; readonly value: 'MEDIA' },
+          ];
+          readonly WebAuthnChallengeType: readonly [
+            { readonly name: 'REGISTRATION'; readonly value: 'REGISTRATION' },
+            { readonly name: 'AUTHENTICATION'; readonly value: 'AUTHENTICATION' },
           ];
         };
       };
