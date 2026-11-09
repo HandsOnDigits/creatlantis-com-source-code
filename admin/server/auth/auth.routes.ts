@@ -95,11 +95,24 @@ authRoutes.get('/session', requireAdminSession, async (req, res, next) => {
       return
     }
 
-    const mfa = await db.orm.public.AdminMfa.whereUnique({
-      adminId: admin.id,
-    }).first()
+    const [mfa, passkeys] = await Promise.all([
+      db.orm.public.AdminMfa.whereUnique({
+        adminId: admin.id,
+      }).first(),
 
-    const mfaEnabled = Boolean(mfa?.enabledAt)
+      db.orm.public.AdminPasskey.where({
+        adminId: admin.id,
+      }).all(),
+    ])
+
+    const totpEnabled = Boolean(mfa?.enabledAt)
+    const passkeyEnabled = passkeys.length > 0
+    const mfaEnabled = totpEnabled || passkeyEnabled
+
+    const availableMethods = [
+      ...(totpEnabled ? ['TOTP'] : []),
+      ...(passkeyEnabled ? ['PASSKEY'] : []),
+    ]
 
     res.setHeader('Cache-Control', 'no-store')
 
@@ -116,6 +129,7 @@ authRoutes.get('/session', requireAdminSession, async (req, res, next) => {
         : auth.mfaVerified
           ? 'AUTHENTICATED'
           : 'MFA_VERIFICATION_REQUIRED',
+      availableMethods,
     })
   } catch (error) {
     next(error)

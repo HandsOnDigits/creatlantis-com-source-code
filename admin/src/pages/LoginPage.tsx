@@ -1,5 +1,8 @@
 ﻿import { useState, type FormEvent } from 'react'
-import { registerAdminPasskey } from '../lib/passkeys'
+import { authenticateAdminPasskey, registerAdminPasskey } from '../lib/passkeys'
+
+import { useNavigate } from 'react-router-dom'
+import { getAdminSession } from '../lib/admin-session'
 
 interface LoginResponse {
   admin?: {
@@ -8,6 +11,7 @@ interface LoginResponse {
     role: string
   }
   nextStep?: string
+  availableMethods?: ('TOTP' | 'PASSKEY')[]
   error?: string
   message?: string
 }
@@ -19,12 +23,28 @@ export default function LoginPage() {
   const [passkeyLoading, setPasskeyLoading] = useState(false)
   const [error, setError] = useState('')
   const [nextStep, setNextStep] = useState('')
+  const [availableMethods, setAvailableMethods] = useState<
+    ('TOTP' | 'PASSKEY')[]
+  >([])
+
+  const navigate = useNavigate()
+
+  async function completeAuthentication() {
+    const session = await getAdminSession()
+
+    if (!session.mfaVerified || session.nextStep !== 'AUTHENTICATED') {
+      throw new Error('Administrator MFA verification was not confirmed.')
+    }
+
+    navigate('/admin', { replace: true })
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     setError('')
     setNextStep('')
+    setAvailableMethods([])
     setLoading(true)
 
     try {
@@ -44,6 +64,7 @@ export default function LoginPage() {
       }
 
       setNextStep(data.nextStep ?? 'UNKNOWN')
+      setAvailableMethods(data.availableMethods ?? [])
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'An unexpected error occurred.',
@@ -59,10 +80,26 @@ export default function LoginPage() {
 
     try {
       await registerAdminPasskey()
-      setNextStep('AUTHENTICATED')
+      await completeAuthentication()
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Passkey registration failed.',
+      )
+    } finally {
+      setPasskeyLoading(false)
+    }
+  }
+
+  async function handlePasskeyAuthentication() {
+    setError('')
+    setPasskeyLoading(true)
+
+    try {
+      await authenticateAdminPasskey()
+      await completeAuthentication()
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Passkey authentication failed.',
       )
     } finally {
       setPasskeyLoading(false)
@@ -98,7 +135,8 @@ export default function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
-              className="border-admin-border bg-admin-bg focus:border-admin-accent focus:ring-admin-accent/20 w-full rounded-lg border px-4 py-3 text-sm transition outline-none placeholder:text-gray-600 focus:ring-2"
+              disabled={nextStep !== ''}
+              className="border-admin-border bg-admin-bg focus:border-admin-accent focus:ring-admin-accent/20 w-full rounded-lg border px-4 py-3 text-sm transition outline-none placeholder:text-gray-600 focus:ring-2 disabled:opacity-60"
               placeholder="admin@example.com"
             />
           </div>
@@ -118,7 +156,8 @@ export default function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              className="border-admin-border bg-admin-bg focus:border-admin-accent focus:ring-admin-accent/20 w-full rounded-lg border px-4 py-3 text-sm transition outline-none placeholder:text-gray-600 focus:ring-2"
+              disabled={nextStep !== ''}
+              className="border-admin-border bg-admin-bg focus:border-admin-accent focus:ring-admin-accent/20 w-full rounded-lg border px-4 py-3 text-sm transition outline-none placeholder:text-gray-600 focus:ring-2 disabled:opacity-60"
               placeholder="Enter your password"
             />
           </div>
@@ -154,12 +193,43 @@ export default function LoginPage() {
           </div>
         )}
 
+        {nextStep === 'MFA_VERIFICATION_REQUIRED' &&
+          availableMethods.includes('PASSKEY') && (
+            <div className="border-admin-border mt-6 space-y-3 rounded-lg border p-4">
+              <h2 className="text-sm font-semibold">Verify your identity</h2>
+
+              <p className="text-admin-muted text-sm">
+                Use your registered passkey to complete authentication.
+              </p>
+
+              <button
+                type="button"
+                onClick={handlePasskeyAuthentication}
+                disabled={passkeyLoading}
+                className="bg-admin-accent w-full rounded-lg px-4 py-3 text-sm font-semibold text-gray-950 transition hover:bg-teal-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {passkeyLoading
+                  ? 'Verifying passkey...'
+                  : 'Sign in with passkey'}
+              </button>
+            </div>
+          )}
+
+        {nextStep === 'MFA_VERIFICATION_REQUIRED' &&
+          !availableMethods.includes('PASSKEY') &&
+          availableMethods.includes('TOTP') && (
+            <p className="text-admin-muted border-admin-border mt-6 rounded-lg border p-4 text-sm">
+              Authenticator verification is required. The TOTP verification
+              interface has not been added yet.
+            </p>
+          )}
+
         {nextStep === 'AUTHENTICATED' && (
           <p
             role="status"
             className="border-admin-accent/30 bg-admin-accent/10 text-admin-accent mt-5 rounded-lg border p-3 text-sm"
           >
-            Passkey registered and authentication verified.
+            Multi-factor authentication successful.
           </p>
         )}
 
@@ -174,11 +244,9 @@ export default function LoginPage() {
 
         {nextStep &&
           nextStep !== 'MFA_ENROLLMENT_REQUIRED' &&
+          nextStep !== 'MFA_VERIFICATION_REQUIRED' &&
           nextStep !== 'AUTHENTICATED' && (
-            <p
-              role="status"
-              className="border-admin-accent/30 bg-admin-accent/10 text-admin-accent mt-5 rounded-lg border p-3 text-sm"
-            >
+            <p role="status" className="mt-5 rounded-lg border p-3 text-sm">
               Password accepted. Next step: {nextStep}
             </p>
           )}
