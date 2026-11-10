@@ -1,6 +1,7 @@
 import argon2 from 'argon2'
 import { createHash, randomBytes } from 'node:crypto'
 import { SignJWT } from 'jose'
+import bcrypt from 'bcryptjs'
 
 import { db } from '../../src/prisma/db'
 import type { LoginInput, RegisterInput } from './auth.schemas'
@@ -37,15 +38,6 @@ async function createAccessToken(userId: number): Promise<string> {
     .setIssuedAt()
     .setExpirationTime(accessTokenTtl)
     .sign(secret)
-}
-
-function isUniqueConstraintError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'sqlState' in error &&
-    error.sqlState === '23505'
-  )
 }
 
 export async function registerUser(input: RegisterInput) {
@@ -148,6 +140,10 @@ export async function logoutUser(refreshToken: string | undefined) {
   await db.orm.public.Session.where({ refreshTokenHash }).delete()
 }
 
+function isLegacyBcryptHash(hash: string): boolean {
+  return /^\$2[aby]\$\d{2}\$/.test(hash)
+}
+
 export async function loginUser(input: LoginInput) {
   const user = await db.orm.public.User.where({ email: input.email })
     .select('id', 'email', 'username', 'name', 'passwordHash')
@@ -157,10 +153,33 @@ export async function loginUser(input: LoginInput) {
     return null
   }
 
-  const passwordMatches = await argon2.verify(user.passwordHash, input.password)
+  let passwordMatches = false
+  let needsRehash = false
+
+  if (isLegacyBcryptHash(user.passwordHash)) {
+    passwordMatches = await bcrypt.compare(input.password, user.passwordHash)
+    needsRehash = passwordMatches
+  } else if (user.passwordHash.startsWith('$argon2')) {
+    passwordMatches = await argon2.verify(user.passwordHash, input.password)
+  } else {
+    return null
+  }
 
   if (!passwordMatches) {
     return null
+  }
+
+  if (needsRehash) {
+    const newPasswordHash = await argon2.hash(input.password, {
+      type: argon2.argon2id,
+    })
+
+    await db.orm.public.User.where({
+      id: user.id,
+      passwordHash: user.passwordHash,
+    }).update({
+      passwordHash: newPasswordHash,
+    })
   }
 
   const refreshToken = randomBytes(32).toString('base64url')

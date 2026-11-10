@@ -20,6 +20,7 @@
     "@bbob/core": "^4.4.1",
     "@prisma/orm-postgres": "^8.0.0-rc.21",
     "argon2": "^0.45.1",
+    "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
