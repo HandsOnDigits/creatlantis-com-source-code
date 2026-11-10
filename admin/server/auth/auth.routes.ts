@@ -12,7 +12,7 @@ import { getAdminSession, revokeAdminSession } from './services/admin-session'
 import { recordAdminAuditEvent } from '../audit/audit.service'
 
 import { db } from '../../src/prisma/db'
-import { requireAdminSession } from './middleware/auth.middleware'
+import { requireAdminSession } from '../middleware/auth.middleware'
 
 const authRoutes = Router()
 

@@ -13,6 +13,7 @@ import profilesRoutes from './profiles/profiles.routes'
 import mediaRoutes from './media/media.routes'
 import postsRoutes from './posts/posts.routes'
 import catalogsRoutes from './catalogs/catalogs.routes'
+
 import { startMediaReservationCleanup } from './media/media.cleanup'
 
 const app = express()

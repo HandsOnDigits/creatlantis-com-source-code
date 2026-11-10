@@ -8,7 +8,7 @@ import { confirmMfaEnrollment } from './services/mfa-confirmation.service'
 import {
   requireAdminSession,
   requireMfaVerifiedAdmin,
-} from './middleware/auth.middleware'
+} from '../middleware/auth.middleware'
 import { startMfaEnrollment } from './services/mfa-enrollment.service'
 import { verifyAdminMfa } from './services/mfa-verification.service'
 import {

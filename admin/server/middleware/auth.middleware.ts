@@ -1,10 +1,10 @@
 import type { NextFunction, Request, Response } from 'express'
 
-import { getAdminSession } from '../services/admin-session'
+import { getAdminSession } from '../auth/services/admin-session'
 import {
   clearAdminSessionCookie,
   getAdminSessionCookieName,
-} from '../auth.cookies'
+} from '../auth/auth.cookies'
 
 declare global {
   namespace Express {

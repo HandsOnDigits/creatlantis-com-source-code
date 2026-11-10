@@ -1,6 +1,6 @@
 import { Router } from 'express'
 
-import { requireMfaVerifiedAdmin } from './middleware/auth.middleware'
+import { requireMfaVerifiedAdmin } from '../middleware/auth.middleware'
 import { listAdminSessions } from './services/session-management.service'
 import { revokeAdminSessionById } from './services/session-management.service'
 import { revokeOtherAdminSessions } from './services/session-management.service'

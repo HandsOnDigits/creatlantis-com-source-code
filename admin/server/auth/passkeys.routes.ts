@@ -7,7 +7,7 @@ import type {
 } from '@simplewebauthn/server'
 
 import { db } from '../../src/prisma/db'
-import { requireAdminSession } from './middleware/auth.middleware'
+import { requireAdminSession } from '../middleware/auth.middleware'
 
 import { createPasskeyRegistrationOptions } from './webauthn/passkey-registration.service'
 import { verifyPasskeyRegistration } from './webauthn/passkey-verification.service'
