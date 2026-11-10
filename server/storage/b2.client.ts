@@ -1,12 +1,20 @@
 import { B2Client, BufferSource } from '@backblaze-labs/b2-sdk'
 import {
+  presignS3GetObjectUrl,
   presignS3PutObjectUrl,
   type B2S3Config,
 } from '@backblaze-labs/b2-sdk/s3'
 
-const applicationKeyId = requiredEnv('B2_MEDIA_APPLICATION_KEY_ID')
-const applicationKey = requiredEnv('B2_MEDIA_APPLICATION_KEY')
-const bucketName = requiredEnv('B2_MEDIA_BUCKET')
+const stagingApplicationKeyId = requiredEnv('B2_STAGING_APPLICATION_KEY_ID')
+const stagingApplicationKey = requiredEnv('B2_STAGING_APPLICATION_KEY')
+const stagingBucketName = requiredEnv('B2_STAGING_BUCKET')
+
+const publicApplicationKeyId = requiredEnv('B2_PUBLIC_APPLICATION_KEY_ID')
+const publicApplicationKey = requiredEnv('B2_PUBLIC_APPLICATION_KEY')
+const publicBucketName = requiredEnv('B2_PUBLIC_BUCKET')
+
+let stagingClientPromise: Promise<B2Client> | undefined
+let publicClientPromise: Promise<B2Client> | undefined
 
 function requiredEnv(name: string): string {
   const value = process.env[name]
@@ -21,53 +29,79 @@ function requiredEnv(name: string): string {
 export async function createOriginalDownloadUrl(
   fileName: string,
 ): Promise<string> {
-  return getMediaVariantUrl(fileName)
+  return presignS3GetObjectUrl({
+    ...(await getStagingS3Config()),
+    bucketName: stagingBucketName,
+    fileName,
+    expiresIn: 120,
+  })
 }
 
-let clientPromise: Promise<B2Client> | undefined
-
 export function getMediaVariantUrl(objectKey: string): string {
-  const baseUrl = requiredEnv('B2_MEDIA_PUBLIC_BASE_URL').replace(/\/+$/, '')
+  const baseUrl = requiredEnv('B2_PUBLIC_BASE_URL').replace(/\/+$/, '')
 
   const encodedKey = objectKey.split('/').map(encodeURIComponent).join('/')
 
   return `${baseUrl}/${encodedKey}`
 }
 
-async function getClient(): Promise<B2Client> {
-  clientPromise ??= (async () => {
+async function getStagingClient(): Promise<B2Client> {
+  stagingClientPromise ??= (async () => {
     const client = new B2Client({
-      applicationKeyId,
-      applicationKey,
+      applicationKeyId: stagingApplicationKeyId,
+      applicationKey: stagingApplicationKey,
     })
 
     await client.authorize()
-
     return client
   })()
 
-  return clientPromise
+  return stagingClientPromise
 }
 
-async function getS3Config(): Promise<B2S3Config> {
-  const client = await getClient()
+async function getPublicClient(): Promise<B2Client> {
+  publicClientPromise ??= (async () => {
+    const client = new B2Client({
+      applicationKeyId: publicApplicationKeyId,
+      applicationKey: publicApplicationKey,
+    })
+
+    await client.authorize()
+    return client
+  })()
+
+  return publicClientPromise
+}
+
+async function getStagingS3Config(): Promise<B2S3Config> {
+  const client = await getStagingClient()
 
   return {
     accountInfo: client.accountInfo,
-    applicationKeyId,
-    applicationKey,
+    applicationKeyId: stagingApplicationKeyId,
+    applicationKey: stagingApplicationKey,
   }
 }
 
-async function getBucket() {
-  const client = await getClient()
-  const bucket = await client.getBucket(bucketName)
+async function getStagingBucket() {
+  const client = await getStagingClient()
+  const bucket = await client.getBucket(stagingBucketName)
 
   if (!bucket) {
-    throw new Error(`B2 bucket not found: ${bucketName}`)
+    throw new Error(`B2 staging bucket not found: ${stagingBucketName}`)
   }
 
   return bucket
+}
+
+async function getPublicS3Config(): Promise<B2S3Config> {
+  const client = await getPublicClient()
+
+  return {
+    accountInfo: client.accountInfo,
+    applicationKeyId: publicApplicationKeyId,
+    applicationKey: publicApplicationKey,
+  }
 }
 
 export async function createOriginalUploadUrl(
@@ -76,8 +110,8 @@ export async function createOriginalUploadUrl(
   contentLength: number,
 ): Promise<string> {
   return presignS3PutObjectUrl({
-    ...(await getS3Config()),
-    bucketName,
+    ...(await getStagingS3Config()),
+    bucketName: stagingBucketName,
     fileName,
     expiresIn: 300,
     contentType,
@@ -86,7 +120,7 @@ export async function createOriginalUploadUrl(
 }
 
 export async function getOriginalObjectMetadata(fileName: string) {
-  const bucket = await getBucket()
+  const bucket = await getStagingBucket()
   const { headers } = await bucket.head(fileName)
 
   return {
@@ -102,7 +136,7 @@ export async function downloadOriginalBuffer(
   fileName: string,
   maxBytes: number,
 ): Promise<Buffer> {
-  const bucket = await getBucket()
+  const bucket = await getStagingBucket()
   const result = await bucket.download(fileName)
 
   const expectedSize = result.headers.contentLength
@@ -150,7 +184,7 @@ export async function uploadMediaVariant(
   buffer: Buffer,
   contentType: string,
 ) {
-  const bucket = await getBucket()
+  const bucket = await getStagingBucket()
 
   const result = await bucket.upload({
     fileName,
@@ -167,7 +201,7 @@ export async function uploadMediaVariant(
 }
 
 export async function deleteOriginalObject(fileName: string): Promise<void> {
-  const bucket = await getBucket()
+  const bucket = await getStagingBucket()
 
   // Returns null when the object does not exist.
   const file = await bucket.getFileInfoByName(fileName)
@@ -177,4 +211,37 @@ export async function deleteOriginalObject(fileName: string): Promise<void> {
   }
 
   await bucket.deleteFileVersion(fileName, file.fileId)
+}
+
+export async function uploadPublicObject(
+  fileName: string,
+  buffer: Buffer,
+  contentType: string,
+) {
+  const url = await presignS3PutObjectUrl({
+    ...(await getPublicS3Config()),
+    bucketName: publicBucketName,
+    fileName,
+    expiresIn: 300,
+    contentType,
+    contentLength: buffer.byteLength,
+  })
+
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': contentType,
+    },
+    body: new Uint8Array(buffer),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Public B2 upload failed: HTTP ${response.status}`)
+  }
+
+  return {
+    fileName,
+    contentType,
+    contentLength: buffer.byteLength,
+  }
 }

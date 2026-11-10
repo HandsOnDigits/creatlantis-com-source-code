@@ -86,7 +86,10 @@ router.get('/', async (req, res) => {
 
     const loadedPosts = await Promise.all(
       pageCatalogPosts.map((item) =>
-        db.orm.public.Post.where({ id: item.postId })
+        db.orm.public.Post.where({
+          id: item.postId,
+          publicationStatus: 'APPROVED',
+        })
           .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
           .first(),
       ),
@@ -94,14 +97,10 @@ router.get('/', async (req, res) => {
 
     pagePosts = loadedPosts.filter((post) => post !== null)
   } else {
-    const posts = await db.orm.public.Post.select(
-      'id',
-      'type',
-      'title',
-      'content',
-      'createdAt',
-      'authorId',
-    )
+    const posts = await db.orm.public.Post.where({
+      publicationStatus: 'APPROVED',
+    })
+      .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
       .orderBy([(post) => post.createdAt.desc(), (post) => post.id.desc()])
       .limit(pageSize + 1)
       .offset(offset)
@@ -136,7 +135,7 @@ router.get('/', async (req, res) => {
             mediaId: media.id,
           })
             .orderBy((variant) => variant.width.asc())
-            .select('width', 'height', 'format', 'objectKey')
+            .select('width', 'height', 'format', 'publicObjectKey')
             .all()
 
           return {
@@ -147,7 +146,9 @@ router.get('/', async (req, res) => {
               width: variant.width,
               height: variant.height,
               format: variant.format,
-              url: getMediaVariantUrl(variant.objectKey),
+              url: variant.publicObjectKey
+                ? getMediaVariantUrl(variant.publicObjectKey)
+                : null,
             })),
           }
         }),
@@ -240,6 +241,7 @@ router.post('/', requireAuth, async (req, res) => {
       title,
       content: content ?? null,
       authorId: userId,
+      publicationStatus: 'PENDING_APPROVAL',
     })
 
     // Attach media in the supplied order.
@@ -273,7 +275,10 @@ router.get('/:id', async (req, res) => {
     return res.status(400).json({ error: 'Invalid post ID' })
   }
 
-  const post = await db.orm.public.Post.where({ id })
+  const post = await db.orm.public.Post.where({
+    id,
+    publicationStatus: 'APPROVED',
+  })
     .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
     .first()
 
@@ -304,7 +309,7 @@ router.get('/:id', async (req, res) => {
         mediaId: media.id,
       })
         .orderBy((variant) => variant.width.asc())
-        .select('width', 'height', 'format', 'objectKey')
+        .select('width', 'height', 'format', 'publicObjectKey')
         .all()
 
       return {
@@ -315,7 +320,9 @@ router.get('/:id', async (req, res) => {
           width: variant.width,
           height: variant.height,
           format: variant.format,
-          url: getMediaVariantUrl(variant.objectKey),
+          url: variant.publicObjectKey
+            ? getMediaVariantUrl(variant.publicObjectKey)
+            : null,
         })),
       }
     }),

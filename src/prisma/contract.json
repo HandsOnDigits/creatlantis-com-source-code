@@ -87,6 +87,23 @@
               }
             ]
           },
+          "PostPublicationStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "PENDING_APPROVAL",
+                "value": "PENDING_APPROVAL"
+              },
+              {
+                "name": "APPROVED",
+                "value": "APPROVED"
+              },
+              {
+                "name": "REJECTED",
+                "value": "REJECTED"
+              }
+            ]
+          },
           "PostType": {
             "codecId": "pg/text@1",
             "members": [
@@ -363,6 +380,13 @@
                   "kind": "scalar"
                 }
               },
+              "publicOriginalKey": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "status": {
                 "nullable": false,
                 "type": {
@@ -484,6 +508,9 @@
                 "processingError": {
                   "column": "processingError"
                 },
+                "publicOriginalKey": {
+                  "column": "publicOriginalKey"
+                },
                 "status": {
                   "column": "status"
                 },
@@ -558,6 +585,13 @@
                   "kind": "scalar"
                 }
               },
+              "publicObjectKey": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "size": {
                 "nullable": false,
                 "type": {
@@ -614,6 +648,9 @@
                 "objectKey": {
                   "column": "objectKey"
                 },
+                "publicObjectKey": {
+                  "column": "publicObjectKey"
+                },
                 "size": {
                   "column": "size"
                 },
@@ -652,6 +689,40 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "publicationStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "PostPublicationStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "rejectionReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewedByAdminId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -744,6 +815,18 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "publicationStatus": {
+                  "column": "publicationStatus"
+                },
+                "rejectionReason": {
+                  "column": "rejectionReason"
+                },
+                "reviewedAt": {
+                  "column": "reviewedAt"
+                },
+                "reviewedByAdminId": {
+                  "column": "reviewedByAdminId"
                 },
                 "title": {
                   "column": "title"
@@ -1430,6 +1513,11 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "publicOriginalKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "status": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -1520,6 +1608,11 @@
                   "columns": [
                     "originalKey"
                   ]
+                },
+                {
+                  "columns": [
+                    "publicOriginalKey"
+                  ]
                 }
               ]
             },
@@ -1577,6 +1670,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "publicObjectKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "size": {
                   "codecId": "pg/int8@1",
                   "dataType": "pg/int8",
@@ -1633,6 +1731,11 @@
                 },
                 {
                   "columns": [
+                    "publicObjectKey"
+                  ]
+                },
+                {
+                  "columns": [
                     "mediaId",
                     "format",
                     "width"
@@ -1642,6 +1745,11 @@
             },
             "Post": {
               "checks": [
+                {
+                  "expression": "\"publicationStatus\" IN ('PENDING_APPROVAL', 'APPROVED', 'REJECTED')",
+                  "name": "Post_publicationStatus_check_3f56bbbd",
+                  "prefix": "Post_publicationStatus_check"
+                },
                 {
                   "expression": "\"type\" IN ('IMAGE', 'JOURNAL', 'MODEL')",
                   "name": "Post_type_check_6601f5a1",
@@ -1676,6 +1784,36 @@
                     "kind": "function"
                   },
                   "nullable": false
+                },
+                "publicationStatus": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PENDING_APPROVAL"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "PostPublicationStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "rejectionReason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reviewedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "reviewedByAdminId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "title": {
                   "codecId": "pg/text@1",
@@ -1786,7 +1924,9 @@
                 },
                 {
                   "index": {
-                    "name": "PostMedia_mediaId_idx_6b06655c"
+                    "unique": [
+                      "mediaId"
+                    ]
                   },
                   "onDelete": "cascade",
                   "source": {
@@ -1808,14 +1948,6 @@
               "indexes": [
                 {
                   "columns": [
-                    "mediaId"
-                  ],
-                  "name": "PostMedia_mediaId_idx_6b06655c",
-                  "prefix": "PostMedia_mediaId_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
                     "postId"
                   ],
                   "name": "PostMedia_postId_idx_a7a72715",
@@ -1829,7 +1961,13 @@
                   "mediaId"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "mediaId"
+                  ]
+                }
+              ]
             },
             "Session": {
               "columns": {
@@ -2114,6 +2252,14 @@
                 "DELETING"
               ]
             },
+            "PostPublicationStatus": {
+              "kind": "valueSet",
+              "values": [
+                "PENDING_APPROVAL",
+                "APPROVED",
+                "REJECTED"
+              ]
+            },
             "PostType": {
               "kind": "valueSet",
               "values": [
@@ -2128,7 +2274,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "cf493bfea1fd3a11305565fd7f38e9963cf2b98dbfcfbd611e3c8ed1e6e3498e"
+    "storageHash": "e94eb39f612e795de642ff6b62d976cb1af27b2aaaaf436ce6f10b4bc4784811"
   },
   "execution": {
     "executionHash": "a7118df9578aae55587fb3800d60df5a0def480e8fd1500cfbfc19fb3285ede8",

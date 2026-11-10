@@ -5,6 +5,17 @@ enum AdminRole {
   ADMIN
 }
 
+enum ContentApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ContentApprovalActionType {
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+}
+
 enum AdminReportStatus {
   PENDING
   REVIEWING
@@ -33,6 +44,8 @@ enum ReportReason {
 enum ModerationActionType {
   CONTENT_REMOVED
   CONTENT_RESTORED
+  CONTENT_APPROVED
+  CONTENT_REJECTED
   USER_SUSPENDED
   USER_BANNED
   USER_UNSUSPENDED

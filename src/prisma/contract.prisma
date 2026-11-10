@@ -1,5 +1,31 @@
 // use prisma-8
 
+enum MediaStatus {
+  PENDING_UPLOAD
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+  DELETING
+}
+
+enum MediaFormat {
+  WEBP
+  AVIF
+}
+
+enum PostType {
+  IMAGE
+  JOURNAL
+  MODEL
+}
+
+enum PostPublicationStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 model User {
   @@index(
   expression: sql`lower(username)`,
@@ -39,11 +65,12 @@ model Media {
   user   User @relation(fields: [userId], references: [id])
   userId Int
 
-  originalKey      String  @unique
-  originalFileId   String?
-  originalFilename String
-  originalMimeType String
-  originalSize     BigInt?
+  originalKey       String  @unique
+  originalFileId    String?
+  originalFilename  String
+  originalMimeType  String
+  originalSize      BigInt?
+  publicOriginalKey String? @unique // Public bucket key
 
   width  Int?
   height Int?
@@ -64,32 +91,19 @@ model Media {
   @@index([status, nextAttemptAt])
 }
 
-enum MediaStatus {
-  PENDING_UPLOAD
-  UPLOADED
-  PROCESSING
-  READY
-  FAILED
-  DELETING
-}
-
-enum MediaFormat {
-  WEBP
-  AVIF
-}
-
 model MediaVariant {
   id String @id @onCreate(uuid())
 
   media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   mediaId String
 
-  format    MediaFormat
-  width     Int
-  height    Int
-  size      BigInt
-  objectKey String      @unique
-  fileId    String?
+  format          MediaFormat
+  width           Int
+  height          Int
+  size            BigInt
+  objectKey       String      @unique // Private staging key
+  publicObjectKey String?     @unique // Public bucket key
+  fileId          String?
 
   createdAt TimestamptzString @default(now())
 
@@ -97,21 +111,20 @@ model MediaVariant {
   @@index([mediaId])
 }
 
-enum PostType {
-  IMAGE
-  JOURNAL
-  MODEL
-}
-
 model Post {
-  id        Int               @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User              @relation(fields: [authorId], references: [id])
-  authorId  Int
-  createdAt TimestamptzString @default(now())
+  id                Int                   @id @default(autoincrement())
+  title             String
+  content           String?
+  author            User                  @relation(fields: [authorId], references: [id])
+  authorId          Int
+  createdAt         TimestamptzString     @default(now())
   updatedAt temporal.UpdatedAtString
-  type      PostType          @default(IMAGE)
+  type              PostType              @default(IMAGE)
+  publicationStatus PostPublicationStatus @default(PENDING_APPROVAL)
+
+  reviewedAt        TimestamptzString?
+  reviewedByAdminId String?
+  rejectionReason   String?
 
   media    PostMedia[]
   catalogs CatalogPost[]
@@ -127,7 +140,7 @@ model PostMedia {
   position Int @default(0)
 
   @@id([postId, mediaId])
-  @@index([mediaId])
+  @@unique([mediaId])
 }
 
 model UploadReservation {

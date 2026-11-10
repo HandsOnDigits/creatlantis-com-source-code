@@ -8,7 +8,6 @@ import {
   createOriginalDownloadUrl,
   createOriginalUploadUrl,
   getOriginalObjectMetadata,
-  getMediaVariantUrl,
 } from '../storage/b2.client'
 
 const router = Router()
@@ -58,6 +57,17 @@ router.get('/:id/status', requireAuth, async (req, res) => {
     .orderBy((variant) => variant.width.asc())
     .all()
 
+  const variantData = await Promise.all(
+    variants.map(async (variant) => ({
+      format: variant.format,
+      width: variant.width,
+      height: variant.height,
+      size: Number(variant.size),
+      url: await createOriginalDownloadUrl(variant.objectKey),
+      expiresIn: 120,
+    })),
+  )
+
   res.setHeader('Cache-Control', 'no-store')
 
   return res.status(200).json({
@@ -69,13 +79,7 @@ router.get('/:id/status', requireAuth, async (req, res) => {
       processingAttempts: media.processingAttempts,
       processingError: media.processingError,
       processedAt: media.processedAt,
-      variants: variants.map((variant) => ({
-        format: variant.format,
-        width: variant.width,
-        height: variant.height,
-        size: Number(variant.size),
-        url: getMediaVariantUrl(variant.objectKey),
-      })),
+      variants: variantData,
     },
   })
 })

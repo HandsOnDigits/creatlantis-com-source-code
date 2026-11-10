@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'cf493bfea1fd3a11305565fd7f38e9963cf2b98dbfcfbd611e3c8ed1e6e3498e'>;
+  StorageHashBase<'e94eb39f612e795de642ff6b62d976cb1af27b2aaaaf436ce6f10b4bc4784811'>;
 export type ExecutionHash =
   ExecutionHashBase<'a7118df9578aae55587fb3800d60df5a0def480e8fd1500cfbfc19fb3285ede8'>;
 export type ProfileHash =
@@ -285,6 +285,10 @@ type FieldTypeOverrides = {
         readonly format: { readonly output: 'WEBP' | 'AVIF'; readonly input: 'WEBP' | 'AVIF' };
       };
       readonly Post: {
+        readonly publicationStatus: {
+          readonly output: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+          readonly input: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+        };
         readonly type: {
           readonly output: 'IMAGE' | 'JOURNAL' | 'MODEL';
           readonly input: 'IMAGE' | 'JOURNAL' | 'MODEL';
@@ -321,6 +325,10 @@ type ColumnTypeOverrides = {
       readonly format: { readonly output: 'WEBP' | 'AVIF'; readonly input: 'WEBP' | 'AVIF' };
     };
     readonly Post: {
+      readonly publicationStatus: {
+        readonly output: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+        readonly input: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+      };
       readonly type: {
         readonly output: 'IMAGE' | 'JOURNAL' | 'MODEL';
         readonly input: 'IMAGE' | 'JOURNAL' | 'MODEL';
@@ -376,6 +384,7 @@ export namespace Models {
     processedAt: FieldOutputTypes['public']['Media']['processedAt'];
     processingAttempts: FieldOutputTypes['public']['Media']['processingAttempts'];
     processingError: FieldOutputTypes['public']['Media']['processingError'];
+    publicOriginalKey: FieldOutputTypes['public']['Media']['publicOriginalKey'];
     status: FieldOutputTypes['public']['Media']['status'];
     updatedAt: FieldOutputTypes['public']['Media']['updatedAt'];
     userId: FieldOutputTypes['public']['Media']['userId'];
@@ -393,6 +402,7 @@ export namespace Models {
     id: FieldOutputTypes['public']['MediaVariant']['id'];
     mediaId: FieldOutputTypes['public']['MediaVariant']['mediaId'];
     objectKey: FieldOutputTypes['public']['MediaVariant']['objectKey'];
+    publicObjectKey: FieldOutputTypes['public']['MediaVariant']['publicObjectKey'];
     size: FieldOutputTypes['public']['MediaVariant']['size'];
     width: FieldOutputTypes['public']['MediaVariant']['width'];
     media: public_Media;
@@ -403,6 +413,10 @@ export namespace Models {
     content: FieldOutputTypes['public']['Post']['content'];
     createdAt: FieldOutputTypes['public']['Post']['createdAt'];
     id: FieldOutputTypes['public']['Post']['id'];
+    publicationStatus: FieldOutputTypes['public']['Post']['publicationStatus'];
+    rejectionReason: FieldOutputTypes['public']['Post']['rejectionReason'];
+    reviewedAt: FieldOutputTypes['public']['Post']['reviewedAt'];
+    reviewedByAdminId: FieldOutputTypes['public']['Post']['reviewedByAdminId'];
     title: FieldOutputTypes['public']['Post']['title'];
     type: FieldOutputTypes['public']['Post']['type'];
     updatedAt: FieldOutputTypes['public']['Post']['updatedAt'];
@@ -705,6 +719,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly publicOriginalKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly status: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -735,7 +755,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['originalKey'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['originalKey'] },
+                { readonly columns: readonly ['publicOriginalKey'] },
+              ];
               indexes: readonly [
                 {
                   readonly name: 'Media_status_nextAttemptAt_idx_8ba20615';
@@ -816,6 +839,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly publicObjectKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly size: {
                   readonly dataType: 'pg/int8';
                   readonly codecId: 'pg/int8@1';
@@ -832,6 +861,7 @@ type ContractBase = Omit<
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [
                 { readonly columns: readonly ['objectKey'] },
+                { readonly columns: readonly ['publicObjectKey'] },
                 { readonly columns: readonly ['mediaId', 'format', 'width'] },
               ];
               indexes: readonly [
@@ -886,6 +916,34 @@ type ContractBase = Omit<
                     readonly kind: 'function';
                     readonly expression: 'autoincrement()';
                   };
+                  readonly many: false;
+                };
+                readonly publicationStatus: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING_APPROVAL'>;
+                  };
+                  readonly many: false;
+                };
+                readonly rejectionReason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewedByAdminId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly title: {
@@ -962,14 +1020,8 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['postId', 'mediaId'] };
-              uniques: readonly [];
+              uniques: readonly [{ readonly columns: readonly ['mediaId'] }];
               indexes: readonly [
-                {
-                  readonly name: 'PostMedia_mediaId_idx_6b06655c';
-                  readonly prefix: 'PostMedia_mediaId_idx';
-                  readonly columns: readonly ['mediaId'];
-                  readonly unique: false;
-                },
                 {
                   readonly name: 'PostMedia_postId_idx_a7a72715';
                   readonly prefix: 'PostMedia_postId_idx';
@@ -1241,6 +1293,10 @@ type ContractBase = Omit<
                 'DELETING',
               ];
             };
+            readonly PostPublicationStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
+            };
             readonly PostType: {
               readonly kind: 'valueSet';
               readonly values: readonly ['IMAGE', 'JOURNAL', 'MODEL'];
@@ -1453,6 +1509,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly publicOriginalKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly status: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -1522,6 +1582,7 @@ type ContractBase = Omit<
                 readonly processedAt: { readonly column: 'processedAt' };
                 readonly processingAttempts: { readonly column: 'processingAttempts' };
                 readonly processingError: { readonly column: 'processingError' };
+                readonly publicOriginalKey: { readonly column: 'publicOriginalKey' };
                 readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly userId: { readonly column: 'userId' };
@@ -1562,6 +1623,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly publicObjectKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly size: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
@@ -1596,6 +1661,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly mediaId: { readonly column: 'mediaId' };
                 readonly objectKey: { readonly column: 'objectKey' };
+                readonly publicObjectKey: { readonly column: 'publicObjectKey' };
                 readonly size: { readonly column: 'size' };
                 readonly width: { readonly column: 'width' };
               };
@@ -1621,6 +1687,25 @@ type ContractBase = Omit<
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly publicationStatus: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly rejectionReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly reviewedByAdminId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly title: {
                 readonly nullable: false;
@@ -1679,6 +1764,10 @@ type ContractBase = Omit<
                 readonly content: { readonly column: 'content' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly id: { readonly column: 'id' };
+                readonly publicationStatus: { readonly column: 'publicationStatus' };
+                readonly rejectionReason: { readonly column: 'rejectionReason' };
+                readonly reviewedAt: { readonly column: 'reviewedAt' };
+                readonly reviewedByAdminId: { readonly column: 'reviewedByAdminId' };
                 readonly title: { readonly column: 'title' };
                 readonly type: { readonly column: 'type' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
@@ -1971,6 +2060,14 @@ type ContractBase = Omit<
               { readonly name: 'DELETING'; readonly value: 'DELETING' },
             ];
           };
+          readonly PostPublicationStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'PENDING_APPROVAL'; readonly value: 'PENDING_APPROVAL' },
+              { readonly name: 'APPROVED'; readonly value: 'APPROVED' },
+              { readonly name: 'REJECTED'; readonly value: 'REJECTED' },
+            ];
+          };
           readonly PostType: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -1992,6 +2089,11 @@ type ContractBase = Omit<
             { readonly name: 'READY'; readonly value: 'READY' },
             { readonly name: 'FAILED'; readonly value: 'FAILED' },
             { readonly name: 'DELETING'; readonly value: 'DELETING' },
+          ];
+          readonly PostPublicationStatus: readonly [
+            { readonly name: 'PENDING_APPROVAL'; readonly value: 'PENDING_APPROVAL' },
+            { readonly name: 'APPROVED'; readonly value: 'APPROVED' },
+            { readonly name: 'REJECTED'; readonly value: 'REJECTED' },
           ];
           readonly PostType: readonly [
             { readonly name: 'IMAGE'; readonly value: 'IMAGE' },
