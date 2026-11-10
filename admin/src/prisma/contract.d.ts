@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'cf67b3026c0a3ec4e7d95c2408d99e39e1f6a2527fbcc983ea6cc2facbb41176'>;
+  StorageHashBase<'b73f85a0fd8951d426a2f3d5ce8651fab1a20b8502231ec35ec760169b5cb492'>;
 export type ExecutionHash =
   ExecutionHashBase<'a9a136a681d49939032874c3b7159fe57ec5984ee7ade59ae73001ac6051d7a4'>;
 export type ProfileHash =
@@ -275,8 +275,8 @@ type FieldTypeOverrides = {
     readonly models: {
       readonly AdminAccount: {
         readonly role: {
-          readonly output: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
-          readonly input: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
+          readonly output: 'MODERATOR' | 'ADMIN';
+          readonly input: 'MODERATOR' | 'ADMIN';
         };
       };
       readonly AdminMfaMethodSelection: {
@@ -366,8 +366,8 @@ type ColumnTypeOverrides = {
   readonly public: {
     readonly AdminAccount: {
       readonly role: {
-        readonly output: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
-        readonly input: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
+        readonly output: 'MODERATOR' | 'ADMIN';
+        readonly input: 'MODERATOR' | 'ADMIN';
       };
     };
     readonly AdminMfaMethodSelection: {
@@ -1418,7 +1418,7 @@ type ContractBase = Omit<
             };
             readonly AdminRole: {
               readonly kind: 'valueSet';
-              readonly values: readonly ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
+              readonly values: readonly ['MODERATOR', 'ADMIN'];
             };
             readonly ModerationActionType: {
               readonly kind: 'valueSet';
@@ -2291,7 +2291,6 @@ type ContractBase = Omit<
             readonly members: readonly [
               { readonly name: 'MODERATOR'; readonly value: 'MODERATOR' },
               { readonly name: 'ADMIN'; readonly value: 'ADMIN' },
-              { readonly name: 'SUPER_ADMIN'; readonly value: 'SUPER_ADMIN' },
             ];
           };
           readonly ModerationActionType: {
@@ -2350,7 +2349,6 @@ type ContractBase = Omit<
           readonly AdminRole: readonly [
             { readonly name: 'MODERATOR'; readonly value: 'MODERATOR' },
             { readonly name: 'ADMIN'; readonly value: 'ADMIN' },
-            { readonly name: 'SUPER_ADMIN'; readonly value: 'SUPER_ADMIN' },
           ];
           readonly ModerationActionType: readonly [
             { readonly name: 'CONTENT_REMOVED'; readonly value: 'CONTENT_REMOVED' },

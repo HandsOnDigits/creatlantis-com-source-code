@@ -3,7 +3,6 @@
 enum AdminRole {
   MODERATOR
   ADMIN
-  SUPER_ADMIN
 }
 
 enum AdminReportStatus {

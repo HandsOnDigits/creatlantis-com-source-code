@@ -89,10 +89,6 @@
               {
                 "name": "ADMIN",
                 "value": "ADMIN"
-              },
-              {
-                "name": "SUPER_ADMIN",
-                "value": "SUPER_ADMIN"
               }
             ]
           },
@@ -1414,8 +1410,8 @@
             "AdminAccount": {
               "checks": [
                 {
-                  "expression": "\"role\" IN ('MODERATOR', 'ADMIN', 'SUPER_ADMIN')",
-                  "name": "AdminAccount_role_check_1c2b19ba",
+                  "expression": "\"role\" IN ('MODERATOR', 'ADMIN')",
+                  "name": "AdminAccount_role_check_195e5edb",
                   "prefix": "AdminAccount_role_check"
                 }
               ],
@@ -2475,8 +2471,7 @@
               "kind": "valueSet",
               "values": [
                 "MODERATOR",
-                "ADMIN",
-                "SUPER_ADMIN"
+                "ADMIN"
               ]
             },
             "ModerationActionType": {
@@ -2526,7 +2521,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "cf67b3026c0a3ec4e7d95c2408d99e39e1f6a2527fbcc983ea6cc2facbb41176"
+    "storageHash": "b73f85a0fd8951d426a2f3d5ce8651fab1a20b8502231ec35ec760169b5cb492"
   },
   "execution": {
     "executionHash": "a9a136a681d49939032874c3b7159fe57ec5984ee7ade59ae73001ac6051d7a4",
