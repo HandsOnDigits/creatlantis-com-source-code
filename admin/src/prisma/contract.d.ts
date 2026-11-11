@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b73f85a0fd8951d426a2f3d5ce8651fab1a20b8502231ec35ec760169b5cb492'>;
+  StorageHashBase<'16a172e3e4ab392496a5a4d3b30f163d0df782335ca562d3bbffe37efe279a4a'>;
 export type ExecutionHash =
   ExecutionHashBase<'a9a136a681d49939032874c3b7159fe57ec5984ee7ade59ae73001ac6051d7a4'>;
 export type ProfileHash =
@@ -296,6 +296,8 @@ type FieldTypeOverrides = {
           readonly output:
             | 'CONTENT_REMOVED'
             | 'CONTENT_RESTORED'
+            | 'CONTENT_APPROVED'
+            | 'CONTENT_REJECTED'
             | 'USER_SUSPENDED'
             | 'USER_BANNED'
             | 'USER_UNSUSPENDED'
@@ -304,6 +306,8 @@ type FieldTypeOverrides = {
           readonly input:
             | 'CONTENT_REMOVED'
             | 'CONTENT_RESTORED'
+            | 'CONTENT_APPROVED'
+            | 'CONTENT_REJECTED'
             | 'USER_SUSPENDED'
             | 'USER_BANNED'
             | 'USER_UNSUSPENDED'
@@ -384,6 +388,8 @@ type ColumnTypeOverrides = {
         readonly output:
           | 'CONTENT_REMOVED'
           | 'CONTENT_RESTORED'
+          | 'CONTENT_APPROVED'
+          | 'CONTENT_REJECTED'
           | 'USER_SUSPENDED'
           | 'USER_BANNED'
           | 'USER_UNSUSPENDED'
@@ -392,6 +398,8 @@ type ColumnTypeOverrides = {
         readonly input:
           | 'CONTENT_REMOVED'
           | 'CONTENT_RESTORED'
+          | 'CONTENT_APPROVED'
+          | 'CONTENT_REJECTED'
           | 'USER_SUSPENDED'
           | 'USER_BANNED'
           | 'USER_UNSUSPENDED'
@@ -556,6 +564,7 @@ export namespace Models {
     createdAt: FieldOutputTypes['public']['ModerationAction']['createdAt'];
     details: FieldOutputTypes['public']['ModerationAction']['details'];
     id: FieldOutputTypes['public']['ModerationAction']['id'];
+    idempotencyKey: FieldOutputTypes['public']['ModerationAction']['idempotencyKey'];
     reason: FieldOutputTypes['public']['ModerationAction']['reason'];
     reportId: FieldOutputTypes['public']['ModerationAction']['reportId'];
     targetId: FieldOutputTypes['public']['ModerationAction']['targetId'];
@@ -1203,6 +1212,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly idempotencyKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly reason: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -1229,7 +1244,7 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [];
+              uniques: readonly [{ readonly columns: readonly ['idempotencyKey'] }];
               indexes: readonly [
                 {
                   readonly name: 'ModerationAction_adminId_createdAt_idx_5015ed56';
@@ -1420,11 +1435,21 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['MODERATOR', 'ADMIN'];
             };
+            readonly ContentApprovalActionType: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['CONTENT_APPROVED', 'CONTENT_REJECTED'];
+            };
+            readonly ContentApprovalStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['PENDING', 'APPROVED', 'REJECTED'];
+            };
             readonly ModerationActionType: {
               readonly kind: 'valueSet';
               readonly values: readonly [
                 'CONTENT_REMOVED',
                 'CONTENT_RESTORED',
+                'CONTENT_APPROVED',
+                'CONTENT_REJECTED',
                 'USER_SUSPENDED',
                 'USER_BANNED',
                 'USER_UNSUSPENDED',
@@ -2113,6 +2138,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly idempotencyKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly reason: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -2165,6 +2194,7 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly details: { readonly column: 'details' };
                 readonly id: { readonly column: 'id' };
+                readonly idempotencyKey: { readonly column: 'idempotencyKey' };
                 readonly reason: { readonly column: 'reason' };
                 readonly reportId: { readonly column: 'reportId' };
                 readonly targetId: { readonly column: 'targetId' };
@@ -2293,11 +2323,28 @@ type ContractBase = Omit<
               { readonly name: 'ADMIN'; readonly value: 'ADMIN' },
             ];
           };
+          readonly ContentApprovalActionType: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'CONTENT_APPROVED'; readonly value: 'CONTENT_APPROVED' },
+              { readonly name: 'CONTENT_REJECTED'; readonly value: 'CONTENT_REJECTED' },
+            ];
+          };
+          readonly ContentApprovalStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'PENDING'; readonly value: 'PENDING' },
+              { readonly name: 'APPROVED'; readonly value: 'APPROVED' },
+              { readonly name: 'REJECTED'; readonly value: 'REJECTED' },
+            ];
+          };
           readonly ModerationActionType: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
               { readonly name: 'CONTENT_REMOVED'; readonly value: 'CONTENT_REMOVED' },
               { readonly name: 'CONTENT_RESTORED'; readonly value: 'CONTENT_RESTORED' },
+              { readonly name: 'CONTENT_APPROVED'; readonly value: 'CONTENT_APPROVED' },
+              { readonly name: 'CONTENT_REJECTED'; readonly value: 'CONTENT_REJECTED' },
               { readonly name: 'USER_SUSPENDED'; readonly value: 'USER_SUSPENDED' },
               { readonly name: 'USER_BANNED'; readonly value: 'USER_BANNED' },
               { readonly name: 'USER_UNSUSPENDED'; readonly value: 'USER_UNSUSPENDED' },
@@ -2350,9 +2397,20 @@ type ContractBase = Omit<
             { readonly name: 'MODERATOR'; readonly value: 'MODERATOR' },
             { readonly name: 'ADMIN'; readonly value: 'ADMIN' },
           ];
+          readonly ContentApprovalActionType: readonly [
+            { readonly name: 'CONTENT_APPROVED'; readonly value: 'CONTENT_APPROVED' },
+            { readonly name: 'CONTENT_REJECTED'; readonly value: 'CONTENT_REJECTED' },
+          ];
+          readonly ContentApprovalStatus: readonly [
+            { readonly name: 'PENDING'; readonly value: 'PENDING' },
+            { readonly name: 'APPROVED'; readonly value: 'APPROVED' },
+            { readonly name: 'REJECTED'; readonly value: 'REJECTED' },
+          ];
           readonly ModerationActionType: readonly [
             { readonly name: 'CONTENT_REMOVED'; readonly value: 'CONTENT_REMOVED' },
             { readonly name: 'CONTENT_RESTORED'; readonly value: 'CONTENT_RESTORED' },
+            { readonly name: 'CONTENT_APPROVED'; readonly value: 'CONTENT_APPROVED' },
+            { readonly name: 'CONTENT_REJECTED'; readonly value: 'CONTENT_REJECTED' },
             { readonly name: 'USER_SUSPENDED'; readonly value: 'USER_SUSPENDED' },
             { readonly name: 'USER_BANNED'; readonly value: 'USER_BANNED' },
             { readonly name: 'USER_UNSUSPENDED'; readonly value: 'USER_UNSUSPENDED' },

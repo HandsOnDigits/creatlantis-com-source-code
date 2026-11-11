@@ -92,6 +92,36 @@
               }
             ]
           },
+          "ContentApprovalActionType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "CONTENT_APPROVED",
+                "value": "CONTENT_APPROVED"
+              },
+              {
+                "name": "CONTENT_REJECTED",
+                "value": "CONTENT_REJECTED"
+              }
+            ]
+          },
+          "ContentApprovalStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "PENDING",
+                "value": "PENDING"
+              },
+              {
+                "name": "APPROVED",
+                "value": "APPROVED"
+              },
+              {
+                "name": "REJECTED",
+                "value": "REJECTED"
+              }
+            ]
+          },
           "ModerationActionType": {
             "codecId": "pg/text@1",
             "members": [
@@ -102,6 +132,14 @@
               {
                 "name": "CONTENT_RESTORED",
                 "value": "CONTENT_RESTORED"
+              },
+              {
+                "name": "CONTENT_APPROVED",
+                "value": "CONTENT_APPROVED"
+              },
+              {
+                "name": "CONTENT_REJECTED",
+                "value": "CONTENT_REJECTED"
               },
               {
                 "name": "USER_SUSPENDED",
@@ -1124,6 +1162,13 @@
                   "kind": "scalar"
                 }
               },
+              "idempotencyKey": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "reason": {
                 "nullable": true,
                 "type": {
@@ -1209,6 +1254,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "idempotencyKey": {
+                  "column": "idempotencyKey"
                 },
                 "reason": {
                   "column": "reason"
@@ -2115,8 +2163,8 @@
             "ModerationAction": {
               "checks": [
                 {
-                  "expression": "\"action\" IN ('CONTENT_REMOVED', 'CONTENT_RESTORED', 'USER_SUSPENDED', 'USER_BANNED', 'USER_UNSUSPENDED', 'REPORT_RESOLVED', 'REPORT_DISMISSED')",
-                  "name": "ModerationAction_action_check_fdcc00f1",
+                  "expression": "\"action\" IN ('CONTENT_REMOVED', 'CONTENT_RESTORED', 'CONTENT_APPROVED', 'CONTENT_REJECTED', 'USER_SUSPENDED', 'USER_BANNED', 'USER_UNSUSPENDED', 'REPORT_RESOLVED', 'REPORT_DISMISSED')",
+                  "name": "ModerationAction_action_check_8cc8349b",
                   "prefix": "ModerationAction_action_check"
                 },
                 {
@@ -2160,6 +2208,11 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "idempotencyKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "reason": {
                   "codecId": "pg/text@1",
@@ -2271,7 +2324,13 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "idempotencyKey"
+                  ]
+                }
+              ]
             },
             "Report": {
               "checks": [
@@ -2474,11 +2533,28 @@
                 "ADMIN"
               ]
             },
+            "ContentApprovalActionType": {
+              "kind": "valueSet",
+              "values": [
+                "CONTENT_APPROVED",
+                "CONTENT_REJECTED"
+              ]
+            },
+            "ContentApprovalStatus": {
+              "kind": "valueSet",
+              "values": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            },
             "ModerationActionType": {
               "kind": "valueSet",
               "values": [
                 "CONTENT_REMOVED",
                 "CONTENT_RESTORED",
+                "CONTENT_APPROVED",
+                "CONTENT_REJECTED",
                 "USER_SUSPENDED",
                 "USER_BANNED",
                 "USER_UNSUSPENDED",
@@ -2521,7 +2597,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b73f85a0fd8951d426a2f3d5ce8651fab1a20b8502231ec35ec760169b5cb492"
+    "storageHash": "16a172e3e4ab392496a5a4d3b30f163d0df782335ca562d3bbffe37efe279a4a"
   },
   "execution": {
     "executionHash": "a9a136a681d49939032874c3b7159fe57ec5984ee7ade59ae73001ac6051d7a4",

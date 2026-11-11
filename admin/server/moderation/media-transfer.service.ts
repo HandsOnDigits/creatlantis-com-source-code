@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 
 import { mainDb } from '../../src/prisma/main-db'
 import {
-  deleteOriginalObject,
   downloadOriginalBuffer,
   uploadPublicObject,
   verifyPublicObject,
@@ -60,7 +59,7 @@ export async function getMediaTransferRecord(mediaId: string) {
 export async function transferMediaToPublic(mediaId: string): Promise<void> {
   const { media, variants } = await getMediaTransferRecord(mediaId)
 
-  // Reserve the public original key before uploading.
+  // Reserve a stable public key for the original.
   let originalPublicKey = media.publicOriginalKey
 
   if (!originalPublicKey) {
@@ -82,25 +81,47 @@ export async function transferMediaToPublic(mediaId: string): Promise<void> {
     originalPublicKey = updated.publicOriginalKey
   }
 
-  // Upload and verify using the reserved key.
-  const originalBuffer = await downloadOriginalBuffer(
-    media.originalKey,
-    MAX_ORIGINAL_SIZE,
-  )
+  const originalContentLength = media.originalSize
 
-  await uploadPublicObject(
+  if (originalContentLength === null) {
+    throw new Error('Original media size is missing.')
+  }
+
+  // Reuse an already uploaded and verified public original.
+  const originalExists = await verifyPublicObject(
     originalPublicKey,
-    originalBuffer,
+    Number(originalContentLength),
     media.originalMimeType,
   )
 
-  await verifyPublicObject(
-    originalPublicKey,
-    originalBuffer.byteLength,
-    media.originalMimeType,
-  )
+  if (!originalExists) {
+    const originalBuffer = await downloadOriginalBuffer(
+      media.originalKey,
+      MAX_ORIGINAL_SIZE,
+    )
 
-  // Reserve, upload, and verify every variant.
+    if (BigInt(originalBuffer.byteLength) !== originalContentLength) {
+      throw new Error('Original media size does not match its database record.')
+    }
+
+    await uploadPublicObject(
+      originalPublicKey,
+      originalBuffer,
+      media.originalMimeType,
+    )
+
+    const verified = await verifyPublicObject(
+      originalPublicKey,
+      originalBuffer.byteLength,
+      media.originalMimeType,
+    )
+
+    if (!verified) {
+      throw new Error('Public original could not be verified after upload.')
+    }
+  }
+
+  // Reserve, verify, and upload every variant.
   for (const variant of variants) {
     let publicKey = variant.publicObjectKey
 
@@ -130,15 +151,42 @@ export async function transferMediaToPublic(mediaId: string): Promise<void> {
       publicKey = updated.publicObjectKey
     }
 
+    const contentType = variant.format === 'WEBP' ? 'image/webp' : 'image/avif'
+
+    // Skip upload when the public variant is already verified.
+    const variantExists = await verifyPublicObject(
+      publicKey,
+      Number(variant.size),
+      contentType,
+    )
+
+    if (variantExists) {
+      continue
+    }
+
     const variantBuffer = await downloadOriginalBuffer(
       variant.objectKey,
       MAX_ORIGINAL_SIZE,
     )
 
-    const contentType = variant.format === 'WEBP' ? 'image/webp' : 'image/avif'
+    if (BigInt(variantBuffer.byteLength) !== variant.size) {
+      throw new Error(
+        `Variant ${variant.id} size does not match its database record.`,
+      )
+    }
 
     await uploadPublicObject(publicKey, variantBuffer, contentType)
 
-    await verifyPublicObject(publicKey, variantBuffer.byteLength, contentType)
+    const verified = await verifyPublicObject(
+      publicKey,
+      variantBuffer.byteLength,
+      contentType,
+    )
+
+    if (!verified) {
+      throw new Error(
+        `Public variant ${variant.id} could not be verified after upload.`,
+      )
+    }
   }
 }

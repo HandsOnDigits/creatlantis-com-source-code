@@ -5,6 +5,7 @@ import { mainDb } from '../../src/prisma/main-db'
 import { requireMfaVerifiedAdmin } from '../middleware/auth.middleware'
 import { requireModerator } from '../middleware/require-moderator'
 import { createOriginalDownloadUrl } from '../../../server/storage/b2.client'
+import { approvePost } from './post-approval.service'
 
 const router = Router()
 
@@ -136,6 +137,43 @@ router.get(
           limit: limit.data,
           hasMore,
         },
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+router.post(
+  '/:postId/approve',
+  requireMfaVerifiedAdmin,
+  requireModerator,
+  async (req, res, next) => {
+    try {
+      const parsed = z.coerce
+        .number()
+        .int()
+        .positive()
+        .safeParse(req.params.postId)
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: 'Invalid post ID.',
+        })
+      }
+
+      if (!req.adminAuth) {
+        return res.status(401).json({
+          error: 'Authentication required.',
+        })
+      }
+
+      await approvePost(parsed.data, req.adminAuth.adminId)
+
+      return res.json({
+        success: true,
+        postId: parsed.data,
+        publicationStatus: 'APPROVED',
       })
     } catch (error) {
       next(error)

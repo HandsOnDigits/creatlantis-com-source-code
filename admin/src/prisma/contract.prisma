@@ -218,7 +218,8 @@ model ModerationAction {
   reason  String?
   details Json?
 
-  createdAt TimestamptzString @default(now())
+  createdAt      TimestamptzString @default(now())
+  idempotencyKey String?           @unique
 
   @@index([adminId, createdAt])
   @@index([targetType, targetId])

@@ -326,13 +326,17 @@ export async function verifyPublicObject(
   fileName: string,
   expectedContentLength: number,
   expectedContentType: string,
-): Promise<void> {
+): Promise<boolean> {
   const url = getMediaVariantUrl(fileName)
 
   const response = await fetch(url, {
     method: 'HEAD',
     cache: 'no-store',
   })
+
+  if (response.status === 404) {
+    return false
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -347,6 +351,8 @@ export async function verifyPublicObject(
     contentLength !== expectedContentLength ||
     contentType !== expectedContentType
   ) {
-    throw new Error('Public object metadata does not match the uploaded file.')
+    throw new Error('Public object metadata does not match the expected file.')
   }
+
+  return true
 }
