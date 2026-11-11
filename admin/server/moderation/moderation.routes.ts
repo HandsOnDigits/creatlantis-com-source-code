@@ -108,7 +108,7 @@ router.get(
                 id: record.id,
                 originalFilename: record.originalFilename,
                 originalMimeType: record.originalMimeType,
-                originalSize: record.originalSize,
+                originalSize: Number(record.originalSize),
                 width: record.width,
                 height: record.height,
                 originalUrl,
