@@ -1,10 +1,12 @@
-import { B2Client, BufferSource } from '@backblaze-labs/b2-sdk'
+import { B2Client } from '@backblaze-labs/b2-sdk'
 import {
   presignS3GetObjectUrl,
   presignS3PutObjectUrl,
   type B2S3Config,
 } from '@backblaze-labs/b2-sdk/s3'
 import { decodeFileName } from '@backblaze-labs/b2-sdk/raw'
+
+import { createHash } from 'node:crypto'
 
 const stagingApplicationKeyId = requiredEnv('B2_STAGING_APPLICATION_KEY_ID')
 const stagingApplicationKey = requiredEnv('B2_STAGING_APPLICATION_KEY')
@@ -60,6 +62,16 @@ async function getStagingClient(): Promise<B2Client> {
   return stagingClientPromise
 }
 
+async function getStagingS3Config(): Promise<B2S3Config> {
+  const client = await getStagingClient()
+
+  return {
+    accountInfo: client.accountInfo,
+    applicationKeyId: stagingApplicationKeyId,
+    applicationKey: stagingApplicationKey,
+  }
+}
+
 async function getPublicClient(): Promise<B2Client> {
   publicClientPromise ??= (async () => {
     const client = new B2Client({
@@ -72,27 +84,6 @@ async function getPublicClient(): Promise<B2Client> {
   })()
 
   return publicClientPromise
-}
-
-async function getStagingS3Config(): Promise<B2S3Config> {
-  const client = await getStagingClient()
-
-  return {
-    accountInfo: client.accountInfo,
-    applicationKeyId: stagingApplicationKeyId,
-    applicationKey: stagingApplicationKey,
-  }
-}
-
-async function getStagingBucket() {
-  const client = await getStagingClient()
-  const bucket = await client.getBucket(stagingBucketName)
-
-  if (!bucket) {
-    throw new Error(`B2 staging bucket not found: ${stagingBucketName}`)
-  }
-
-  return bucket
 }
 
 async function getPublicS3Config(): Promise<B2S3Config> {
@@ -157,20 +148,38 @@ export async function downloadOriginalBuffer(
   fileName: string,
   maxBytes: number,
 ): Promise<Buffer> {
-  const bucket = await getStagingBucket()
-  const result = await bucket.download(fileName)
-
-  const expectedSize = result.headers.contentLength
-
-  if (
-    !Number.isSafeInteger(expectedSize) ||
-    expectedSize < 1 ||
-    expectedSize > maxBytes
-  ) {
-    throw new Error('Original image has an invalid or excessive size')
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
+    throw new Error('Invalid maximum download size.')
   }
 
-  const reader = result.body.getReader()
+  const client = await getStagingClient()
+
+  const response = await client.raw.downloadFileByName(
+    client.accountInfo.getDownloadUrl(),
+    client.accountInfo.getAuthToken(),
+    stagingBucketName,
+    fileName,
+  )
+
+  if (response.status === 404) {
+    throw new Error('Staging object not found.')
+  }
+
+  if (response.status !== 200 || !response.body) {
+    throw new Error(`Staging download failed with HTTP ${response.status}.`)
+  }
+
+  const contentLength = Number(response.headers.get('content-length'))
+
+  if (
+    !Number.isSafeInteger(contentLength) ||
+    contentLength <= 0 ||
+    contentLength > maxBytes
+  ) {
+    throw new Error('Staging object has an invalid or excessive size.')
+  }
+
+  const reader = response.body.getReader()
   const chunks: Buffer[] = []
   let totalSize = 0
 
@@ -180,21 +189,22 @@ export async function downloadOriginalBuffer(
 
       if (done) break
 
-      totalSize += value.byteLength
+      const chunk = Buffer.from(value)
+      totalSize += chunk.length
 
-      if (totalSize > maxBytes || totalSize > expectedSize) {
+      if (totalSize > maxBytes || totalSize > contentLength) {
         await reader.cancel()
-        throw new Error('Original image exceeds its expected size')
+        throw new Error('Staging download exceeded its expected size.')
       }
 
-      chunks.push(Buffer.from(value))
+      chunks.push(chunk)
     }
   } finally {
     reader.releaseLock()
   }
 
-  if (totalSize !== expectedSize) {
-    throw new Error('Downloaded original image has an unexpected size')
+  if (totalSize !== contentLength) {
+    throw new Error('Staging download size does not match its metadata.')
   }
 
   return Buffer.concat(chunks, totalSize)
@@ -205,13 +215,30 @@ export async function uploadMediaVariant(
   buffer: Buffer,
   contentType: string,
 ) {
-  const bucket = await getStagingBucket()
+  const client = await getStagingClient()
+  const bucketId = client.accountInfo.getAllowedBucketId()
 
-  const result = await bucket.upload({
-    fileName,
-    source: new BufferSource(buffer),
-    contentType,
-  })
+  if (!bucketId) {
+    throw new Error('Staging key is not restricted to an allowed bucket.')
+  }
+
+  const upload = await client.raw.getUploadUrl(
+    client.accountInfo.getApiUrl(),
+    client.accountInfo.getAuthToken(),
+    { bucketId },
+  )
+
+  const result = await client.raw.uploadFile(
+    upload.uploadUrl,
+    {
+      authorization: upload.authorizationToken,
+      fileName: fileName.split('/').map(encodeURIComponent).join('/'),
+      contentType,
+      contentLength: buffer.byteLength,
+      contentSha1: createHash('sha1').update(buffer).digest('hex'),
+    },
+    new Uint8Array(buffer),
+  )
 
   return {
     fileId: result.fileId,
@@ -222,16 +249,44 @@ export async function uploadMediaVariant(
 }
 
 export async function deleteOriginalObject(fileName: string): Promise<void> {
-  const bucket = await getStagingBucket()
+  const client = await getStagingClient()
 
-  // Returns null when the object does not exist.
-  const file = await bucket.getFileInfoByName(fileName)
+  const response = await client.raw.downloadFileByName(
+    client.accountInfo.getDownloadUrl(),
+    client.accountInfo.getAuthToken(),
+    stagingBucketName,
+    fileName,
+    { method: 'HEAD' },
+  )
 
-  if (!file) {
+  if (response.status === 404) {
     return
   }
 
-  await bucket.deleteFileVersion(fileName, file.fileId)
+  if (response.status !== 200) {
+    throw new Error(
+      `Staging object metadata request failed with HTTP ${response.status}.`,
+    )
+  }
+
+  const rawFileId = response.headers.get('x-bz-file-id')
+
+  if (!rawFileId) {
+    throw new Error('Staging object metadata did not contain a file ID.')
+  }
+
+  const fileId = rawFileId as Parameters<
+    typeof client.raw.deleteFileVersion
+  >[2]['fileId']
+
+  await client.raw.deleteFileVersion(
+    client.accountInfo.getApiUrl(),
+    client.accountInfo.getAuthToken(),
+    {
+      fileName,
+      fileId,
+    },
+  )
 }
 
 export async function uploadPublicObject(
@@ -264,5 +319,34 @@ export async function uploadPublicObject(
     fileName,
     contentType,
     contentLength: buffer.byteLength,
+  }
+}
+
+export async function verifyPublicObject(
+  fileName: string,
+  expectedContentLength: number,
+  expectedContentType: string,
+): Promise<void> {
+  const url = getMediaVariantUrl(fileName)
+
+  const response = await fetch(url, {
+    method: 'HEAD',
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `Public object verification failed: HTTP ${response.status}`,
+    )
+  }
+
+  const contentLength = Number(response.headers.get('content-length'))
+  const contentType = response.headers.get('content-type')
+
+  if (
+    contentLength !== expectedContentLength ||
+    contentType !== expectedContentType
+  ) {
+    throw new Error('Public object metadata does not match the uploaded file.')
   }
 }

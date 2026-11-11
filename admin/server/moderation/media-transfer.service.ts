@@ -1,0 +1,144 @@
+import { randomUUID } from 'node:crypto'
+
+import { mainDb } from '../../src/prisma/main-db'
+import {
+  deleteOriginalObject,
+  downloadOriginalBuffer,
+  uploadPublicObject,
+  verifyPublicObject,
+} from '../../../server/storage/b2.client'
+
+const MAX_ORIGINAL_SIZE = 10 * 1024 * 1024
+
+function createPublicObjectKey(mediaId: string, filename: string): string {
+  return `media/${mediaId}/approved/${randomUUID()}/${filename}`
+}
+
+export async function getMediaTransferRecord(mediaId: string) {
+  const media = await mainDb.orm.public.Media.where({
+    id: mediaId,
+  })
+    .select(
+      'id',
+      'status',
+      'originalKey',
+      'originalMimeType',
+      'originalSize',
+      'publicOriginalKey',
+    )
+    .first()
+
+  if (!media) {
+    throw new Error('Media record not found.')
+  }
+
+  if (media.status !== 'READY') {
+    throw new Error('Media is not ready for publication.')
+  }
+
+  const variants = await mainDb.orm.public.MediaVariant.where({
+    mediaId,
+  })
+    .select(
+      'id',
+      'objectKey',
+      'publicObjectKey',
+      'format',
+      'width',
+      'height',
+      'size',
+    )
+    .all()
+
+  if (variants.length === 0) {
+    throw new Error('Media has no processed variants.')
+  }
+
+  return { media, variants }
+}
+
+export async function transferMediaToPublic(mediaId: string): Promise<void> {
+  const { media, variants } = await getMediaTransferRecord(mediaId)
+
+  // Reserve the public original key before uploading.
+  let originalPublicKey = media.publicOriginalKey
+
+  if (!originalPublicKey) {
+    const candidate = createPublicObjectKey(media.id, 'original')
+
+    await mainDb.orm.public.Media.where({
+      id: media.id,
+      publicOriginalKey: null,
+    }).update({ publicOriginalKey: candidate })
+
+    const updated = await mainDb.orm.public.Media.where({ id: media.id })
+      .select('publicOriginalKey')
+      .first()
+
+    if (!updated?.publicOriginalKey) {
+      throw new Error('Could not reserve the public original key.')
+    }
+
+    originalPublicKey = updated.publicOriginalKey
+  }
+
+  // Upload and verify using the reserved key.
+  const originalBuffer = await downloadOriginalBuffer(
+    media.originalKey,
+    MAX_ORIGINAL_SIZE,
+  )
+
+  await uploadPublicObject(
+    originalPublicKey,
+    originalBuffer,
+    media.originalMimeType,
+  )
+
+  await verifyPublicObject(
+    originalPublicKey,
+    originalBuffer.byteLength,
+    media.originalMimeType,
+  )
+
+  // Reserve, upload, and verify every variant.
+  for (const variant of variants) {
+    let publicKey = variant.publicObjectKey
+
+    if (!publicKey) {
+      const candidate = createPublicObjectKey(
+        media.id,
+        `${variant.width}.${variant.format.toLowerCase()}`,
+      )
+
+      await mainDb.orm.public.MediaVariant.where({
+        id: variant.id,
+        publicObjectKey: null,
+      }).update({ publicObjectKey: candidate })
+
+      const updated = await mainDb.orm.public.MediaVariant.where({
+        id: variant.id,
+      })
+        .select('publicObjectKey')
+        .first()
+
+      if (!updated?.publicObjectKey) {
+        throw new Error(
+          `Could not reserve the public key for variant ${variant.id}.`,
+        )
+      }
+
+      publicKey = updated.publicObjectKey
+    }
+
+    const variantBuffer = await downloadOriginalBuffer(
+      variant.objectKey,
+      MAX_ORIGINAL_SIZE,
+    )
+
+    const contentType = variant.format === 'WEBP' ? 'image/webp' : 'image/avif'
+
+    await uploadPublicObject(publicKey, variantBuffer, contentType)
+
+    await verifyPublicObject(publicKey, variantBuffer.byteLength, contentType)
+  }
+}
