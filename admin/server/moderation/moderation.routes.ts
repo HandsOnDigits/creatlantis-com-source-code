@@ -6,6 +6,7 @@ import { requireMfaVerifiedAdmin } from '../middleware/auth.middleware'
 import { requireModerator } from '../middleware/require-moderator'
 import { createOriginalDownloadUrl } from '../../../server/storage/b2.client'
 import { approvePost } from './post-approval.service'
+import { rejectPost } from './post-rejection.service'
 
 const router = Router()
 
@@ -174,6 +175,57 @@ router.post(
         success: true,
         postId: parsed.data,
         publicationStatus: 'APPROVED',
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+router.post(
+  '/:postId/reject',
+  requireMfaVerifiedAdmin,
+  requireModerator,
+  async (req, res, next) => {
+    try {
+      const parsedPostId = z.coerce
+        .number()
+        .int()
+        .positive()
+        .safeParse(req.params.postId)
+
+      const parsedBody = z
+        .object({
+          reason: z.string().trim().min(1).max(2000),
+        })
+        .safeParse(req.body)
+
+      if (!parsedPostId.success) {
+        return res.status(400).json({ error: 'Invalid post ID.' })
+      }
+
+      if (!parsedBody.success) {
+        return res.status(400).json({
+          error: 'A rejection reason is required.',
+        })
+      }
+
+      if (!req.adminAuth) {
+        return res.status(401).json({
+          error: 'Authentication required.',
+        })
+      }
+
+      await rejectPost(
+        parsedPostId.data,
+        req.adminAuth.adminId,
+        parsedBody.data.reason,
+      )
+
+      return res.json({
+        success: true,
+        postId: parsedPostId.data,
+        publicationStatus: 'REJECTED',
       })
     } catch (error) {
       next(error)
