@@ -9,8 +9,12 @@ import {
 
 const MAX_ORIGINAL_SIZE = 10 * 1024 * 1024
 
-function createPublicObjectKey(mediaId: string, filename: string): string {
-  return `media/${mediaId}/approved/${randomUUID()}/${filename}`
+function createPublicObjectKey(
+  mediaId: string,
+  type: 'originals' | 'variants',
+  filename: string,
+): string {
+  return `media/${mediaId}/approved/${type}/${randomUUID()}/${filename}`
 }
 
 export async function getMediaTransferRecord(mediaId: string) {
@@ -63,7 +67,7 @@ export async function transferMediaToPublic(mediaId: string): Promise<void> {
   let originalPublicKey = media.publicOriginalKey
 
   if (!originalPublicKey) {
-    const candidate = createPublicObjectKey(media.id, 'original')
+    const candidate = createPublicObjectKey(media.id, 'originals', 'original')
 
     await mainDb.orm.public.Media.where({
       id: media.id,
@@ -126,9 +130,12 @@ export async function transferMediaToPublic(mediaId: string): Promise<void> {
     let publicKey = variant.publicObjectKey
 
     if (!publicKey) {
+      const extension = variant.format === 'WEBP' ? 'webp' : 'avif'
+
       const candidate = createPublicObjectKey(
         media.id,
-        `${variant.width}.${variant.format.toLowerCase()}`,
+        'variants',
+        `${variant.width}.${extension}`,
       )
 
       await mainDb.orm.public.MediaVariant.where({
