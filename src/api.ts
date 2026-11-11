@@ -270,6 +270,7 @@ export interface MediaVariant {
   height: number
   size: number
   url: string
+  expiresIn: number | null
 }
 
 export interface MediaStatusResponse {
@@ -285,7 +286,7 @@ export interface MediaStatusResponse {
 
 export interface OriginalDownloadResponse {
   url: string
-  expiresIn: number
+  expiresIn: number | null
 }
 
 interface MediaApiResponse<T> {
@@ -527,5 +528,16 @@ export const authApi = {
     return api.post<void>('/api/auth/logout', undefined, {
       authenticated: false,
     })
+  },
+}
+
+// Temporary development-only moderation media tests.
+export const mediaDebugApi = {
+  getStatus(id: string) {
+    return mediaApi.getStatus(id)
+  },
+
+  getOriginal(id: string) {
+    return mediaApi.getOriginalDownloadUrl(id)
   },
 }

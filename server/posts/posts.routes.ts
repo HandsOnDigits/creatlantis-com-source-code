@@ -76,11 +76,24 @@ router.get('/', async (req, res) => {
       catalogId,
     })
       .orderBy([(item) => item.position.asc(), (item) => item.postId.asc()])
-      .limit(pageSize + 1)
-      .offset(offset)
       .all()
 
-    hasMore = catalogPosts.length > pageSize
+    // Load only approved posts, preserving catalog order.
+    const approvedPosts = (
+      await Promise.all(
+        catalogPosts.map((item) =>
+          db.orm.public.Post.where({
+            id: item.postId,
+            publicationStatus: 'APPROVED',
+          })
+            .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
+            .first(),
+        ),
+      )
+    ).filter((post) => post !== null)
+
+    hasMore = approvedPosts.length > offset + pageSize
+    pagePosts = approvedPosts.slice(offset, offset + pageSize)
 
     const pageCatalogPosts = catalogPosts.slice(0, pageSize)
 
@@ -142,14 +155,14 @@ router.get('/', async (req, res) => {
             id: media.id,
             width: media.width,
             height: media.height,
-            variants: variants.map((variant) => ({
-              width: variant.width,
-              height: variant.height,
-              format: variant.format,
-              url: variant.publicObjectKey
-                ? getMediaVariantUrl(variant.publicObjectKey)
-                : null,
-            })),
+            variants: variants
+              .filter((variant) => variant.publicObjectKey !== null)
+              .map((variant) => ({
+                width: variant.width,
+                height: variant.height,
+                format: variant.format,
+                url: getMediaVariantUrl(variant.publicObjectKey!),
+              })),
           }
         }),
       )
@@ -316,14 +329,14 @@ router.get('/:id', async (req, res) => {
         id: media.id,
         width: media.width,
         height: media.height,
-        variants: variants.map((variant) => ({
-          width: variant.width,
-          height: variant.height,
-          format: variant.format,
-          url: variant.publicObjectKey
-            ? getMediaVariantUrl(variant.publicObjectKey)
-            : null,
-        })),
+        variants: variants
+          .filter((variant) => variant.publicObjectKey !== null)
+          .map((variant) => ({
+            width: variant.width,
+            height: variant.height,
+            format: variant.format,
+            url: getMediaVariantUrl(variant.publicObjectKey!),
+          })),
       }
     }),
   )

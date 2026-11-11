@@ -58,13 +58,16 @@ app.use('/api/catalogs', catalogsRoutes)
 // Health
 app.get('/api/health', async (_req, res) => {
   try {
-    await db.connect()
+    // Execute a lightweight database query to verify connectivity.
+    await db.orm.public.User.where({ id: -1 }).first()
 
     res.json({
       status: 'ok',
       database: 'connected',
     })
-  } catch {
+  } catch (error) {
+    console.error('Database health check failed:', error)
+
     res.status(503).json({
       status: 'error',
       database: 'unavailable',

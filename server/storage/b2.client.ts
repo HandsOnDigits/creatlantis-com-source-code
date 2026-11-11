@@ -40,12 +40,16 @@ export async function createOriginalDownloadUrl(
   })
 }
 
-export function getMediaVariantUrl(objectKey: string): string {
+export function getPublicObjectUrl(objectKey: string): string {
   const baseUrl = requiredEnv('B2_PUBLIC_BASE_URL').replace(/\/+$/, '')
 
   const encodedKey = objectKey.split('/').map(encodeURIComponent).join('/')
 
   return `${baseUrl}/${encodedKey}`
+}
+
+export function getMediaVariantUrl(objectKey: string): string {
+  return getPublicObjectUrl(objectKey)
 }
 
 async function getStagingClient(): Promise<B2Client> {

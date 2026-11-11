@@ -8,6 +8,7 @@ import {
   createOriginalDownloadUrl,
   createOriginalUploadUrl,
   getOriginalObjectMetadata,
+  getPublicObjectUrl,
 } from '../storage/b2.client'
 
 const router = Router()
@@ -24,6 +25,7 @@ const createUploadSchema = z.object({
 })
 
 // Retrieve media processing status and available variants.
+
 router.get('/:id/status', requireAuth, async (req, res) => {
   const mediaId = req.params.id
   const userId = req.auth?.userId
@@ -53,19 +55,58 @@ router.get('/:id/status', requireAuth, async (req, res) => {
     })
   }
 
+  const postMedia = await db.orm.public.PostMedia.where({
+    mediaId,
+  }).first()
+
+  const post = postMedia
+    ? await db.orm.public.Post.where({
+        id: postMedia.postId,
+      })
+        .select('publicationStatus')
+        .first()
+    : null
+
+  if (post?.publicationStatus === 'REJECTED') {
+    return res.status(404).json({
+      error: 'Media not found',
+    })
+  }
+
   const variants = await db.orm.public.MediaVariant.where({ mediaId })
     .orderBy((variant) => variant.width.asc())
     .all()
 
+  const isApproved = post?.publicationStatus === 'APPROVED'
+
+  if (isApproved && variants.some((variant) => !variant.publicObjectKey)) {
+    return res.status(409).json({
+      error: 'Published media is not fully available yet.',
+    })
+  }
+
   const variantData = await Promise.all(
-    variants.map(async (variant) => ({
-      format: variant.format,
-      width: variant.width,
-      height: variant.height,
-      size: Number(variant.size),
-      url: await createOriginalDownloadUrl(variant.objectKey),
-      expiresIn: 120,
-    })),
+    variants.map(async (variant) => {
+      if (isApproved) {
+        return {
+          format: variant.format,
+          width: variant.width,
+          height: variant.height,
+          size: Number(variant.size),
+          url: getPublicObjectUrl(variant.publicObjectKey!),
+          expiresIn: null,
+        }
+      }
+
+      return {
+        format: variant.format,
+        width: variant.width,
+        height: variant.height,
+        size: Number(variant.size),
+        url: await createOriginalDownloadUrl(variant.objectKey),
+        expiresIn: 120,
+      }
+    }),
   )
 
   res.setHeader('Cache-Control', 'no-store')
@@ -108,25 +149,59 @@ router.get('/:id/original', requireAuth, async (req, res) => {
     id: mediaId,
   }).first()
 
-  if (
-    !media ||
-    media.userId !== userId ||
-    !media.originalFileId ||
-    media.status === 'DELETING'
-  ) {
+  if (!media || media.userId !== userId || media.status === 'DELETING') {
     return res.status(404).json({
       error: 'Media not found',
     })
   }
 
-  const downloadUrl = await createOriginalDownloadUrl(media.originalKey)
+  const postMedia = await db.orm.public.PostMedia.where({
+    mediaId,
+  }).first()
+
+  const post = postMedia
+    ? await db.orm.public.Post.where({
+        id: postMedia.postId,
+      })
+        .select('publicationStatus')
+        .first()
+    : null
+
+  if (post?.publicationStatus === 'REJECTED') {
+    return res.status(404).json({
+      error: 'Original image not found',
+    })
+  }
+
+  let downloadUrl: string
+  let expiresIn: number | null
+
+  if (post?.publicationStatus === 'APPROVED') {
+    if (!media.publicOriginalKey) {
+      return res.status(404).json({
+        error: 'Original image not found',
+      })
+    }
+
+    downloadUrl = getPublicObjectUrl(media.publicOriginalKey)
+    expiresIn = null
+  } else {
+    if (!media.originalFileId) {
+      return res.status(404).json({
+        error: 'Original image not found',
+      })
+    }
+
+    downloadUrl = await createOriginalDownloadUrl(media.originalKey)
+    expiresIn = 120
+  }
 
   res.setHeader('Cache-Control', 'no-store')
 
   return res.status(200).json({
     data: {
       url: downloadUrl,
-      expiresIn: 120,
+      expiresIn,
     },
   })
 })
@@ -189,11 +264,11 @@ router.post('/uploads', requireAuth, async (req, res) => {
       },
     })
   } catch (error) {
-    await db.orm.public.UploadReservation.where({
-      id: reservationId,
-    }).delete()
+    console.error('B2 metadata verification failed:', error)
 
-    throw error
+    return res.status(500).json({
+      error: 'B2 metadata verification failed.',
+    })
   }
 })
 
