@@ -4,6 +4,7 @@ import {
   presignS3PutObjectUrl,
   type B2S3Config,
 } from '@backblaze-labs/b2-sdk/s3'
+import { decodeFileName } from '@backblaze-labs/b2-sdk/raw'
 
 const stagingApplicationKeyId = requiredEnv('B2_STAGING_APPLICATION_KEY_ID')
 const stagingApplicationKey = requiredEnv('B2_STAGING_APPLICATION_KEY')
@@ -120,15 +121,35 @@ export async function createOriginalUploadUrl(
 }
 
 export async function getOriginalObjectMetadata(fileName: string) {
-  const bucket = await getStagingBucket()
-  const { headers } = await bucket.head(fileName)
+  const client = await getStagingClient()
+
+  const response = await client.raw.downloadFileByName(
+    client.accountInfo.getDownloadUrl(),
+    client.accountInfo.getAuthToken(),
+    stagingBucketName,
+    fileName,
+    { method: 'HEAD' },
+  )
+
+  if (response.status === 404) {
+    throw new Error('Staging object not found.')
+  }
+
+  if (response.status !== 200) {
+    throw new Error(
+      `Staging object metadata request failed with HTTP ${response.status}.`,
+    )
+  }
+
+  const headers = response.headers
+  const encodedFileName = headers.get('x-bz-file-name')
 
   return {
-    fileName: headers.fileName,
-    fileId: headers.fileId,
-    contentType: headers.contentType,
-    contentLength: headers.contentLength,
-    contentSha1: headers.contentSha1,
+    fileName: encodedFileName ? decodeFileName(encodedFileName) : null,
+    fileId: headers.get('x-bz-file-id'),
+    contentType: headers.get('content-type'),
+    contentLength: headers.get('content-length'),
+    contentSha1: headers.get('x-bz-content-sha1'),
   }
 }
 

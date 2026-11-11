@@ -300,9 +300,21 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
 
   try {
     metadata = await getOriginalObjectMetadata(reservation.objectKey)
-  } catch {
-    return res.status(409).json({
-      error: 'The original file has not been uploaded yet',
+  } catch (error) {
+    const details =
+      error instanceof Error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          }
+        : String(error)
+
+    console.error('B2 metadata verification failed:', details)
+
+    return res.status(500).json({
+      error: 'B2 metadata verification failed.',
+      details,
     })
   }
 
