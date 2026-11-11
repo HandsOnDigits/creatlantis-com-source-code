@@ -239,7 +239,7 @@ export const postsApi = {
 export type MediaStatus =
   'PENDING_UPLOAD' | 'UPLOADED' | 'PROCESSING' | 'READY' | 'FAILED' | 'DELETING'
 
-export type MediaUploadStage = 'UPLOADING' | MediaStatus
+export type MediaUploadStage = 'UPLOADING' | 'COMPLETING' | MediaStatus
 
 export type MediaContentType = 'image/jpeg' | 'image/png' | 'image/webp'
 
@@ -317,12 +317,17 @@ export const mediaApi = {
   },
 
   // Upload the actual file directly to Backblaze B2.
-  async uploadFile(upload: CreateMediaUploadResponse, file: File) {
+  async uploadFile(
+    upload: CreateMediaUploadResponse,
+    file: File,
+    signal?: AbortSignal,
+  ) {
     const response = await fetch(upload.uploadUrl, {
       method: upload.method,
       headers: upload.headers,
       body: file,
       credentials: 'omit',
+      signal,
     })
 
     if (!response.ok) {
@@ -408,6 +413,7 @@ export const mediaApi = {
       processingInterval?: number
       processingTimeout?: number
       onStatusChange?: (status: MediaUploadStage) => void
+      signal?: AbortSignal
     } = {},
   ) {
     if (!ALLOWED_MEDIA_TYPES.includes(file.type as MediaContentType)) {
@@ -429,7 +435,9 @@ export const mediaApi = {
     try {
       options.onStatusChange?.('UPLOADING')
 
-      await this.uploadFile(upload, file)
+      await this.uploadFile(upload, file, options.signal)
+
+      options.onStatusChange?.('COMPLETING')
 
       const result = await this.complete(upload.id)
       completed = true

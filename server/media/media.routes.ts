@@ -7,6 +7,7 @@ import { requireAuth } from '../auth/auth.middleware'
 import {
   createOriginalDownloadUrl,
   createOriginalUploadUrl,
+  deleteOriginalObject,
   getOriginalObjectMetadata,
   getPublicObjectUrl,
 } from '../storage/b2.client'
@@ -264,10 +265,14 @@ router.post('/uploads', requireAuth, async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('B2 metadata verification failed:', error)
+    console.error('Failed to create B2 upload URL:', error)
+
+    await db.orm.public.UploadReservation.where({
+      id: reservationId,
+    }).delete()
 
     return res.status(500).json({
-      error: 'B2 metadata verification failed.',
+      error: 'Failed to prepare the upload.',
     })
   }
 })
@@ -301,12 +306,32 @@ router.delete('/uploads/:id', requireAuth, async (req, res) => {
     })
   }
 
-  // Expire immediately so completion requests are rejected.
-  await db.orm.public.UploadReservation.where({
+  // Atomically claim cancellation.
+  // If completion has already consumed the reservation, this returns null.
+  const cancelledReservation = await db.orm.public.UploadReservation.where({
     id: reservationId,
+    userId,
+    expiresAt: reservation.expiresAt,
   }).update({
     expiresAt: new Date().toISOString(),
   })
+
+  if (!cancelledReservation) {
+    return res.status(404).json({
+      error: 'Upload reservation not found',
+    })
+  }
+
+  try {
+    // Delete the staging object if the upload reached B2.
+    await deleteOriginalObject(reservation.objectKey)
+  } catch (error) {
+    console.error('Failed to delete cancelled upload from B2:', error)
+
+    return res.status(500).json({
+      error: 'Failed to clean up the cancelled upload.',
+    })
+  }
 
   return res.status(204).send()
 })
@@ -376,20 +401,10 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
   try {
     metadata = await getOriginalObjectMetadata(reservation.objectKey)
   } catch (error) {
-    const details =
-      error instanceof Error
-        ? {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-          }
-        : String(error)
-
-    console.error('B2 metadata verification failed:', details)
+    console.error('B2 metadata verification failed:', error)
 
     return res.status(500).json({
       error: 'B2 metadata verification failed.',
-      details,
     })
   }
 
@@ -405,21 +420,50 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
     })
   }
 
-  // Only create permanent Media metadata after B2 verification.
-  await db.orm.public.Media.create({
-    id: reservation.id,
-    userId: reservation.userId,
-    originalKey: reservation.objectKey,
-    originalFileId: metadata.fileId,
-    originalFilename: reservation.filename,
-    originalMimeType: reservation.contentType,
-    originalSize: BigInt(reservation.size),
-    status: 'UPLOADED',
+  // Recheck expiry before attempting to consume the reservation.
+  if (new Date(reservation.expiresAt).getTime() <= Date.now()) {
+    return res.status(410).json({
+      error: 'Upload reservation has expired',
+    })
+  }
+
+  const completed = await db.transaction(async (tx) => {
+    // Atomically claim the reservation using its original expiry value.
+    const claimedReservation = await tx.orm.public.UploadReservation.where({
+      id: reservation.id,
+      userId,
+      expiresAt: reservation.expiresAt,
+    }).update({
+      expiresAt: new Date().toISOString(),
+    })
+
+    if (!claimedReservation) {
+      return false
+    }
+
+    await tx.orm.public.Media.create({
+      id: reservation.id,
+      userId: reservation.userId,
+      originalKey: reservation.objectKey,
+      originalFileId: metadata.fileId,
+      originalFilename: reservation.filename,
+      originalMimeType: reservation.contentType,
+      originalSize: BigInt(reservation.size),
+      status: 'UPLOADED',
+    })
+
+    await tx.orm.public.UploadReservation.where({
+      id: reservation.id,
+    }).delete()
+
+    return true
   })
 
-  await db.orm.public.UploadReservation.where({
-    id: reservation.id,
-  }).delete()
+  if (!completed) {
+    return res.status(410).json({
+      error: 'Upload reservation has expired or was cancelled',
+    })
+  }
 
   res.setHeader('Cache-Control', 'no-store')
 

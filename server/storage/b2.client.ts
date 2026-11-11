@@ -252,16 +252,35 @@ export async function uploadMediaVariant(
   }
 }
 
+function isB2NotFoundError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    error.status === 404
+  )
+}
+
 export async function deleteOriginalObject(fileName: string): Promise<void> {
   const client = await getStagingClient()
 
-  const response = await client.raw.downloadFileByName(
-    client.accountInfo.getDownloadUrl(),
-    client.accountInfo.getAuthToken(),
-    stagingBucketName,
-    fileName,
-    { method: 'HEAD' },
-  )
+  let response: Awaited<ReturnType<typeof client.raw.downloadFileByName>>
+
+  try {
+    response = await client.raw.downloadFileByName(
+      client.accountInfo.getDownloadUrl(),
+      client.accountInfo.getAuthToken(),
+      stagingBucketName,
+      fileName,
+      { method: 'HEAD' },
+    )
+  } catch (error) {
+    if (isB2NotFoundError(error)) {
+      return
+    }
+
+    throw error
+  }
 
   if (response.status === 404) {
     return
@@ -283,14 +302,22 @@ export async function deleteOriginalObject(fileName: string): Promise<void> {
     typeof client.raw.deleteFileVersion
   >[2]['fileId']
 
-  await client.raw.deleteFileVersion(
-    client.accountInfo.getApiUrl(),
-    client.accountInfo.getAuthToken(),
-    {
-      fileName,
-      fileId,
-    },
-  )
+  try {
+    await client.raw.deleteFileVersion(
+      client.accountInfo.getApiUrl(),
+      client.accountInfo.getAuthToken(),
+      {
+        fileName,
+        fileId,
+      },
+    )
+  } catch (error) {
+    if (isB2NotFoundError(error)) {
+      return
+    }
+
+    throw error
+  }
 }
 
 export async function uploadPublicObject(

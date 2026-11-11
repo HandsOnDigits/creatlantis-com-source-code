@@ -1,4 +1,5 @@
 import { db } from '../../../src/prisma/db'
+import { deleteOriginalObject } from '../../storage/b2.client'
 import { processMediaJob } from './media.processor'
 
 export type MediaJob = NonNullable<Awaited<ReturnType<typeof claimMediaJob>>>
@@ -39,6 +40,37 @@ async function claimMediaJob() {
   })
 }
 
+async function cleanupExpiredUploadReservations(): Promise<void> {
+  const now = new Date().toISOString()
+
+  const expiredReservations = await db.orm.public.UploadReservation.where(
+    (reservation) => reservation.expiresAt.lte(now),
+  )
+    .orderBy((reservation) => reservation.expiresAt.asc())
+    .all()
+
+  for (const reservation of expiredReservations) {
+    try {
+      // Delete the staging object first.
+      // Missing objects are already handled by deleteOriginalObject().
+      await deleteOriginalObject(reservation.objectKey)
+
+      // Only remove the reservation after successful B2 cleanup.
+      await db.orm.public.UploadReservation.where({
+        id: reservation.id,
+        expiresAt: reservation.expiresAt,
+      }).delete()
+
+      console.log(`Cleaned up expired upload reservation ${reservation.id}`)
+    } catch (error) {
+      console.error(
+        `Failed to clean up expired upload reservation ${reservation.id}:`,
+        error,
+      )
+    }
+  }
+}
+
 async function handleProcessingFailure(
   job: { id: string; processingAttempts: number },
   error: unknown,
@@ -67,9 +99,18 @@ async function handleProcessingFailure(
 async function runWorker(): Promise<void> {
   console.log('Media worker started')
 
+  let nextReservationCleanupAt = 0
+  const RESERVATION_CLEANUP_INTERVAL_MS = 60 * 1000
+
   while (true) {
     try {
       const job = await claimMediaJob()
+
+      if (Date.now() >= nextReservationCleanupAt) {
+        nextReservationCleanupAt = Date.now() + RESERVATION_CLEANUP_INTERVAL_MS
+
+        await cleanupExpiredUploadReservations()
+      }
 
       if (!job) {
         await new Promise((resolve) => setTimeout(resolve, 2000))

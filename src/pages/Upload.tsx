@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { mediaApi, postsApi, type PostType as ApiPostType } from '../api'
 
@@ -33,6 +33,8 @@ function Upload() {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
+  const uploadController = useRef<AbortController | null>(null)
+  const [cancelling, setCancelling] = useState(false)
 
   if (!isPostType(type) || type === PostType.Model) {
     return <div>Post type is unavailable.</div>
@@ -47,6 +49,9 @@ function Upload() {
     setStatus('')
     setLoading(true)
 
+    const controller = new AbortController()
+    uploadController.current = controller
+
     try {
       let mediaIds: string[] = []
 
@@ -59,6 +64,7 @@ function Upload() {
 
         const media = await mediaApi.upload(file, {
           waitForProcessing: true,
+          signal: controller.signal,
           onStatusChange: (stage) => {
             setStatus(`Image status: ${stage}`)
           },
@@ -87,10 +93,26 @@ function Upload() {
 
       if (fileInput) fileInput.value = ''
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create post.')
+      if (err instanceof Error && err.name === 'AbortError') {
+        setStatus('Upload cancelled.')
+        setError('')
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to create post.')
+      }
     } finally {
+      uploadController.current = null
+      setCancelling(false)
       setLoading(false)
     }
+  }
+
+  function handleCancelUpload() {
+    const controller = uploadController.current
+
+    if (!controller || controller.signal.aborted) return
+
+    setCancelling(true)
+    controller.abort()
   }
 
   return (
@@ -140,6 +162,15 @@ function Upload() {
         <button type="submit" disabled={loading}>
           {loading ? 'Creating...' : 'Create post'}
         </button>
+        {status === 'Image status: UPLOADING' && (
+          <button
+            type="button"
+            onClick={handleCancelUpload}
+            disabled={cancelling}
+          >
+            {cancelling ? 'Cancelling...' : 'Cancel upload'}
+          </button>
+        )}
       </form>
 
       {status && <p>{status}</p>}
