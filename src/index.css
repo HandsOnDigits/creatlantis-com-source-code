@@ -254,13 +254,19 @@ html.green-theme {
     }
 
     .drop-down-content {
-      @apply absolute top-full right-0 left-auto w-[20vw];
+      @apply absolute top-full right-0 left-auto sm:w-[20vw];
 
       @apply flex flex-col items-center;
 
       div {
         @apply text-center whitespace-nowrap;
       }
+    }
+  }
+
+  #mobile-search div {
+    input {
+      @apply w-4/5;
     }
   }
 
@@ -283,7 +289,8 @@ html.green-theme {
     }
 
     & nav,
-    & footer {
+    & footer,
+    & #mobile-search {
       @apply bg-surface;
     }
 

@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, AuthStatus } from './AuthContext'
 
-import { VerticalHR, HorizontalHR, ProfileLink } from './Utilites'
+import { VerticalHR, HorizontalHR, ProfileIcon } from './Utilites'
 
 import SearchAndFilter from './SearchAndFilte'
 
 // Images
 import test_icon from './assets/images/test_icon.webp'
+import more_icon from './assets/images/icons/moreIcon.webp'
 
 function NavigationBar() {
   const { status, logout } = useAuth()
@@ -46,16 +47,50 @@ function NavigationBar() {
     localStorage.setItem('theme', currentTheme)
   }, [currentTheme])
 
+  {
+    /* Mobile triggers */
+  }
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
+
   return (
     <nav className="sticky top-0 flex items-center justify-between p-4 shadow-2xs transition-colors duration-200">
+      {/* Mobile search and filters */}
+      <div className="lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+          aria-expanded={isMobileSearchOpen}
+          className="cursor-pointer p-2"
+        >
+          <img src={more_icon} alt="Åbn søgning og filtre" />
+        </button>
+
+        {/* Dropdown triggered by a click */}
+        {isMobileSearchOpen && (
+          <div
+            className="absolute left-0 z-50 w-fit p-4 shadow-md"
+            id="mobile-search"
+          >
+            <SearchAndFilter />
+          </div>
+        )}
+      </div>
+
       {/* Home Icon */}
       <Link to="/">
-        <img className="h-auto w-[30vw]" src={test_icon} alt="Statisk logo" />
+        <img
+          className="h-auto w-[30vw] lg:w-40"
+          src={test_icon}
+          alt="Statisk logo"
+        />
       </Link>
 
-      <SearchAndFilter />
+      {/* Desktop search and filters */}
+      <div className="hidden lg:block">
+        <SearchAndFilter />
+      </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 pl-4">
         <VerticalHR />
 
         {/* Drop-down menu for uploads */}
@@ -77,7 +112,7 @@ function NavigationBar() {
 
         {/* Profile Dropdown Container */}
         <div className="drop-down">
-          <ProfileLink name="Name" />
+          <ProfileIcon name="Name" />
           <div className="drop-down-content">
             {status === AuthStatus.Authenticated ? (
               <button id="logout" onClick={handleLogout}>

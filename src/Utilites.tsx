@@ -4,12 +4,12 @@ interface profileURL {
   name: string
 }
 
-export function ProfileLink({ name }: profileURL) {
+export function ProfileIcon({ name }: profileURL) {
   return (
-    <a href={name} className="user-profile items-cente flex">
+    <div className="user-profile items-cente flex">
       <img className="h-auto max-w-14" src={default_pp} />
       <p className="p-4">{name}</p>
-    </a>
+    </div>
   )
 }
 
