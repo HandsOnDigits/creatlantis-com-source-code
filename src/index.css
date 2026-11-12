@@ -79,6 +79,11 @@ html.green-theme {
   --color-journal-body: var(--color-green-0);
 }
 
+/* Light to dark shaded gradient effect */
+.light-to-dark-gradient {
+  @apply w-full bg-linear-to-b from-[rgba(192,192,192,0.3)] to-[rgba(108,108,108,0.3)] p-2;
+}
+
 /* ==========================================
    Components & Global Layout
    ================================---------- */
@@ -135,7 +140,7 @@ html.green-theme {
       /* Nested subclasses and IDs for specific button types */
 
       &.submit,
-      &#login {
+      &.login {
         @apply bg-green-500 hover:bg-green-600;
       }
 
@@ -165,6 +170,28 @@ html.green-theme {
   img {
     &.navigation-icon {
       @apply h-5 sm:h-6 md:h-7 lg:h-10;
+    }
+  }
+
+  /* Submit */
+
+  #error-feedback {
+    @apply font-semibold text-red-500;
+  }
+
+  form {
+    @apply text-base/loose;
+
+    h1 {
+      @apply self-center;
+    }
+
+    & input {
+      @apply border-hr-line rounded-sm border-2;
+    }
+
+    & div {
+      @apply flex justify-between gap-4;
     }
   }
 
@@ -218,22 +245,27 @@ html.green-theme {
     @apply bg-[linear-gradient(to_left,var(--color-green-0),var(--color-green-1),var(--color-green-2),var(--color-green-3),var(--color-green-4))];
   }
 
+  /* Drop-down */
   .drop-down {
     @apply relative;
 
     * {
       @apply p-1;
     }
+
+    .drop-down-content {
+      @apply absolute top-full right-0 left-auto w-[20vw];
+
+      @apply flex flex-col items-center;
+
+      div {
+        @apply text-center whitespace-nowrap;
+      }
+    }
   }
 
-  .drop-down-content {
-    @apply absolute top-full right-0 left-auto w-[20vw];
-
-    @apply flex flex-col items-center;
-
-    div {
-      @apply text-center whitespace-nowrap;
-    }
+  .drop-down:not(:hover) .drop-down-content {
+    @apply hidden;
   }
 
   /* Universal Theme Application targeting HTML and its children */
@@ -241,7 +273,8 @@ html.green-theme {
     @apply bg-bg text-text placeholder-text min-h-screen;
 
     & #category-list,
-    & .navigation-input {
+    & .navigation-input,
+    & form input {
       @apply bg-background-blend;
     }
 
@@ -254,7 +287,8 @@ html.green-theme {
       @apply bg-surface;
     }
 
-    & .drop-down *:not(button) {
+    & .drop-down:hover *:not(button),
+    & #login {
       @apply bg-drop-down;
     }
   }

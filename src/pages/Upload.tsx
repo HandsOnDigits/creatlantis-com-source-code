@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { mediaApi, postsApi, type PostType as ApiPostType } from '../api'
 
+import { VerticalHR } from '../Utilites'
+
 export enum PostType {
   Image = 'image',
   Journal = 'journal',
@@ -117,64 +119,77 @@ function Upload() {
 
   return (
     <div>
-      <h2>Create {postTypeLabels[postType]}</h2>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="post-title">Title</label>
-          <input
-            id="post-title"
-            type="text"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            required
-            maxLength={200}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="post-content">
-            {postType === PostType.Journal ? 'Journal entry' : 'Description'}
-          </label>
-
-          <textarea
-            id="post-content"
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            required={postType === PostType.Journal}
-            maxLength={50000}
-          />
-        </div>
-
-        {postType === PostType.Image && (
+      <form onSubmit={handleSubmit} className="p-0">
+        <h1 className="extra-big-text">Create {postTypeLabels[postType]}</h1>
+        <div className="p-8">
           <div>
-            <label htmlFor="post-file">Image</label>
+            <label htmlFor="post-title">Title</label>
             <input
-              id="post-file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              id="post-title"
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
               required
+              maxLength={200}
             />
           </div>
-        )}
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Creating...' : 'Create post'}
-        </button>
-        {status === 'Image status: UPLOADING' && (
-          <button
-            type="button"
-            onClick={handleCancelUpload}
-            disabled={cancelling}
-          >
-            {cancelling ? 'Cancelling...' : 'Cancel upload'}
+          <div>
+            <label htmlFor="post-content">
+              {postType === PostType.Journal ? 'Journal entry' : 'Description'}
+            </label>
+
+            <textarea
+              id="post-content"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              required={postType === PostType.Journal}
+              maxLength={50000}
+            />
+          </div>
+
+          {postType === PostType.Image && (
+            <div>
+              <label htmlFor="post-file">Image</label>
+              <input
+                id="post-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                required
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Buttons */}
+        <div className="light-to-dark-gradient flex items-center justify-center">
+          <VerticalHR />
+
+          <button type="submit" disabled={loading} className="submit">
+            {loading ? 'Creating...' : 'Submit'}
           </button>
-        )}
+
+          {status === 'Image status: UPLOADING' && (
+            <button
+              type="button"
+              onClick={handleCancelUpload}
+              disabled={cancelling}
+            >
+              {cancelling ? 'Cancelling...' : 'Cancel upload'}
+            </button>
+          )}
+
+          <VerticalHR />
+        </div>
       </form>
 
       {status && <p>{status}</p>}
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert" id="error-feedback">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

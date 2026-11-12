@@ -84,7 +84,7 @@ function NavigationBar() {
                 Logout
               </button>
             ) : (
-              <button id="login" onClick={() => navigate('/login')}>
+              <button className="login" onClick={() => navigate('/login')}>
                 Login
               </button>
             )}

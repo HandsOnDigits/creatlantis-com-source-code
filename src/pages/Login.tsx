@@ -39,9 +39,15 @@ function Login() {
 
   return (
     <main>
-      <h1>Log in</h1>
+      <form
+        onSubmit={handleSubmit}
+        id="login"
+        className="flex w-full flex-col gap-4 p-12"
+      >
+        <h1 className="extra-big-text">Log in</h1>
 
-      <form onSubmit={handleSubmit}>
+        <br />
+
         <div>
           <label htmlFor="email">Email</label>
           <input
@@ -66,9 +72,13 @@ function Login() {
           />
         </div>
 
-        {error && <p role="alert">{error}</p>}
+        {error && (
+          <p role="alert" id="error-feedback">
+            {error}
+          </p>
+        )}
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading} className="login">
           {loading ? 'Logging in...' : 'Log in'}
         </button>
       </form>
