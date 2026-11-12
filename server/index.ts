@@ -13,6 +13,9 @@ import profilesRoutes from './profiles/profiles.routes'
 import mediaRoutes from './media/media.routes'
 import postsRoutes from './posts/posts.routes'
 import catalogsRoutes from './catalogs/catalogs.routes'
+import reportsRoutes from './reports/reports.routes'
+
+import { closeReportSubmissionPool } from './reports/report-submission.service'
 
 import { startMediaReservationCleanup } from './media/media.cleanup'
 
@@ -54,6 +57,7 @@ app.use('/api/profiles', profilesRoutes)
 app.use('/api/media', mediaRoutes)
 app.use('/api/posts', postsRoutes)
 app.use('/api/catalogs', catalogsRoutes)
+app.use('/api/reports', reportsRoutes)
 
 // Health
 app.get('/api/health', async (_req, res) => {
@@ -89,7 +93,7 @@ const server = app.listen(port, () => {
 async function shutdown() {
   server.close(async () => {
     try {
-      await db.close()
+      await Promise.all([db.close(), closeReportSubmissionPool()])
     } finally {
       process.exit(0)
     }
