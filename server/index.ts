@@ -14,6 +14,8 @@ import mediaRoutes from './media/media.routes'
 import postsRoutes from './posts/posts.routes'
 import catalogsRoutes from './catalogs/catalogs.routes'
 import reportsRoutes from './reports/reports.routes'
+import liveRoutes from './live/live.routes'
+import liveInternalRoutes from './live/live.internal.routes'
 
 import { closeReportSubmissionPool } from './reports/report-submission.service'
 
@@ -48,6 +50,8 @@ const apiLimiter = rateLimit({
   },
 })
 
+app.use('/api/live', liveRoutes)
+app.use('/api/live/internal', liveInternalRoutes)
 app.use('/api', apiLimiter)
 
 // API routes

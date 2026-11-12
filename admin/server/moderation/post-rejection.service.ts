@@ -2,6 +2,7 @@ import { mainDb } from '../../src/prisma/main-db'
 import { recordModerationAction } from './moderation-action.service'
 import { getMediaTransferRecord } from './media-transfer.service'
 import { deleteOriginalObject } from '../../../server/storage/b2.client'
+import { sendModerationLiveEvent } from './live-event.service'
 
 export async function rejectPost(
   postId: number,
@@ -15,7 +16,13 @@ export async function rejectPost(
   }
 
   const post = await mainDb.orm.public.Post.where({ id: postId })
-    .select('id', 'publicationStatus', 'reviewedByAdminId', 'rejectionReason')
+    .select(
+      'id',
+      'authorId',
+      'publicationStatus',
+      'reviewedByAdminId',
+      'rejectionReason',
+    )
     .first()
 
   if (!post) {
@@ -57,6 +64,12 @@ export async function rejectPost(
     targetType: 'POST',
     targetId: String(postId),
     reason: rejectedPost.rejectionReason,
+  })
+
+  await sendModerationLiveEvent({
+    type: 'post.rejected',
+    postId,
+    authorId: post.authorId,
   })
 
   const postMedia = await mainDb.orm.public.PostMedia.where({

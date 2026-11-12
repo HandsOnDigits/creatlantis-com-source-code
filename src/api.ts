@@ -5,6 +5,14 @@ const API_BASE_URL = (
 // Access token stays in memory.
 let accessToken: string | null = null
 
+export function getAccessToken(): string | null {
+  return accessToken
+}
+
+export function getApiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`
+}
+
 export function setAccessToken(token: string | null) {
   accessToken = token
 }

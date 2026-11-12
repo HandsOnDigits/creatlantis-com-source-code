@@ -5,13 +5,14 @@ import {
   transferMediaToPublic,
 } from './media-transfer.service'
 import { deleteOriginalObject } from '../../../server/storage/b2.client'
+import { sendModerationLiveEvent } from './live-event.service'
 
 export async function approvePost(
   postId: number,
   adminId: string,
 ): Promise<void> {
   const post = await mainDb.orm.public.Post.where({ id: postId })
-    .select('id', 'publicationStatus', 'reviewedByAdminId')
+    .select('id', 'authorId', 'publicationStatus', 'reviewedByAdminId')
     .first()
 
   if (!post) {
@@ -59,6 +60,12 @@ export async function approvePost(
     action: 'CONTENT_APPROVED',
     targetType: 'POST',
     targetId: String(postId),
+  })
+
+  await sendModerationLiveEvent({
+    type: 'post.approved',
+    postId,
+    authorId: post.authorId,
   })
 
   // Staging cleanup happens only after the public copies are verified,

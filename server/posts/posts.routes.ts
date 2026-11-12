@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { db } from '../../src/prisma/db'
 import { getMediaVariantUrl } from '../storage/b2.client'
 import { requireAuth } from '../auth/auth.middleware'
+import { publishLiveEvent } from '../live/live.service'
 
 const router = Router()
 
@@ -274,6 +275,15 @@ router.post('/', requireAuth, async (req, res) => {
       error: 'One or more media files are unavailable or not ready.',
     })
   }
+
+  publishLiveEvent(
+    'post.created',
+    {
+      postId: post.id,
+      publicationStatus: post.publicationStatus,
+    },
+    { userIds: [userId] },
+  )
 
   return res.status(201).json({
     data: post,
