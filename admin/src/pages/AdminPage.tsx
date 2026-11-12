@@ -156,6 +156,11 @@ export default function AdminPage() {
   const [reportsHasMore, setReportsHasMore] = useState(false)
   const [reportsLoading, setReportsLoading] = useState(true)
   const [reportsError, setReportsError] = useState<string | null>(null)
+  const [reportActionReason, setReportActionReason] = useState('')
+  const [reportActionLoading, setReportActionLoading] = useState(false)
+  const [reportActionError, setReportActionError] = useState<string | null>(
+    null,
+  )
 
   const loadPending = useCallback(async (targetPage: number) => {
     setLoading(true)
@@ -254,6 +259,62 @@ export default function AdminPage() {
       setReportDetailsLoading(false)
     }
   }, [])
+
+  async function updateReportStatus(status: 'resolve' | 'dismiss') {
+    if (!selectedReport) return
+
+    const reason = reportActionReason.trim()
+
+    if (!reason) {
+      setReportActionError('An explanation is required.')
+      return
+    }
+
+    setReportActionLoading(true)
+    setReportActionError(null)
+
+    try {
+      const response = await fetch(
+        `${API_URL}/moderation/reports/${selectedReport.id}/${status}`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ reason }),
+        },
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update the report.')
+      }
+
+      setSelectedReport((current) =>
+        current
+          ? {
+              ...current,
+              status: result.status,
+              assignedToAdminId: result.adminId,
+            }
+          : current,
+      )
+
+      setReportActionReason('')
+      await loadReports(reportsPage)
+    } catch (error) {
+      setReportActionError(
+        error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred.',
+      )
+    } finally {
+      setReportActionLoading(false)
+    }
+  }
 
   useEffect(() => {
     void loadPending(1)
@@ -658,6 +719,64 @@ export default function AdminPage() {
                 <p className="mt-2">The reported target could not be found.</p>
               )}
             </div>
+
+            {selectedReport.status === 'PENDING' ||
+            selectedReport.status === 'REVIEWING' ? (
+              <div className="mt-6 border-t border-gray-200 pt-4">
+                <h4 className="font-semibold">Review decision</h4>
+
+                <label
+                  htmlFor="report-action-reason"
+                  className="mt-3 block text-sm font-medium"
+                >
+                  Explanation (required)
+                </label>
+
+                <textarea
+                  id="report-action-reason"
+                  value={reportActionReason}
+                  onChange={(event) =>
+                    setReportActionReason(event.target.value)
+                  }
+                  maxLength={2000}
+                  rows={4}
+                  disabled={reportActionLoading}
+                  placeholder="Explain why this report is being resolved or dismissed..."
+                  className="mt-1 w-full rounded-md border border-gray-300 p-2"
+                />
+
+                {reportActionError && (
+                  <p className="mt-2 text-sm text-red-600" role="alert">
+                    {reportActionError}
+                  </p>
+                )}
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void updateReportStatus('resolve')}
+                    disabled={reportActionLoading || !reportActionReason.trim()}
+                    className="rounded-md bg-green-700 px-4 py-2 text-white disabled:opacity-50"
+                  >
+                    {reportActionLoading ? 'Processing...' : 'Resolve report'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void updateReportStatus('dismiss')}
+                    disabled={reportActionLoading || !reportActionReason.trim()}
+                    className="rounded-md bg-gray-600 px-4 py-2 text-white disabled:opacity-50"
+                  >
+                    {reportActionLoading ? 'Processing...' : 'Dismiss report'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-6 border-t border-gray-200 pt-4 text-sm text-gray-600">
+                This report has been closed with status: {selectedReport.status}
+                .
+              </p>
+            )}
           </section>
         )}
 

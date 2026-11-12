@@ -8,6 +8,7 @@ import { requireModerator } from '../middleware/require-moderator'
 import { createOriginalDownloadUrl } from '../../../server/storage/b2.client'
 import { approvePost } from './post-approval.service'
 import { rejectPost } from './post-rejection.service'
+import { ReportStatusError, updateReportStatus } from './report-status.service'
 
 const router = Router()
 
@@ -15,6 +16,69 @@ router.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store')
   next()
 })
+
+function registerReportStatusRoute(
+  path: string,
+  status: 'RESOLVED' | 'DISMISSED',
+) {
+  router.post(
+    path,
+    requireMfaVerifiedAdmin,
+    requireModerator,
+    async (req, res, next) => {
+      try {
+        const parsedId = z.string().uuid().safeParse(req.params.reportId)
+
+        const parsedBody = z
+          .object({
+            reason: z.string().trim().min(1).max(2000),
+          })
+          .safeParse(req.body)
+
+        if (!parsedId.success) {
+          return res.status(400).json({
+            error: 'Invalid report ID.',
+          })
+        }
+
+        if (!parsedBody.success) {
+          return res.status(400).json({
+            error: 'A valid explanation is required.',
+          })
+        }
+
+        if (!req.adminAuth) {
+          return res.status(401).json({
+            error: 'Authentication required.',
+          })
+        }
+
+        const result = await updateReportStatus({
+          reportId: parsedId.data,
+          adminId: req.adminAuth.adminId,
+          status,
+          reason: parsedBody.data.reason,
+        })
+
+        return res.json({
+          success: true,
+          ...result,
+        })
+      } catch (error) {
+        if (error instanceof ReportStatusError) {
+          return res.status(error.statusCode).json({
+            error: error.message,
+          })
+        }
+
+        next(error)
+      }
+    },
+  )
+}
+
+registerReportStatusRoute('/reports/:reportId/resolve', 'RESOLVED')
+registerReportStatusRoute('/reports/:reportId/dismiss', 'DISMISSED')
 
 router.get(
   '/pending',
