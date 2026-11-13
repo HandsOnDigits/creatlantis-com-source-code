@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { mediaApi, postsApi, type PostType as ApiPostType } from '../api'
 
@@ -35,11 +35,25 @@ function Upload() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const uploadController = useRef<AbortController | null>(null)
   const [cancelling, setCancelling] = useState(false)
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null)
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(file)
+    setPreviewUrl(objectUrl)
+
+    // Free up memory when the file changes or component unmounts
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [file])
 
   if (!isPostType(type) || type === PostType.Model) {
     return <div>Post type is unavailable.</div>
@@ -125,10 +139,10 @@ function Upload() {
       <form onSubmit={handleSubmit} className="p-0">
         <h1 className="big-text">Create {postTypeLabels[postType]}</h1>
 
-        <div className="flex w-200 flex-col items-center justify-center self-center p-8">
+        <div className="flex flex-col items-center justify-center self-center p-8 lg:w-200">
           {/* Text inputs */}
           <div>
-            <div className="submit-input">
+            <div className="submit-input justify-center">
               <div className="flex items-center gap-4">
                 <label htmlFor="post-title">Title</label>
                 <input
@@ -142,7 +156,7 @@ function Upload() {
               </div>
             </div>
 
-            <div className="submit-input flex-col">
+            <div className="submit-input item flex-col">
               <label htmlFor="post-content">
                 {postType === PostType.Journal
                   ? 'Journal entry'
@@ -151,7 +165,7 @@ function Upload() {
 
               <textarea
                 id="post-content"
-                className="h-50 w-200"
+                className="h-50 w-[90vw]"
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
                 required={postType === PostType.Journal}
@@ -162,14 +176,16 @@ function Upload() {
 
           {/* File inputs */}
           {postType === PostType.Image && (
-            <div className="flex w-full flex-col justify-center">
+            <div className="flex w-[90vw] flex-col justify-center">
               <label className="text-center" htmlFor="post-file">
                 Image
               </label>
               <input
                 id="post-file"
-                style={{ backgroundImage: `url(${upload_icon})` }}
-                className="h-100 bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${previewUrl ?? upload_icon})` }}
+                className={`h-100 w-full cursor-pointer bg-center bg-no-repeat ${
+                  previewUrl ? 'bg-contain' : 'bg-auto'
+                }`}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
