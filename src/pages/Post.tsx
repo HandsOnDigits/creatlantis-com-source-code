@@ -103,6 +103,10 @@ function Post() {
           </div>
         )}
 
+        {post.type === 'JOURNAL' && post.content && (
+          <Journal content={post.content} />
+        )}
+
         {/* Metadata */}
         <div className="bg-background-blend flex flex-col items-center">
           <HorizontalHR />
@@ -111,10 +115,6 @@ function Post() {
             <p className="mb-8 leading-relaxed whitespace-pre-wrap">
               {post.content}
             </p>
-          )}
-
-          {post.type === 'JOURNAL' && post.content && (
-            <Journal content={post.content} />
           )}
 
           {post.type === 'MODEL' && <p>Model posts are not available yet.</p>}
