@@ -5,6 +5,7 @@ import NavigationBar from './NavigationBar'
 import Home from './pages/Home'
 import Upload from './pages/Upload'
 import Login from './pages/Login'
+import Post from './pages/Post'
 import ProtectedRoute from './ProtectedRoute'
 import { useLive } from './LiveContext'
 
@@ -30,6 +31,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/posts/:id" element={<Post />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/upload/:type" element={<Upload />} />

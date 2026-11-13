@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e94eb39f612e795de642ff6b62d976cb1af27b2aaaaf436ce6f10b4bc4784811'>;
+  StorageHashBase<'9e5b5c1a5c8b2645af45f7ca4f5dcd5c29978aff5ea8dbe53d6d645eea0d873a'>;
 export type ExecutionHash =
-  ExecutionHashBase<'a7118df9578aae55587fb3800d60df5a0def480e8fd1500cfbfc19fb3285ede8'>;
+  ExecutionHashBase<'cef1557cf24f09b2a1b4346d0b1916222cb51d12c6023fd9ef30aa6083cc7c65'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -352,24 +352,24 @@ export type StorageColumnInputTypes = ColumnTypesFromStorage<
 >;
 
 export namespace Models {
-  export type public_Catalog = {
-    createdAt: FieldOutputTypes['public']['Catalog']['createdAt'];
-    description: FieldOutputTypes['public']['Catalog']['description'];
-    id: FieldOutputTypes['public']['Catalog']['id'];
-    name: FieldOutputTypes['public']['Catalog']['name'];
-    slug: FieldOutputTypes['public']['Catalog']['slug'];
-    updatedAt: FieldOutputTypes['public']['Catalog']['updatedAt'];
-    posts: public_CatalogPost[];
+  export type public_Category = {
+    createdAt: FieldOutputTypes['public']['Category']['createdAt'];
+    description: FieldOutputTypes['public']['Category']['description'];
+    id: FieldOutputTypes['public']['Category']['id'];
+    name: FieldOutputTypes['public']['Category']['name'];
+    slug: FieldOutputTypes['public']['Category']['slug'];
+    updatedAt: FieldOutputTypes['public']['Category']['updatedAt'];
+    posts: public_CategoryPost[];
     readonly [RelationKeys]?: 'posts';
   };
-  export type public_CatalogPost = {
-    catalogId: FieldOutputTypes['public']['CatalogPost']['catalogId'];
-    createdAt: FieldOutputTypes['public']['CatalogPost']['createdAt'];
-    position: FieldOutputTypes['public']['CatalogPost']['position'];
-    postId: FieldOutputTypes['public']['CatalogPost']['postId'];
-    catalog: public_Catalog;
+  export type public_CategoryPost = {
+    categoryId: FieldOutputTypes['public']['CategoryPost']['categoryId'];
+    createdAt: FieldOutputTypes['public']['CategoryPost']['createdAt'];
+    position: FieldOutputTypes['public']['CategoryPost']['position'];
+    postId: FieldOutputTypes['public']['CategoryPost']['postId'];
+    category: public_Category;
     post: public_Post;
-    readonly [RelationKeys]?: 'catalog' | 'post';
+    readonly [RelationKeys]?: 'category' | 'post';
   };
   export type public_Media = {
     createdAt: FieldOutputTypes['public']['Media']['createdAt'];
@@ -421,9 +421,9 @@ export namespace Models {
     type: FieldOutputTypes['public']['Post']['type'];
     updatedAt: FieldOutputTypes['public']['Post']['updatedAt'];
     author: public_User;
-    catalogs: public_CatalogPost[];
+    categories: public_CategoryPost[];
     media: public_PostMedia[];
-    readonly [RelationKeys]?: 'author' | 'catalogs' | 'media';
+    readonly [RelationKeys]?: 'author' | 'categories' | 'media';
   };
   export type public_PostMedia = {
     mediaId: FieldOutputTypes['public']['PostMedia']['mediaId'];
@@ -473,8 +473,8 @@ export namespace Models {
 
 export declare const models: {
   public: {
-    Catalog: Models.public_Catalog;
-    CatalogPost: Models.public_CatalogPost;
+    Category: Models.public_Category;
+    CategoryPost: Models.public_CategoryPost;
     Media: Models.public_Media;
     MediaVariant: Models.public_MediaVariant;
     Post: Models.public_Post;
@@ -503,7 +503,7 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
-            readonly Catalog: {
+            readonly Category: {
               columns: {
                 readonly createdAt: {
                   readonly dataType: 'pg/timestamptz';
@@ -551,17 +551,17 @@ type ContractBase = Omit<
               uniques: readonly [{ readonly columns: readonly ['slug'] }];
               indexes: readonly [
                 {
-                  readonly name: 'Catalog_name_idx_ce87e6ba';
-                  readonly prefix: 'Catalog_name_idx';
+                  readonly name: 'Category_name_idx_ce87e6ba';
+                  readonly prefix: 'Category_name_idx';
                   readonly columns: readonly ['name'];
                   readonly unique: false;
                 },
               ];
               foreignKeys: readonly [];
             };
-            readonly CatalogPost: {
+            readonly CategoryPost: {
               columns: {
-                readonly catalogId: {
+                readonly categoryId: {
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: false;
@@ -591,24 +591,24 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
               };
-              primaryKey: { readonly columns: readonly ['catalogId', 'postId'] };
+              primaryKey: { readonly columns: readonly ['categoryId', 'postId'] };
               uniques: readonly [];
               indexes: readonly [
                 {
-                  readonly name: 'CatalogPost_catalogId_idx_f0d71193';
-                  readonly prefix: 'CatalogPost_catalogId_idx';
-                  readonly columns: readonly ['catalogId'];
+                  readonly name: 'CategoryPost_categoryId_idx_15c304f2';
+                  readonly prefix: 'CategoryPost_categoryId_idx';
+                  readonly columns: readonly ['categoryId'];
                   readonly unique: false;
                 },
                 {
-                  readonly name: 'CatalogPost_catalogId_position_idx_f3f5029f';
-                  readonly prefix: 'CatalogPost_catalogId_position_idx';
-                  readonly columns: readonly ['catalogId', 'position'];
+                  readonly name: 'CategoryPost_categoryId_position_idx_f8fbc26a';
+                  readonly prefix: 'CategoryPost_categoryId_position_idx';
+                  readonly columns: readonly ['categoryId', 'position'];
                   readonly unique: false;
                 },
                 {
-                  readonly name: 'CatalogPost_postId_idx_a7a72715';
-                  readonly prefix: 'CatalogPost_postId_idx';
+                  readonly name: 'CategoryPost_postId_idx_a7a72715';
+                  readonly prefix: 'CategoryPost_postId_idx';
                   readonly columns: readonly ['postId'];
                   readonly unique: false;
                 },
@@ -617,19 +617,19 @@ type ContractBase = Omit<
                 {
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'CatalogPost';
-                    readonly columns: readonly ['catalogId'];
+                    readonly tableName: 'CategoryPost';
+                    readonly columns: readonly ['categoryId'];
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'Catalog';
+                    readonly tableName: 'Category';
                     readonly columns: readonly ['id'];
                   };
                 },
                 {
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'CatalogPost';
+                    readonly tableName: 'CategoryPost';
                     readonly columns: readonly ['postId'];
                   };
                   readonly target: {
@@ -1312,10 +1312,10 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
-    readonly Catalog: { readonly namespace: 'public' & NamespaceId; readonly model: 'Catalog' };
-    readonly CatalogPost: {
+    readonly Category: { readonly namespace: 'public' & NamespaceId; readonly model: 'Category' };
+    readonly CategoryPost: {
       readonly namespace: 'public' & NamespaceId;
-      readonly model: 'CatalogPost';
+      readonly model: 'CategoryPost';
     };
     readonly Media: { readonly namespace: 'public' & NamespaceId; readonly model: 'Media' };
     readonly MediaVariant: {
@@ -1335,7 +1335,7 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
-          readonly Catalog: {
+          readonly Category: {
             readonly fields: {
               readonly createdAt: {
                 readonly nullable: false;
@@ -1372,17 +1372,17 @@ type ContractBase = Omit<
               readonly posts: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'CatalogPost';
+                  readonly model: 'CategoryPost';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
                   readonly localFields: readonly ['id'];
-                  readonly targetFields: readonly ['catalogId'];
+                  readonly targetFields: readonly ['categoryId'];
                 };
               };
             };
             readonly storage: {
-              readonly table: 'Catalog';
+              readonly table: 'Category';
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly createdAt: { readonly column: 'createdAt' };
@@ -1394,9 +1394,9 @@ type ContractBase = Omit<
               };
             };
           };
-          readonly CatalogPost: {
+          readonly CategoryPost: {
             readonly fields: {
-              readonly catalogId: {
+              readonly categoryId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
@@ -1417,15 +1417,15 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
-              readonly catalog: {
+              readonly category: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'Catalog';
+                  readonly model: 'Category';
                 };
                 readonly cardinality: 'N:1';
                 readonly nullable: false;
                 readonly on: {
-                  readonly localFields: readonly ['catalogId'];
+                  readonly localFields: readonly ['categoryId'];
                   readonly targetFields: readonly ['id'];
                 };
               };
@@ -1440,10 +1440,10 @@ type ContractBase = Omit<
               };
             };
             readonly storage: {
-              readonly table: 'CatalogPost';
+              readonly table: 'CategoryPost';
               readonly namespaceId: 'public';
               readonly fields: {
-                readonly catalogId: { readonly column: 'catalogId' };
+                readonly categoryId: { readonly column: 'categoryId' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly position: { readonly column: 'position' };
                 readonly postId: { readonly column: 'postId' };
@@ -1733,10 +1733,10 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
-              readonly catalogs: {
+              readonly categories: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'CatalogPost';
+                  readonly model: 'CategoryPost';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -2140,7 +2140,7 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
-            readonly entry: 'Catalog';
+            readonly entry: 'Category';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

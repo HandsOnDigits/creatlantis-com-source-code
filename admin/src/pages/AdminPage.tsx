@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import CategoryManager from '../components/CategoryManager'
+
 interface PendingMedia {
   id: string
   originalFilename: string
@@ -403,6 +405,10 @@ export default function AdminPage() {
           Sign out
         </button>
       </header>
+
+      <div className="mx-auto max-w-7xl">
+        <CategoryManager />
+      </div>
 
       <section>
         <div className="mb-5 flex items-center justify-between">

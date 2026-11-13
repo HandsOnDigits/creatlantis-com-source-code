@@ -4,12 +4,12 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
-    "Catalog": {
-      "model": "Catalog",
+    "Category": {
+      "model": "Category",
       "namespace": "public"
     },
-    "CatalogPost": {
-      "model": "CatalogPost",
+    "CategoryPost": {
+      "model": "CategoryPost",
       "namespace": "public"
     },
     "Media": {
@@ -123,7 +123,7 @@
           }
         },
         "models": {
-          "Catalog": {
+          "Category": {
             "fields": {
               "createdAt": {
                 "nullable": false,
@@ -176,11 +176,11 @@
                     "id"
                   ],
                   "targetFields": [
-                    "catalogId"
+                    "categoryId"
                   ]
                 },
                 "to": {
-                  "model": "CatalogPost",
+                  "model": "CategoryPost",
                   "namespace": "public"
                 }
               }
@@ -207,12 +207,12 @@
                 }
               },
               "namespaceId": "public",
-              "table": "Catalog"
+              "table": "Category"
             }
           },
-          "CatalogPost": {
+          "CategoryPost": {
             "fields": {
-              "catalogId": {
+              "categoryId": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
@@ -242,19 +242,19 @@
               }
             },
             "relations": {
-              "catalog": {
+              "category": {
                 "cardinality": "N:1",
                 "nullable": false,
                 "on": {
                   "localFields": [
-                    "catalogId"
+                    "categoryId"
                   ],
                   "targetFields": [
                     "id"
                   ]
                 },
                 "to": {
-                  "model": "Catalog",
+                  "model": "Category",
                   "namespace": "public"
                 }
               },
@@ -277,8 +277,8 @@
             },
             "storage": {
               "fields": {
-                "catalogId": {
-                  "column": "catalogId"
+                "categoryId": {
+                  "column": "categoryId"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -291,7 +291,7 @@
                 }
               },
               "namespaceId": "public",
-              "table": "CatalogPost"
+              "table": "CategoryPost"
             }
           },
           "Media": {
@@ -771,7 +771,7 @@
                   "namespace": "public"
                 }
               },
-              "catalogs": {
+              "categories": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
@@ -782,7 +782,7 @@
                   ]
                 },
                 "to": {
-                  "model": "CatalogPost",
+                  "model": "CategoryPost",
                   "namespace": "public"
                 }
               },
@@ -1263,7 +1263,7 @@
       "public": {
         "entries": {
           "table": {
-            "Catalog": {
+            "Category": {
               "columns": {
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -1310,8 +1310,8 @@
                   "columns": [
                     "name"
                   ],
-                  "name": "Catalog_name_idx_ce87e6ba",
-                  "prefix": "Catalog_name_idx",
+                  "name": "Category_name_idx_ce87e6ba",
+                  "prefix": "Category_name_idx",
                   "unique": false
                 }
               ],
@@ -1328,9 +1328,9 @@
                 }
               ]
             },
-            "CatalogPost": {
+            "CategoryPost": {
               "columns": {
-                "catalogId": {
+                "categoryId": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
                   "nullable": false
@@ -1362,27 +1362,27 @@
               "foreignKeys": [
                 {
                   "index": {
-                    "name": "CatalogPost_catalogId_idx_f0d71193"
+                    "name": "CategoryPost_categoryId_idx_15c304f2"
                   },
                   "onDelete": "cascade",
                   "source": {
                     "columns": [
-                      "catalogId"
+                      "categoryId"
                     ],
                     "namespaceId": "public",
-                    "tableName": "CatalogPost"
+                    "tableName": "CategoryPost"
                   },
                   "target": {
                     "columns": [
                       "id"
                     ],
                     "namespaceId": "public",
-                    "tableName": "Catalog"
+                    "tableName": "Category"
                   }
                 },
                 {
                   "index": {
-                    "name": "CatalogPost_postId_idx_a7a72715"
+                    "name": "CategoryPost_postId_idx_a7a72715"
                   },
                   "onDelete": "cascade",
                   "source": {
@@ -1390,7 +1390,7 @@
                       "postId"
                     ],
                     "namespaceId": "public",
-                    "tableName": "CatalogPost"
+                    "tableName": "CategoryPost"
                   },
                   "target": {
                     "columns": [
@@ -1404,33 +1404,33 @@
               "indexes": [
                 {
                   "columns": [
-                    "catalogId"
+                    "categoryId"
                   ],
-                  "name": "CatalogPost_catalogId_idx_f0d71193",
-                  "prefix": "CatalogPost_catalogId_idx",
+                  "name": "CategoryPost_categoryId_idx_15c304f2",
+                  "prefix": "CategoryPost_categoryId_idx",
                   "unique": false
                 },
                 {
                   "columns": [
-                    "catalogId",
+                    "categoryId",
                     "position"
                   ],
-                  "name": "CatalogPost_catalogId_position_idx_f3f5029f",
-                  "prefix": "CatalogPost_catalogId_position_idx",
+                  "name": "CategoryPost_categoryId_position_idx_f8fbc26a",
+                  "prefix": "CategoryPost_categoryId_position_idx",
                   "unique": false
                 },
                 {
                   "columns": [
                     "postId"
                   ],
-                  "name": "CatalogPost_postId_idx_a7a72715",
-                  "prefix": "CatalogPost_postId_idx",
+                  "name": "CategoryPost_postId_idx_a7a72715",
+                  "prefix": "CategoryPost_postId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
                 "columns": [
-                  "catalogId",
+                  "categoryId",
                   "postId"
                 ]
               },
@@ -2274,10 +2274,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e94eb39f612e795de642ff6b62d976cb1af27b2aaaaf436ce6f10b4bc4784811"
+    "storageHash": "9e5b5c1a5c8b2645af45f7ca4f5dcd5c29978aff5ea8dbe53d6d645eea0d873a"
   },
   "execution": {
-    "executionHash": "a7118df9578aae55587fb3800d60df5a0def480e8fd1500cfbfc19fb3285ede8",
+    "executionHash": "cef1557cf24f09b2a1b4346d0b1916222cb51d12c6023fd9ef30aa6083cc7c65",
     "mutations": {
       "defaults": [
         {
@@ -2290,7 +2290,7 @@
             "kind": "generator"
           },
           "ref": {
-            "entry": "Catalog",
+            "entry": "Category",
             "field": "updatedAt",
             "namespace": "public"
           }

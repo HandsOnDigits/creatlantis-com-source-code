@@ -24,7 +24,7 @@ export type LiveEventType =
   | 'notification.created'
   | 'profile.updated'
   | 'media.updated'
-  | 'catalog.updated'
+  | 'category.updated'
 
 export interface LiveEvent<T = unknown> {
   id: string

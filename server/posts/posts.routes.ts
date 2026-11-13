@@ -8,7 +8,7 @@ import { publishLiveEvent } from '../live/live.service'
 
 const router = Router()
 
-function parseCatalogId(value: unknown): number | null {
+function parseCategoryId(value: unknown): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
     return null
   }
@@ -48,41 +48,41 @@ router.get('/', async (req, res) => {
   const pageSize = limit.data
   const offset = (page.data - 1) * pageSize
 
-  const catalogId =
-    req.query.catalogId === undefined
+  const categoryId =
+    req.query.categoryId === undefined
       ? null
-      : parseCatalogId(req.query.catalogId)
+      : parseCategoryId(req.query.categoryId)
 
-  if (req.query.catalogId !== undefined && catalogId === null) {
+  if (req.query.categoryId !== undefined && categoryId === null) {
     return res.status(400).json({
-      error: 'Invalid catalog ID',
+      error: 'Invalid category ID',
     })
   }
 
   let pagePosts
   let hasMore: boolean
 
-  if (catalogId !== null) {
-    const catalog = await db.orm.public.Catalog.where({ id: catalogId })
+  if (categoryId !== null) {
+    const category = await db.orm.public.Category.where({ id: categoryId })
       .select('id')
       .first()
 
-    if (!catalog) {
+    if (!category) {
       return res.status(404).json({
-        error: 'Catalog not found',
+        error: 'Category not found',
       })
     }
 
-    const catalogPosts = await db.orm.public.CatalogPost.where({
-      catalogId,
+    const categoryPosts = await db.orm.public.CategoryPost.where({
+      categoryId,
     })
       .orderBy([(item) => item.position.asc(), (item) => item.postId.asc()])
       .all()
 
-    // Load only approved posts, preserving catalog order.
+    // Load approved posts while preserving category order.
     const approvedPosts = (
       await Promise.all(
-        catalogPosts.map((item) =>
+        categoryPosts.map((item) =>
           db.orm.public.Post.where({
             id: item.postId,
             publicationStatus: 'APPROVED',
@@ -95,21 +95,6 @@ router.get('/', async (req, res) => {
 
     hasMore = approvedPosts.length > offset + pageSize
     pagePosts = approvedPosts.slice(offset, offset + pageSize)
-
-    const pageCatalogPosts = catalogPosts.slice(0, pageSize)
-
-    const loadedPosts = await Promise.all(
-      pageCatalogPosts.map((item) =>
-        db.orm.public.Post.where({
-          id: item.postId,
-          publicationStatus: 'APPROVED',
-        })
-          .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
-          .first(),
-      ),
-    )
-
-    pagePosts = loadedPosts.filter((post) => post !== null)
   } else {
     const posts = await db.orm.public.Post.where({
       publicationStatus: 'APPROVED',

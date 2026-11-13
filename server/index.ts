@@ -12,7 +12,7 @@ import usersRoutes from './users/users.routes'
 import profilesRoutes from './profiles/profiles.routes'
 import mediaRoutes from './media/media.routes'
 import postsRoutes from './posts/posts.routes'
-import catalogsRoutes from './catalogs/catalogs.routes'
+import categoriesRoutes from './categories/categories.routes'
 import reportsRoutes from './reports/reports.routes'
 import liveRoutes from './live/live.routes'
 import liveInternalRoutes from './live/live.internal.routes'
@@ -60,7 +60,7 @@ app.use('/api/users', usersRoutes)
 app.use('/api/profiles', profilesRoutes)
 app.use('/api/media', mediaRoutes)
 app.use('/api/posts', postsRoutes)
-app.use('/api/catalogs', catalogsRoutes)
+app.use('/api/categories', categoriesRoutes)
 app.use('/api/reports', reportsRoutes)
 
 // Health

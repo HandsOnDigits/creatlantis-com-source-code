@@ -198,6 +198,35 @@ export const profilesApi = {
 
 export type PostType = 'IMAGE' | 'JOURNAL' | 'MODEL'
 
+export interface PostImageVariant {
+  format: 'WEBP' | 'AVIF'
+  width: number
+  height: number
+  url: string
+}
+
+export interface PostImage {
+  id: string
+  width: number | null
+  height: number | null
+  variants: PostImageVariant[]
+}
+
+export interface PostAuthor {
+  id: number
+  username: string
+  name: string | null
+}
+
+export interface PostListResponse {
+  data: Post[]
+  pagination: {
+    page: number
+    limit: number
+    hasMore: boolean
+  }
+}
+
 export interface Post {
   id: number
   type: PostType
@@ -205,6 +234,8 @@ export interface Post {
   content: string | null
   createdAt: string
   authorId: number
+  author?: PostAuthor | null
+  images?: PostImage[]
 }
 
 export interface CreatePostInput {
@@ -217,21 +248,16 @@ export interface CreatePostInput {
 export const postsApi = {
   // GET /api/posts
   list(page = 1, limit = 10) {
-    return api.get<
-      ApiResponse<{
-        data: Post[]
-        pagination: {
-          page: number
-          limit: number
-          hasMore: boolean
-        }
-      }>
-    >(`/api/posts?page=${page}&limit=${limit}`)
+    return api.get<PostListResponse>(`/api/posts?page=${page}&limit=${limit}`, {
+      authenticated: false,
+    })
   },
 
   // GET /api/posts/:id
   get(id: number) {
-    return api.get<ApiResponse<Post>>(`/api/posts/${id}`)
+    return api.get<ApiResponse<Post>>(`/api/posts/${id}`, {
+      authenticated: false,
+    })
   },
 
   // POST /api/posts

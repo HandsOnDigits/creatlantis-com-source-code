@@ -126,8 +126,8 @@ model Post {
   reviewedByAdminId String?
   rejectionReason   String?
 
-  media    PostMedia[]
-  catalogs CatalogPost[]
+  media      PostMedia[]
+  categories CategoryPost[]
 }
 
 model PostMedia {
@@ -158,22 +158,22 @@ model UploadReservation {
   @@index([expiresAt])
 }
 
-model Catalog {
-  id          Int           @id @default(autoincrement())
+model Category {
+  id          Int            @id @default(autoincrement())
   name        String
-  slug        String        @unique
+  slug        String         @unique
   description String?
-  posts       CatalogPost[]
+  posts       CategoryPost[]
 
   createdAt TimestamptzString @default(now())
-  updatedAt   temporal.UpdatedAtString
+  updatedAt temporal.UpdatedAtString
 
   @@index([name])
 }
 
-model CatalogPost {
-  catalog   Catalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
-  catalogId Int
+model CategoryPost {
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId Int
 
   post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId Int
@@ -181,7 +181,7 @@ model CatalogPost {
   position  Int               @default(0)
   createdAt TimestamptzString @default(now())
 
-  @@id([catalogId, postId])
+  @@id([categoryId, postId])
   @@index([postId])
-  @@index([catalogId, position])
+  @@index([categoryId, position])
 }
