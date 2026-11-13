@@ -3,24 +3,46 @@ import { Link } from 'react-router-dom'
 
 import { Journal, Image } from './PostElements'
 import { HorizontalHR } from './Utilites'
-import { postsApi, type Post, type PostType } from './api'
-
-const categoryNames = {
-  ALL: 'All',
-  IMAGE: 'Images',
-  JOURNAL: 'Journals',
-  MODEL: 'Models',
-} as const
-
-type Category = keyof typeof categoryNames
+import { categoriesApi, postsApi, type Category, type Post } from './api'
 
 function Collection() {
-  const [selectedCategory, setSelectedCategory] = useState<Category>('ALL')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null,
+  )
 
+  const [categories, setCategories] = useState<Category[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Load categories.
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadCategories() {
+      try {
+        const response = await categoriesApi.list()
+
+        if (!cancelled) {
+          setCategories(response.data)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : 'Failed to load categories.',
+          )
+        }
+      }
+    }
+
+    loadCategories()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Load posts, optionally filtered by category.
   useEffect(() => {
     let cancelled = false
 
@@ -29,7 +51,11 @@ function Collection() {
         setLoading(true)
         setError(null)
 
-        const response = await postsApi.list(1, 50)
+        const response = await postsApi.list(
+          1,
+          50,
+          selectedCategoryId ?? undefined,
+        )
 
         if (!cancelled) {
           setPosts(response.data)
@@ -50,14 +76,15 @@ function Collection() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [selectedCategoryId])
 
-  const categories = Object.keys(categoryNames) as Category[]
+  const selectedCategory = categories.find(
+    (category) => category.id === selectedCategoryId,
+  )
 
-  const filteredPosts =
-    selectedCategory === 'ALL'
-      ? posts
-      : posts.filter((post) => post.type === (selectedCategory as PostType))
+  const heading = selectedCategory
+    ? `${selectedCategory.name} Posts`
+    : 'All Posts'
 
   return (
     <div className="flex min-h-screen">
@@ -66,25 +93,31 @@ function Collection() {
         id="category-list"
         className="w-[18vw] space-y-2 p-4 text-nowrap lg:w-[8vw]"
       >
+        <li
+          className={`cursor-pointer transition-colors ${
+            selectedCategoryId === null ? 'selected-index' : ''
+          }`}
+          onClick={() => setSelectedCategoryId(null)}
+        >
+          All
+        </li>
+
         {categories.map((category) => (
           <li
-            key={category}
-            className={`transition-colors ${
-              selectedCategory === category ? 'selected-index' : ''
+            key={category.id}
+            className={`cursor-pointer transition-colors ${
+              selectedCategoryId === category.id ? 'selected-index' : ''
             }`}
-            onClick={() => setSelectedCategory(category)}
-            style={{ cursor: 'pointer' }}
+            onClick={() => setSelectedCategoryId(category.id)}
           >
-            {categoryNames[category]}
+            {category.name}
           </li>
         ))}
       </ol>
 
       {/* Collection Display */}
       <div className="flex min-h-0 flex-1 flex-col p-6">
-        <h2 className="big-text font-bold">
-          {categoryNames[selectedCategory]} Posts
-        </h2>
+        <h2 className="big-text font-bold">{heading}</h2>
 
         <HorizontalHR />
 
@@ -93,14 +126,14 @@ function Collection() {
 
           {error && <p className="p-4 text-red-500">{error}</p>}
 
-          {!loading && !error && filteredPosts.length === 0 && (
+          {!loading && !error && posts.length === 0 && (
             <p className="p-4">No posts available.</p>
           )}
 
           {/* Masonry Layout */}
           {!loading && !error && (
             <div className="columns-1 gap-6 space-y-6 sm:columns-2 lg:columns-3">
-              {filteredPosts.map((post) => (
+              {posts.map((post) => (
                 <article
                   key={post.id}
                   className="cursor-pointer break-inside-avoid"
@@ -108,7 +141,6 @@ function Collection() {
                   <Link to={`/posts/${post.id}`} className="block">
                     <h3 className="mb-2 font-semibold">{post.title}</h3>
 
-                    {/* Image Posts */}
                     {post.type === 'IMAGE' && (
                       <div className="space-y-4">
                         {(post.images ?? []).map((media) => (
@@ -121,12 +153,10 @@ function Collection() {
                       </div>
                     )}
 
-                    {/* Journal Posts */}
                     {post.type === 'JOURNAL' && (
                       <Journal content={post.content ?? ''} />
                     )}
 
-                    {/* Model Posts */}
                     {post.type === 'MODEL' && (
                       <p>Model posts are not available yet.</p>
                     )}

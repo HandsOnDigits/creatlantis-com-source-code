@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { mediaApi, postsApi, type PostType as ApiPostType } from '../api'
+import {
+  categoriesApi,
+  mediaApi,
+  postsApi,
+  type Category,
+  type PostType as ApiPostType,
+} from '../api'
 
 import { VerticalHR } from '../Utilites'
 
@@ -39,6 +45,10 @@ function Upload() {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [categorySearch, setCategorySearch] = useState('')
   const uploadController = useRef<AbortController | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
@@ -54,6 +64,36 @@ function Upload() {
     // Free up memory when the file changes or component unmounts
     return () => URL.revokeObjectURL(objectUrl)
   }, [file])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadCategories() {
+      try {
+        const response = await categoriesApi.list()
+
+        if (!cancelled) {
+          setCategories(response.data)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : 'Failed to load categories.',
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoriesLoading(false)
+        }
+      }
+    }
+
+    loadCategories()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   if (!isPostType(type) || type === PostType.Model) {
     return <div>Post type is unavailable.</div>
@@ -99,12 +139,14 @@ function Upload() {
         title,
         content: content || null,
         mediaIds,
+        categoryIds: selectedCategoryIds,
       })
 
       setStatus('Post created successfully.')
       setTitle('')
       setContent('')
       setFile(null)
+      setSelectedCategoryIds([])
 
       const fileInput = document.getElementById(
         'post-file',
@@ -172,6 +214,63 @@ function Upload() {
                 maxLength={50000}
               />
             </div>
+          </div>
+
+          {/* Category selection */}
+          <div className="submit-input item flex-col">
+            <h2>Categories</h2>
+
+            <input
+              type="search"
+              placeholder="Search categories..."
+              value={categorySearch}
+              onChange={(event) => setCategorySearch(event.target.value)}
+            />
+
+            {categoriesLoading ? (
+              <p>Loading categories...</p>
+            ) : (
+              <div className="max-h-64 overflow-y-auto rounded-lg border p-3">
+                {categories
+                  .filter((category) =>
+                    category.name
+                      .toLowerCase()
+                      .includes(categorySearch.toLowerCase()),
+                  )
+                  .map((category) => (
+                    <label
+                      key={category.id}
+                      className="flex cursor-pointer items-start gap-3 p-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCategoryIds.includes(category.id)}
+                        onChange={(event) => {
+                          setSelectedCategoryIds((current) =>
+                            event.target.checked
+                              ? [...current, category.id]
+                              : current.filter((id) => id !== category.id),
+                          )
+                        }}
+                      />
+
+                      <div>
+                        <p className="font-medium">{category.name}</p>
+                        <p className="text-sm opacity-70">
+                          {category.description || 'No description available.'}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+
+                {categories.length > 0 &&
+                  categories.filter((category) =>
+                    category.name
+                      .toLowerCase()
+                      .includes(categorySearch.toLowerCase()),
+                  ).length === 0 && <p>No matching categories.</p>}
+              </div>
+            )}
           </div>
 
           {/* File inputs */}

@@ -2,6 +2,14 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 ).replace(/\/$/, '')
 
+const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024
+
+const ALLOWED_MEDIA_TYPES: MediaContentType[] = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]
+
 // Access token stays in memory.
 let accessToken: string | null = null
 
@@ -193,6 +201,34 @@ export const profilesApi = {
 }
 
 // -----------------------------------------------------------------------------
+// Categories
+// -----------------------------------------------------------------------------
+
+export interface Category {
+  id: number
+  name: string
+  slug: string
+  description: string | null
+  createdAt: string
+}
+
+export const categoriesApi = {
+  // GET /api/categories
+  list() {
+    return api.get<ApiResponse<Category[]>>('/api/categories', {
+      authenticated: false,
+    })
+  },
+
+  // GET /api/categories/:id
+  get(id: number) {
+    return api.get<ApiResponse<Category>>(`/api/categories/${id}`, {
+      authenticated: false,
+    })
+  },
+}
+
+// -----------------------------------------------------------------------------
 // Posts
 // -----------------------------------------------------------------------------
 
@@ -243,12 +279,22 @@ export interface CreatePostInput {
   title: string
   content?: string | null
   mediaIds?: string[]
+  categoryIds?: number[]
 }
 
 export const postsApi = {
   // GET /api/posts
-  list(page = 1, limit = 10) {
-    return api.get<PostListResponse>(`/api/posts?page=${page}&limit=${limit}`, {
+  list(page = 1, limit = 10, categoryId?: number) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    })
+
+    if (categoryId !== undefined) {
+      params.set('categoryId', String(categoryId))
+    }
+
+    return api.get<PostListResponse>(`/api/posts?${params}`, {
       authenticated: false,
     })
   },
@@ -326,14 +372,6 @@ export interface OriginalDownloadResponse {
 interface MediaApiResponse<T> {
   data: T
 }
-
-const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024
-
-const ALLOWED_MEDIA_TYPES: MediaContentType[] = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]
 
 export const mediaApi = {
   // POST /api/media/uploads

@@ -183,6 +183,7 @@ const createPostSchema = z
     title: z.string().trim().min(1).max(200),
     content: z.string().max(50000).nullable().optional(),
     mediaIds: z.array(z.string().uuid()).max(20).default([]),
+    categoryIds: z.array(z.number().int().positive()).max(50).default([]),
   })
   .refine((data) => data.type !== 'MODEL', {
     message: 'Model posts are not available yet',
@@ -215,7 +216,7 @@ router.post('/', requireAuth, async (req, res) => {
     })
   }
 
-  const { type, title, content, mediaIds } = parsed.data
+  const { type, title, content, mediaIds, categoryIds } = parsed.data
   const userId = req.auth!.userId
 
   const post = await db.transaction(async (tx) => {
@@ -234,6 +235,17 @@ router.post('/', requireAuth, async (req, res) => {
       }
     }
 
+    // Validate that every category exists.
+    for (const categoryId of categoryIds) {
+      const category = await tx.orm.public.Category.where({ id: categoryId })
+        .select('id')
+        .first()
+
+      if (!category) {
+        return null
+      }
+    }
+
     // Create the post.
     const createdPost = await tx.orm.public.Post.create({
       type,
@@ -242,6 +254,15 @@ router.post('/', requireAuth, async (req, res) => {
       authorId: userId,
       publicationStatus: 'PENDING_APPROVAL',
     })
+
+    // Attach categories in the supplied order.
+    for (const [position, categoryId] of categoryIds.entries()) {
+      await tx.orm.public.CategoryPost.create({
+        postId: createdPost.id,
+        categoryId,
+        position,
+      })
+    }
 
     // Attach media in the supplied order.
     for (const [position, mediaId] of mediaIds.entries()) {
@@ -257,7 +278,7 @@ router.post('/', requireAuth, async (req, res) => {
 
   if (!post) {
     return res.status(400).json({
-      error: 'One or more media files are unavailable or not ready.',
+      error: 'One or more media files or categories are unavailable.',
     })
   }
 

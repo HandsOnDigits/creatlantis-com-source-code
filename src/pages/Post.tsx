@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
+import { HorizontalHR } from '../Utilites'
+
 import { postsApi, type Post as PostData } from '../api'
 import { Image, Journal } from '../PostElements'
 
@@ -88,7 +90,7 @@ function Post() {
       </header>
 
       {/* Post Content */}
-      <section className="space-y-8">
+      <section>
         {post.type === 'IMAGE' && (
           <div className="space-y-6">
             {(post.images ?? []).map((media) => (
@@ -101,19 +103,23 @@ function Post() {
           </div>
         )}
 
-        {post.type === 'JOURNAL' && post.content && (
-          <Journal content={post.content} />
-        )}
+        {/* Metadata */}
+        <div className="bg-background-blend flex flex-col items-center">
+          <HorizontalHR />
 
-        {post.type === 'MODEL' && <p>Model posts are not available yet.</p>}
+          {post.content && post.type !== 'JOURNAL' && (
+            <p className="mb-8 leading-relaxed whitespace-pre-wrap">
+              {post.content}
+            </p>
+          )}
+
+          {post.type === 'JOURNAL' && post.content && (
+            <Journal content={post.content} />
+          )}
+
+          {post.type === 'MODEL' && <p>Model posts are not available yet.</p>}
+        </div>
       </section>
-
-      {/* Post Footer */}
-      <footer className="mt-12 border-t pt-6">
-        <Link to="/" className="transition-opacity hover:opacity-60">
-          ← Back to collection
-        </Link>
-      </footer>
     </main>
   )
 }
