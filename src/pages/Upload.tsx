@@ -4,6 +4,9 @@ import { mediaApi, postsApi, type PostType as ApiPostType } from '../api'
 
 import { VerticalHR } from '../Utilites'
 
+/* Images */
+import upload_icon from '../assets/images/icons/uploadIcon.webp'
+
 export enum PostType {
   Image = 'image',
   Journal = 'journal',
@@ -118,41 +121,55 @@ function Upload() {
   }
 
   return (
-    <div>
+    <div className="bg-background-blend">
       <form onSubmit={handleSubmit} className="p-0">
-        <h1 className="extra-big-text">Create {postTypeLabels[postType]}</h1>
-        <div className="p-8">
+        <h1 className="big-text">Create {postTypeLabels[postType]}</h1>
+
+        <div className="flex w-200 flex-col items-center justify-center self-center p-8">
+          {/* Text inputs */}
           <div>
-            <label htmlFor="post-title">Title</label>
-            <input
-              id="post-title"
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              required
-              maxLength={200}
-            />
+            <div className="submit-input">
+              <div className="flex items-center gap-4">
+                <label htmlFor="post-title">Title</label>
+                <input
+                  id="post-title"
+                  type="text"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  required
+                  maxLength={200}
+                />
+              </div>
+            </div>
+
+            <div className="submit-input flex-col">
+              <label htmlFor="post-content">
+                {postType === PostType.Journal
+                  ? 'Journal entry'
+                  : 'Description'}
+              </label>
+
+              <textarea
+                id="post-content"
+                className="h-50 w-200"
+                value={content}
+                onChange={(event) => setContent(event.target.value)}
+                required={postType === PostType.Journal}
+                maxLength={50000}
+              />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="post-content">
-              {postType === PostType.Journal ? 'Journal entry' : 'Description'}
-            </label>
-
-            <textarea
-              id="post-content"
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              required={postType === PostType.Journal}
-              maxLength={50000}
-            />
-          </div>
-
+          {/* File inputs */}
           {postType === PostType.Image && (
-            <div>
-              <label htmlFor="post-file">Image</label>
+            <div className="flex w-full flex-col justify-center">
+              <label className="text-center" htmlFor="post-file">
+                Image
+              </label>
               <input
                 id="post-file"
+                style={{ backgroundImage: `url(${upload_icon})` }}
+                className="h-100 bg-center bg-no-repeat"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
@@ -163,7 +180,7 @@ function Upload() {
         </div>
 
         {/* Buttons */}
-        <div className="light-to-dark-gradient flex items-center justify-center">
+        <div className="light-to-dark-gradient flex items-center justify-center gap-4">
           <VerticalHR />
 
           <button type="submit" disabled={loading} className="submit">
@@ -175,6 +192,7 @@ function Upload() {
               type="button"
               onClick={handleCancelUpload}
               disabled={cancelling}
+              className="cancel"
             >
               {cancelling ? 'Cancelling...' : 'Cancel upload'}
             </button>

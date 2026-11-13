@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth, AuthStatus } from '../AuthContext'
 
+import { VerticalHR } from '../Utilites'
+
 function Login() {
   const { login, status } = useAuth()
   const navigate = useNavigate()
@@ -38,17 +40,13 @@ function Login() {
   }
 
   return (
-    <main>
-      <form
-        onSubmit={handleSubmit}
-        id="login"
-        className="flex w-full flex-col gap-4 p-12"
-      >
+    <main className="mt-12 flex justify-center">
+      <form onSubmit={handleSubmit} id="login" className="w-2/3">
         <h1 className="extra-big-text">Log in</h1>
 
         <br />
 
-        <div>
+        <div className="submit-input">
           <label htmlFor="email">Email</label>
           <input
             id="email"
@@ -60,7 +58,7 @@ function Login() {
           />
         </div>
 
-        <div>
+        <div className="submit-input">
           <label htmlFor="password">Password</label>
           <input
             id="password"
@@ -78,9 +76,19 @@ function Login() {
           </p>
         )}
 
-        <button type="submit" disabled={loading} className="login">
-          {loading ? 'Logging in...' : 'Log in'}
-        </button>
+        <br />
+
+        <div className="light-to-dark-gradient flex justify-around">
+          <div className="flex items-center gap-4">
+            <VerticalHR />
+
+            <button type="submit" disabled={loading} className="login">
+              {loading ? 'Logging in...' : 'Log in'}
+            </button>
+
+            <VerticalHR />
+          </div>
+        </div>
       </form>
     </main>
   )

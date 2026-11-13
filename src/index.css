@@ -33,7 +33,6 @@
 
   /* --- Assets --- */
   --star-rate-mask: url('../images/5-stars.webp');
-  --upload-image: url('../images/icons/uploadIcon.webp');
 }
 
 /* ==========================================
@@ -156,7 +155,8 @@ html.green-theme {
         @apply bg-neutral-400 hover:bg-neutral-500;
       }
 
-      &#watch-user {
+      &#watch-user,
+      .cancel {
         @apply bg-slate-500;
 
         &.unwatch {
@@ -181,17 +181,19 @@ html.green-theme {
 
   form {
     @apply text-base/loose;
+    @apply flex flex-col gap-4;
 
     h1 {
       @apply self-center;
     }
 
-    & input {
+    & input,
+    & textarea {
       @apply border-hr-line rounded-sm border-2;
     }
 
-    & div {
-      @apply flex justify-between gap-4;
+    & .submit-input {
+      @apply flex items-center justify-between gap-4 max-sm:mx-12 lg:mx-50 landscape:mx-100;
     }
   }
 
@@ -280,7 +282,8 @@ html.green-theme {
 
     & #category-list,
     & .navigation-input,
-    & form input {
+    & form input,
+    & textarea {
       @apply bg-background-blend;
     }
 

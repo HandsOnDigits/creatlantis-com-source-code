@@ -90,14 +90,14 @@ function NavigationBar() {
         <SearchAndFilter />
       </div>
 
-      <div className="flex gap-4 pl-4">
+      <div className="flex gap-4">
         <VerticalHR />
 
         {/* Drop-down menu for uploads */}
         <select
           onChange={handleSelectChange}
           defaultValue=""
-          className="submit w-30"
+          className="submit w-35"
         >
           <option value="" disabled>
             Submit...
