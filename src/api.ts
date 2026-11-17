@@ -127,6 +127,14 @@ export const api = {
     })
   },
 
+  put<T>(path: string, body: unknown, options?: ApiRequestOptions) {
+    return apiRequest<T>(path, {
+      ...options,
+      method: 'PUT',
+      body: JSON.stringify(body),
+    })
+  },
+
   delete<T>(path: string, options?: ApiRequestOptions) {
     return apiRequest<T>(path, {
       ...options,
@@ -197,6 +205,42 @@ export const profilesApi = {
     return api.get<ApiResponse<PublicProfile>>(`/api/profiles/${id}`, {
       authenticated: false,
     })
+  },
+
+  getMyCustomization() {
+    return api.get<ApiResponse<ProfileCustomization>>(
+      '/api/profiles/me/customization',
+    )
+  },
+
+  updateMyCustomization(data: UpdateProfileCustomizationInput) {
+    return api.put<ApiResponse<ProfileCustomization>>(
+      '/api/profiles/me/customization',
+      data,
+    )
+  },
+
+  getCustomization(id: number) {
+    return api.get<ApiResponse<PublicProfileCustomization>>(
+      `/api/profiles/${id}/customization`,
+      { authenticated: false },
+    )
+  },
+
+  // GET /api/profiles/username/:username
+  getByUsername(username: string) {
+    return api.get<ApiResponse<PublicProfile>>(
+      `/api/profiles/username/${encodeURIComponent(username)}`,
+      { authenticated: false },
+    )
+  },
+
+  // GET /api/profiles/username/:username/customization
+  getCustomizationByUsername(username: string) {
+    return api.get<ApiResponse<PublicProfileCustomization>>(
+      `/api/profiles/username/${encodeURIComponent(username)}/customization`,
+      { authenticated: false },
+    )
   },
 }
 
@@ -280,6 +324,24 @@ export interface CreatePostInput {
   content?: string | null
   mediaIds?: string[]
   categoryIds?: number[]
+}
+
+export interface ProfileCustomization {
+  id?: string
+  userId?: number
+  description: string
+  customCss: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface PublicProfileCustomization {
+  descriptionHtml: string
+}
+
+export interface UpdateProfileCustomizationInput {
+  description?: string
+  customCss?: string
 }
 
 export const postsApi = {

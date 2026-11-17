@@ -1,8 +1,27 @@
 import { Router } from 'express'
+import { z } from 'zod'
 
 import { db } from '../../src/prisma/db'
+import { requireAuth } from '../auth/auth.middleware'
+import { renderProfileBBCode } from './profile-renderer'
 
 const router = Router()
+
+const MAX_DESCRIPTION_LENGTH = 20_000
+const MAX_CSS_LENGTH = 50_000
+
+// Validation
+const updateCustomizationSchema = z
+  .object({
+    description: z.string().max(MAX_DESCRIPTION_LENGTH).optional(),
+    customCss: z.string().max(MAX_CSS_LENGTH).optional(),
+  })
+  .refine(
+    (data) => data.description !== undefined || data.customCss !== undefined,
+    {
+      message: 'At least one field must be provided',
+    },
+  )
 
 function parseUserId(value: string | string[] | undefined): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
@@ -13,6 +32,52 @@ function parseUserId(value: string | string[] | undefined): number | null {
 
   return Number.isSafeInteger(id) ? id : null
 }
+
+// Get public profile by username
+router.get('/username/:username', async (req, res) => {
+  const username = req.params.username
+
+  const user = await db.orm.public.User.where({ username })
+    .select('id', 'username', 'name', 'nameIsPublic')
+    .first()
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' })
+    return
+  }
+
+  res.json({
+    data: {
+      id: user.id,
+      username: user.username,
+      ...(user.nameIsPublic && user.name !== null ? { name: user.name } : {}),
+    },
+  })
+})
+
+// Get public profile customization by username
+router.get('/username/:username/customization', async (req, res) => {
+  const username = req.params.username
+
+  const user = await db.orm.public.User.where({ username }).select('id').first()
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' })
+    return
+  }
+
+  const customization = await db.orm.public.ProfileCustomization.where({
+    userId: user.id,
+  })
+    .select('description')
+    .first()
+
+  res.json({
+    data: {
+      descriptionHtml: renderProfileBBCode(customization?.description ?? ''),
+    },
+  })
+})
 
 // Get public profile
 router.get('/:id', async (req, res) => {
@@ -38,6 +103,96 @@ router.get('/:id', async (req, res) => {
       username: user.username,
       ...(user.nameIsPublic && user.name !== null ? { name: user.name } : {}),
     },
+  })
+})
+
+// Get public profile customization
+router.get('/:id/customization', async (req, res) => {
+  const id = parseUserId(req.params.id)
+
+  if (id === null) {
+    res.status(400).json({ error: 'Invalid user ID' })
+    return
+  }
+
+  const user = await db.orm.public.User.where({ id }).select('id').first()
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' })
+    return
+  }
+
+  const customization = await db.orm.public.ProfileCustomization.where({
+    userId: id,
+  })
+    .select('description')
+    .first()
+
+  const description = customization?.description ?? ''
+
+  res.json({
+    data: {
+      descriptionHtml: renderProfileBBCode(description),
+    },
+  })
+})
+
+// Get own profile customization (editor)
+router.get('/me/customization', requireAuth, async (req, res) => {
+  const userId = req.auth!.userId
+
+  const customization = await db.orm.public.ProfileCustomization.where({
+    userId,
+  }).first()
+
+  res.json({
+    data: customization ?? {
+      description: '',
+      customCss: '',
+    },
+  })
+})
+
+// Update own profile customization
+router.put('/me/customization', requireAuth, async (req, res) => {
+  const parsed = updateCustomizationSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid profile customization',
+      details: parsed.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
+    })
+    return
+  }
+
+  const userId = req.auth!.userId
+
+  const existing = await db.orm.public.ProfileCustomization.where({
+    userId,
+  }).first()
+
+  const customization = existing
+    ? await db.orm.public.ProfileCustomization.where({ userId }).update(
+        parsed.data,
+      )
+    : await db.orm.public.ProfileCustomization.create({
+        userId,
+        description: parsed.data.description ?? '',
+        customCss: parsed.data.customCss ?? '',
+      })
+
+  if (!customization) {
+    res.status(404).json({
+      error: 'Profile customization not found',
+    })
+    return
+  }
+
+  res.json({
+    data: customization,
   })
 })
 

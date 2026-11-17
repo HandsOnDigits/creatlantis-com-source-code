@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'9e5b5c1a5c8b2645af45f7ca4f5dcd5c29978aff5ea8dbe53d6d645eea0d873a'>;
+  StorageHashBase<'71de8b2750e096338092e3636f433cdb85f596421534870180e6d4a6936757e7'>;
 export type ExecutionHash =
-  ExecutionHashBase<'cef1557cf24f09b2a1b4346d0b1916222cb51d12c6023fd9ef30aa6083cc7c65'>;
+  ExecutionHashBase<'8bd5b156d2b6d937d2621cff6cddb6f860220fe418247ba3420d850ffe3d01a1'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -433,6 +433,16 @@ export namespace Models {
     post: public_Post;
     readonly [RelationKeys]?: 'media' | 'post';
   };
+  export type public_ProfileCustomization = {
+    createdAt: FieldOutputTypes['public']['ProfileCustomization']['createdAt'];
+    customCss: FieldOutputTypes['public']['ProfileCustomization']['customCss'];
+    description: FieldOutputTypes['public']['ProfileCustomization']['description'];
+    id: FieldOutputTypes['public']['ProfileCustomization']['id'];
+    updatedAt: FieldOutputTypes['public']['ProfileCustomization']['updatedAt'];
+    userId: FieldOutputTypes['public']['ProfileCustomization']['userId'];
+    user: public_User;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_Session = {
     createdAt: FieldOutputTypes['public']['Session']['createdAt'];
     expiresAt: FieldOutputTypes['public']['Session']['expiresAt'];
@@ -465,9 +475,11 @@ export namespace Models {
     username: FieldOutputTypes['public']['User']['username'];
     media: public_Media[];
     posts: public_Post[];
+    profileCustomization: public_ProfileCustomization | null;
     sessions: public_Session[];
     uploadReservations: public_UploadReservation[];
-    readonly [RelationKeys]?: 'media' | 'posts' | 'sessions' | 'uploadReservations';
+    readonly [RelationKeys]?:
+      'media' | 'posts' | 'profileCustomization' | 'sessions' | 'uploadReservations';
   };
 }
 
@@ -479,6 +491,7 @@ export declare const models: {
     MediaVariant: Models.public_MediaVariant;
     Post: Models.public_Post;
     PostMedia: Models.public_PostMedia;
+    ProfileCustomization: Models.public_ProfileCustomization;
     Session: Models.public_Session;
     UploadReservation: Models.public_UploadReservation;
     User: Models.public_User;
@@ -1056,6 +1069,72 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly ProfileCustomization: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly customCss: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', ''>;
+                  };
+                  readonly many: false;
+                };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', ''>;
+                  };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'ProfileCustomization';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly Session: {
               columns: {
                 readonly createdAt: {
@@ -1324,6 +1403,10 @@ type ContractBase = Omit<
     };
     readonly Post: { readonly namespace: 'public' & NamespaceId; readonly model: 'Post' };
     readonly PostMedia: { readonly namespace: 'public' & NamespaceId; readonly model: 'PostMedia' };
+    readonly ProfileCustomization: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ProfileCustomization';
+    };
     readonly Session: { readonly namespace: 'public' & NamespaceId; readonly model: 'Session' };
     readonly UploadReservation: {
       readonly namespace: 'public' & NamespaceId;
@@ -1822,6 +1905,63 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly ProfileCustomization: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly customCss: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly description: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'ProfileCustomization';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly customCss: { readonly column: 'customCss' };
+                readonly description: { readonly column: 'description' };
+                readonly id: { readonly column: 'id' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly Session: {
             readonly fields: {
               readonly createdAt: {
@@ -2002,6 +2142,18 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['authorId'];
                 };
               };
+              readonly profileCustomization: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ProfileCustomization';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
               readonly sessions: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -2175,6 +2327,23 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'Post';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'ProfileCustomization';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'ProfileCustomization';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

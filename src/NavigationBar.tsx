@@ -11,7 +11,7 @@ import test_icon from './assets/images/test_icon.webp'
 import more_icon from './assets/images/icons/moreIcon.webp'
 
 function NavigationBar() {
-  const { status, logout } = useAuth()
+  const { status, logout, user } = useAuth()
   const handleLogout = async () => {
     try {
       await logout()
@@ -121,6 +121,17 @@ function NavigationBar() {
             ) : (
               <button className="login" onClick={() => navigate('/login')}>
                 Login
+              </button>
+            )}
+
+            {user && (
+              <button
+                id="main-profile"
+                onClick={() =>
+                  navigate(`/profile/${encodeURIComponent(user.username)}`)
+                }
+              >
+                My Profile
               </button>
             )}
 

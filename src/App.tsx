@@ -7,6 +7,8 @@ import Upload from './pages/Upload'
 import Login from './pages/Login'
 import Post from './pages/Post'
 import ProtectedRoute from './ProtectedRoute'
+import Profile from './pages/Profile'
+import ProfileEditor from './pages/ProfileEditor'
 import { useLive } from './LiveContext'
 
 function App() {
@@ -33,9 +35,13 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/posts/:id" element={<Post />} />
 
+        {/* Public profile */}
+        <Route path="/profile/:username" element={<Profile />} />
+
         <Route element={<ProtectedRoute />}>
           <Route path="/upload/:type" element={<Upload />} />
           <Route path="/upload" element={<Upload />} />
+          <Route path="/profile/edit" element={<ProfileEditor />} />
         </Route>
       </Routes>
     </BrowserRouter>

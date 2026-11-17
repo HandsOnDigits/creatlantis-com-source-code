@@ -39,15 +39,32 @@ model User {
   name         String?
   nameIsPublic Boolean @default(false)
 
-  passwordHash String?
-  posts        Post[]
-  sessions     Session[]
-  createdAt    TimestamptzString @default(now())
+  passwordHash         String?
+  posts                Post[]
+  sessions             Session[]
+  createdAt            TimestamptzString     @default(now())
   updatedAt    temporal.UpdatedAtString
+  profileCustomization ProfileCustomization?
 
   media Media[]
 
   uploadReservations UploadReservation[]
+}
+
+model ProfileCustomization {
+  id String @id @onCreate(uuid())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @unique
+
+  // Original BBCode source
+  description String @default("")
+
+  // User-defined profile stylesheet
+  customCss String @default("")
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
 }
 
 model Session {
