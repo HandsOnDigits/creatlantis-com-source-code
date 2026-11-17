@@ -14,9 +14,13 @@ export function Journal({ content }: { content: string }) {
 export function Image({
   variants,
   alt,
+  onClick,
+  className = '',
 }: {
   variants: PostImageVariant[]
   alt: string
+  onClick?: () => void
+  className?: string
 }) {
   const webp = variants
     .filter((variant) => variant.format === 'WEBP')
@@ -34,12 +38,12 @@ export function Image({
     items.map((item) => `${item.url} ${item.width}w`).join(', ')
 
   return (
-    <picture>
+    <picture className="block max-w-full overflow-hidden">
       {avif.length > 0 && (
         <source
           type="image/avif"
           srcSet={makeSrcSet(avif)}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 70vw"
         />
       )}
 
@@ -47,7 +51,7 @@ export function Image({
         <source
           type="image/webp"
           srcSet={makeSrcSet(webp)}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 70vw"
         />
       )}
 
@@ -56,9 +60,24 @@ export function Image({
         alt={alt}
         width={fallback.width}
         height={fallback.height}
-        className="w-full object-cover"
         loading="lazy"
         decoding="async"
+        onClick={onClick}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onKeyDown={
+          onClick
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onClick()
+                }
+              }
+            : undefined
+        }
+        className={`mx-auto block max-h-[75vh] w-auto max-w-full object-contain ${
+          onClick ? 'cursor-zoom-in' : ''
+        } ${className}`}
       />
     </picture>
   )
