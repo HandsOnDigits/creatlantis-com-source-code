@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { Image, Journal } from '../../PostElements'
 import ProfileContent from './ProfileContent'
 
+import { HorizontalHR } from '../../Utilites'
+
 import type {
   Post,
   PublicProfile,
@@ -45,7 +47,7 @@ function ProfileTab({
       case 'header':
         return (
           <header key={widget.id} className="mb-4">
-            <h1 className="big-text font-bold">
+            <h1 className="big-text bg-background-blend font-bold">
               {profile.name ?? profile.username}
             </h1>
             <p className="mt-2 text-sm opacity-60">@{profile.username}</p>
@@ -54,15 +56,21 @@ function ProfileTab({
 
       case 'bio':
         return (
-          <section key={widget.id} className="mb-6">
+          <section key={widget.id} className="bg-background-blend mb-6">
+            <h2 className="mb-4 text-xl font-bold">About</h2>
+
+            <HorizontalHR />
+
             <ProfileContent html={customization?.descriptionHtml ?? ''} />
           </section>
         )
 
       case 'gallery':
         return (
-          <section key={widget.id} className="mb-6">
+          <section key={widget.id} className="bg-background-blend mb-6">
             <h2 className="mb-4 text-xl font-bold">Gallery</h2>
+
+            <HorizontalHR />
 
             {galleryLoading && galleryPosts.length === 0 ? (
               <p className="text-sm opacity-60">Loading gallery...</p>
@@ -70,7 +78,7 @@ function ProfileTab({
               <p className="text-sm opacity-60">No artwork published yet.</p>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3">
                   {galleryPosts.map((post) => {
                     const firstImage = post.images?.[0]
 
@@ -114,8 +122,10 @@ function ProfileTab({
 
       case 'journal':
         return (
-          <section key={widget.id} className="mb-6">
+          <section key={widget.id} className="bg-background-blend mb-6">
             <h2 className="mb-4 text-xl font-bold">Journal</h2>
+
+            <HorizontalHR />
 
             {journalLoading && journalPosts.length === 0 ? (
               <p className="text-sm opacity-60">Loading journal...</p>
@@ -192,7 +202,7 @@ function ProfileTab({
   const sidebarColumn = layout.columns.find((column) => column.id === 'sidebar')
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-8 p-6 lg:grid-cols-3">
       <div className="min-w-0 lg:col-span-2">
         {mainColumn?.widgets.map((widget) => {
           if (widget.type === 'header') return null

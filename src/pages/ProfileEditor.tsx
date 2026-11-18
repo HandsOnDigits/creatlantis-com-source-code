@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 
 import { profilesApi, type ProfileLayout, type ProfileWidget } from '../api'
 
+import { HorizontalHR } from '../Utilites'
+
 const availableWidgets: {
   type: ProfileWidget['type']
   label: string
@@ -245,19 +247,23 @@ function ProfileEditor() {
       <header>
         <h1 className="big-text font-bold">Profile Editor</h1>
         <p className="mt-2 opacity-60">Customize your CreAtlantis profile.</p>
+        <HorizontalHR />
       </header>
 
       {/* Widget builder */}
       <section className="flex flex-col gap-4">
         <div>
           <h2 className="text-xl font-bold">Profile layout</h2>
+
+          <HorizontalHR />
+
           <p className="mt-1 text-sm opacity-60">
             Add widgets and drag them between columns to arrange your profile.
           </p>
         </div>
 
         {/* Available widgets */}
-        <div className="rounded border border-current/20 p-4">
+        <div className="bg-background-blend rounded border border-current/20 p-4">
           <h3 className="mb-3 font-bold">Add widgets</h3>
 
           <div className="flex flex-wrap gap-2">
@@ -272,7 +278,7 @@ function ProfileEditor() {
                     column.widgets.some((widget) => widget.type === 'bio'),
                   )
                 }
-                className="rounded border border-current/30 px-3 py-2 text-sm transition-opacity hover:opacity-60 disabled:cursor-not-allowed disabled:opacity-30"
+                className="bg-background-blend rounded border border-current/30 px-3 py-2 text-sm transition-opacity hover:opacity-60 disabled:cursor-not-allowed disabled:opacity-30"
               >
                 + {item.label}
               </button>
@@ -297,7 +303,7 @@ function ProfileEditor() {
 
                 setDraggingId(null)
               }}
-              className="flex min-h-64 flex-col gap-3 rounded border border-current/20 p-4"
+              className="bg-background-blend flex min-h-64 flex-col gap-3 rounded border border-current/20 p-4"
             >
               <h3 className="font-bold">
                 {column.id === 'main' ? 'Main column' : 'Sidebar'}
@@ -333,7 +339,7 @@ function ProfileEditor() {
                     }}
                     className={`flex flex-col gap-3 rounded border border-current/20 p-3 ${
                       draggingId === widget.id ? 'opacity-30' : 'opacity-100'
-                    }`}
+                    } bg-background-blend`}
                   >
                     <div className="flex cursor-grab items-center gap-3 active:cursor-grabbing">
                       <span className="opacity-50 select-none">⠿</span>
@@ -349,10 +355,10 @@ function ProfileEditor() {
                         type="button"
                         draggable={false}
                         onClick={() => removeWidget(widget.id)}
-                        className="text-sm text-red-500"
+                        className="delete"
                         aria-label={`Remove ${label}`}
                       >
-                        ×
+                        Delete
                       </button>
                     </div>
 
@@ -418,10 +424,14 @@ function ProfileEditor() {
             type="button"
             onClick={saveLayout}
             disabled={savingLayout}
-            className="rounded border border-current px-6 py-3 transition-opacity hover:opacity-60 disabled:opacity-40"
+            className="save"
           >
             {savingLayout ? 'Saving layout...' : 'Save layout'}
           </button>
+
+          <Link to="/" className="underline opacity-70 hover:opacity-100">
+            Cancel
+          </Link>
 
           {layoutSuccess && (
             <p role="status" className="text-green-500">
@@ -434,8 +444,10 @@ function ProfileEditor() {
       <hr className="border-current/20" />
 
       {/* Custom CSS editor */}
-      <section className="flex flex-col gap-3">
+      <section className="bg-background-blend flex flex-col gap-3">
         <h2 className="text-xl font-bold">Custom CSS</h2>
+
+        <HorizontalHR />
 
         <label htmlFor="profile-css" className="font-bold">
           Profile styles
@@ -467,7 +479,7 @@ function ProfileEditor() {
 
       {success && (
         <p role="status" className="text-green-500">
-          Profile BIO and CSS saved.
+          Profile profile and CSS saved.
         </p>
       )}
 
@@ -476,9 +488,9 @@ function ProfileEditor() {
           type="button"
           onClick={saveCustomization}
           disabled={saving}
-          className="rounded border border-current px-6 py-3 transition-opacity hover:opacity-60 disabled:opacity-40"
+          className="save"
         >
-          {saving ? 'Saving...' : 'Save BIO and CSS'}
+          {saving ? 'Saving...' : 'Save CSS'}
         </button>
 
         <Link to="/" className="underline opacity-70 hover:opacity-100">

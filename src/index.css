@@ -139,11 +139,13 @@ html.green-theme {
       /* Nested subclasses and IDs for specific button types */
 
       &.submit,
-      &.login {
+      &.login,
+      &.save {
         @apply bg-green-500 hover:bg-green-600;
       }
 
       &#delete,
+      &.delete,
       &#logout {
         @apply bg-red-500 hover:bg-red-600;
       }

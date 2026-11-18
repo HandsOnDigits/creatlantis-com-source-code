@@ -53,7 +53,7 @@ function NavigationBar() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 flex items-center justify-between p-4 shadow-2xs transition-colors duration-200">
+    <nav className="sticky top-0 z-20 flex items-center justify-between p-4 shadow-2xs transition-colors duration-200">
       {/* Mobile search and filters */}
       <div className="lg:hidden">
         <button

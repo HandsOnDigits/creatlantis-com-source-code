@@ -317,9 +317,9 @@ function Profile() {
   }
 
   return (
-    <main className="min-h-screen p-6">
+    <main className="min-h-screen">
       {/* Profile header */}
-      <header className="mb-6">
+      <header className="mb-6 p-6">
         <h1 className="big-text font-bold">
           {profile.name ?? profile.username}
         </h1>

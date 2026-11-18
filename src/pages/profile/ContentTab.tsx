@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import { Image, Journal } from '../../PostElements'
 import type { Post } from '../../api'
 
+import { HorizontalHR } from '../../Utilites'
+
 interface ContentTabProps {
   posts: Post[]
   loading: boolean
@@ -22,10 +24,12 @@ function ContentTab({ posts, loading, hasMore, onLoadMore }: ContentTabProps) {
   }
 
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-12 p-6">
       {/* Images */}
-      <section>
+      <section className="bg-background-blend">
         <h2 className="mb-4 text-2xl font-bold">Images</h2>
+
+        <HorizontalHR />
 
         {imagePosts.length === 0 ? (
           <p className="text-sm opacity-60">No images published yet.</p>
@@ -61,8 +65,10 @@ function ContentTab({ posts, loading, hasMore, onLoadMore }: ContentTabProps) {
       </section>
 
       {/* Journals */}
-      <section>
+      <section className="bg-background-blend">
         <h2 className="mb-4 text-2xl font-bold">Journals</h2>
+
+        <HorizontalHR />
 
         {journalPosts.length === 0 ? (
           <p className="text-sm opacity-60">

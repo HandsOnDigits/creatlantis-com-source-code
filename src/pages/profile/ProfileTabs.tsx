@@ -8,7 +8,7 @@ interface ProfileTabsProps {
 function ProfileTabs({ activeTab, onChange }: ProfileTabsProps) {
   return (
     <nav
-      className="mb-8 flex gap-6 border-b border-current/10"
+      className="light-to-dark-gradient mb-8 flex gap-6 border-b border-current/10"
       aria-label="Profile navigation"
     >
       <button
