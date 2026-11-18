@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 
-import { Image, Journal } from '../PostElements'
+import ProfileTabs from './profile/ProfileTabs'
+import ProfileTab from './profile/ProfileTab'
+import ContentTab from './profile/ContentTab'
 
 import {
   postsApi,
@@ -10,56 +12,7 @@ import {
   type PublicProfile,
   type PublicProfileCustomization,
   type ProfileLayout,
-  type ProfileWidget,
 } from '../api'
-
-function ProfileContent({ html }: { html: string }) {
-  const hostRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const host = hostRef.current
-    if (!host) return
-
-    const shadow = host.shadowRoot ?? host.attachShadow({ mode: 'open' })
-
-    const style = document.createElement('style')
-    style.textContent = `
-      :host {
-        display: block;
-        color: inherit;
-        font-family: inherit;
-        line-height: 1.7;
-        overflow-wrap: anywhere;
-      }
-
-      img {
-        max-width: 100%;
-        height: auto;
-      }
-
-      a {
-        color: inherit;
-        text-decoration: underline;
-      }
-
-      table {
-        max-width: 100%;
-        border-collapse: collapse;
-      }
-    `
-
-    const content = document.createElement('div')
-    content.innerHTML = html
-
-    shadow.replaceChildren(style, content)
-
-    return () => {
-      shadow.replaceChildren()
-    }
-  }, [html])
-
-  return <div ref={hostRef} className="w-full" />
-}
 
 function Profile() {
   const { username } = useParams<{ username: string }>()
@@ -70,6 +23,28 @@ function Profile() {
     useState<PublicProfileCustomization | null>(null)
 
   const [layout, setLayout] = useState<ProfileLayout | null>(null)
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const activeTab =
+    searchParams.get('tab') === 'content' ? 'content' : 'profile'
+
+  function changeTab(tab: 'profile' | 'content') {
+    const nextParams = new URLSearchParams(searchParams)
+
+    if (tab === 'profile') {
+      nextParams.delete('tab')
+    } else {
+      nextParams.set('tab', tab)
+    }
+
+    setSearchParams(nextParams)
+  }
+
+  const [contentPosts, setContentPosts] = useState<Post[]>([])
+  const [contentLoading, setContentLoading] = useState(false)
+  const [contentHasMore, setContentHasMore] = useState(false)
+  const [contentPage, setContentPage] = useState(1)
 
   const [galleryPosts, setGalleryPosts] = useState<Post[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
@@ -83,6 +58,44 @@ function Profile() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      return
+    }
+
+    let cancelled = false
+
+    async function loadContent() {
+      try {
+        setContentLoading(true)
+
+        const response = await postsApi.listByUsername(username!, 1, 12)
+
+        if (!cancelled) {
+          setContentPosts(response.data)
+          setContentHasMore(response.pagination.hasMore)
+          setContentPage(1)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to load profile content:', err)
+          setContentPosts([])
+          setContentHasMore(false)
+        }
+      } finally {
+        if (!cancelled) {
+          setContentLoading(false)
+        }
+      }
+    }
+
+    loadContent()
+
+    return () => {
+      cancelled = true
+    }
+  }, [username])
 
   useEffect(() => {
     if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
@@ -281,169 +294,67 @@ function Profile() {
     }
   }
 
-  function renderWidget(widget: ProfileWidget) {
-    switch (widget.type) {
-      case 'header':
-        return (
-          <header key={widget.id} className="mb-4">
-            <h1 className="big-text font-bold">
-              {profile!.name ?? profile!.username}
-            </h1>
-            <p className="mt-2 text-sm opacity-60">@{profile!.username}</p>
-          </header>
-        )
+  async function loadMoreContent() {
+    if (!username || contentLoading || !contentHasMore) {
+      return
+    }
 
-      case 'bio':
-        return (
-          <section key={widget.id} className="mb-6">
-            <ProfileContent html={customization?.descriptionHtml ?? ''} />
-          </section>
-        )
+    const nextPage = contentPage + 1
 
-      case 'gallery':
-        return (
-          <section key={widget.id} className="mb-6">
-            <h2 className="mb-4 text-xl font-bold">Gallery</h2>
+    try {
+      setContentLoading(true)
 
-            {galleryLoading && galleryPosts.length === 0 ? (
-              <p className="text-sm opacity-60">Loading gallery...</p>
-            ) : galleryPosts.length === 0 ? (
-              <p className="text-sm opacity-60">No artwork published yet.</p>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {galleryPosts.map((post) => {
-                    const firstImage = post.images?.[0]
+      const response = await postsApi.listByUsername(username, nextPage, 12)
 
-                    if (!firstImage || firstImage.variants.length === 0) {
-                      return null
-                    }
-
-                    return (
-                      <Link
-                        key={post.id}
-                        to={`/posts/${post.id}`}
-                        className="group block overflow-hidden rounded border border-current/10"
-                        title={post.title}
-                      >
-                        <Image
-                          variants={firstImage.variants}
-                          alt={post.title}
-                          className="transition-transform duration-300 group-hover:scale-105"
-                        />
-
-                        <div className="truncate p-2 text-sm">{post.title}</div>
-                      </Link>
-                    )
-                  })}
-                </div>
-
-                {galleryHasMore && (
-                  <button
-                    type="button"
-                    onClick={loadMoreGallery}
-                    disabled={galleryLoading}
-                    className="mt-4 rounded border border-current/20 px-4 py-2 text-sm transition-opacity hover:opacity-60 disabled:opacity-40"
-                  >
-                    {galleryLoading ? 'Loading...' : 'Load more'}
-                  </button>
-                )}
-              </>
-            )}
-          </section>
-        )
-
-      case 'journal':
-        return (
-          <section key={widget.id} className="mb-6">
-            <h2 className="mb-4 text-xl font-bold">Journal</h2>
-
-            {journalLoading && journalPosts.length === 0 ? (
-              <p className="text-sm opacity-60">Loading journal...</p>
-            ) : journalPosts.length === 0 ? (
-              <p className="text-sm opacity-60">
-                No journal entries published yet.
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-col gap-6">
-                  {journalPosts.map((post) => (
-                    <article
-                      key={post.id}
-                      className="rounded border border-current/10 p-4"
-                    >
-                      <header className="mb-3">
-                        <Link
-                          to={`/posts/${post.id}`}
-                          className="text-lg font-bold transition-opacity hover:opacity-60"
-                        >
-                          {post.title}
-                        </Link>
-
-                        <p className="mt-1 text-xs opacity-50">
-                          {new Date(post.createdAt).toLocaleDateString()}
-                        </p>
-                      </header>
-
-                      {post.content && <Journal content={post.content} />}
-
-                      <Link
-                        to={`/posts/${post.id}`}
-                        className="mt-3 inline-block text-sm underline transition-opacity hover:opacity-60"
-                      >
-                        Read journal
-                      </Link>
-                    </article>
-                  ))}
-                </div>
-
-                {journalHasMore && (
-                  <button
-                    type="button"
-                    onClick={loadMoreJournal}
-                    disabled={journalLoading}
-                    className="mt-4 rounded border border-current/20 px-4 py-2 text-sm transition-opacity hover:opacity-60 disabled:opacity-40"
-                  >
-                    {journalLoading ? 'Loading...' : 'Load more'}
-                  </button>
-                )}
-              </>
-            )}
-          </section>
-        )
-
-      default:
-        return (
-          <section
-            key={widget.id}
-            className="mb-6 rounded border border-current/10 p-4"
-          >
-            <h2 className="font-bold capitalize">
-              {widget.type === 'customText' ? 'Custom text' : widget.type}
-            </h2>
-            <p className="mt-2 text-sm opacity-50">
-              This widget has not been implemented yet.
-            </p>
-          </section>
-        )
+      setContentPosts((current) => [...current, ...response.data])
+      setContentHasMore(response.pagination.hasMore)
+      setContentPage(nextPage)
+    } catch (err) {
+      console.error('Failed to load more content:', err)
+    } finally {
+      setContentLoading(false)
     }
   }
 
-  const mainColumn = layout.columns.find((column) => column.id === 'main')
-
-  const sidebarColumn = layout.columns.find((column) => column.id === 'sidebar')
-
   return (
     <main className="min-h-screen p-6">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="min-w-0 lg:col-span-2">
-          {mainColumn?.widgets.map(renderWidget)}
-        </div>
+      {/* Profile header */}
+      <header className="mb-6">
+        <h1 className="big-text font-bold">
+          {profile.name ?? profile.username}
+        </h1>
 
-        <aside className="min-w-0">
-          {sidebarColumn?.widgets.map(renderWidget)}
-        </aside>
-      </div>
+        <p className="mt-2 text-sm opacity-60">@{profile.username}</p>
+      </header>
+
+      <ProfileTabs activeTab={activeTab} onChange={changeTab} />
+
+      {/* Profile tab */}
+      {activeTab === 'profile' && (
+        <ProfileTab
+          profile={profile}
+          customization={customization}
+          layout={layout}
+          galleryPosts={galleryPosts}
+          galleryLoading={galleryLoading}
+          galleryHasMore={galleryHasMore}
+          onLoadMoreGallery={loadMoreGallery}
+          journalPosts={journalPosts}
+          journalLoading={journalLoading}
+          journalHasMore={journalHasMore}
+          onLoadMoreJournal={loadMoreJournal}
+        />
+      )}
+
+      {/* Content tab */}
+      {activeTab === 'content' && (
+        <ContentTab
+          posts={contentPosts}
+          loading={contentLoading}
+          hasMore={contentHasMore}
+          onLoadMore={loadMoreContent}
+        />
+      )}
     </main>
   )
 }

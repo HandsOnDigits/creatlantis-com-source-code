@@ -418,13 +418,16 @@ export const postsApi = {
     username: string,
     page = 1,
     limit = 12,
-    type: 'IMAGE' | 'JOURNAL' = 'IMAGE',
+    type?: 'IMAGE' | 'JOURNAL',
   ) {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
-      type,
     })
+
+    if (type) {
+      params.set('type', type)
+    }
 
     return api.get<PostListResponse>(
       `/api/posts/user/${encodeURIComponent(username)}?${params}`,

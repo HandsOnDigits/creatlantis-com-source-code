@@ -413,7 +413,8 @@ router.get('/user/:username', async (req, res) => {
 
   const postType = z
     .enum(['IMAGE', 'JOURNAL'])
-    .safeParse(req.query.type ?? 'IMAGE')
+    .optional()
+    .safeParse(req.query.type)
 
   if (!postType.success) {
     return res.status(400).json({
@@ -427,7 +428,7 @@ router.get('/user/:username', async (req, res) => {
   const posts = await db.orm.public.Post.where({
     authorId: user.id,
     publicationStatus: 'APPROVED',
-    type: postType.data,
+    ...(postType.data ? { type: postType.data } : {}),
   })
     .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
     .orderBy([(post) => post.createdAt.desc(), (post) => post.id.desc()])
