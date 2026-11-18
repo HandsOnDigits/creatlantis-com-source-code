@@ -45,6 +45,7 @@ model User {
   createdAt            TimestamptzString     @default(now())
   updatedAt    temporal.UpdatedAtString
   profileCustomization ProfileCustomization?
+  profileLayout        ProfileLayout?
 
   media Media[]
 
@@ -62,6 +63,22 @@ model ProfileCustomization {
 
   // User-defined profile stylesheet
   customCss String @default("")
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+}
+
+model ProfileLayout {
+  id String @id @onCreate(uuid())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @unique
+
+  // Version of the layout structure
+  version Int @default(1)
+
+  // Profile widget arrangement
+  layout Json @default(json`{}`)
 
   createdAt TimestamptzString @default(now())
   updatedAt temporal.UpdatedAtString

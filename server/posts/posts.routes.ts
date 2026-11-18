@@ -372,4 +372,134 @@ router.get('/:id', async (req, res) => {
   })
 })
 
+// Get a user's approved image posts for their profile gallery
+router.get('/user/:username', async (req, res) => {
+  const username = req.params.username
+
+  if (typeof username !== 'string' || !/^[a-zA-Z0-9_]+$/.test(username)) {
+    return res.status(400).json({
+      error: 'Invalid username',
+    })
+  }
+
+  const user = await db.orm.public.User.where({ username })
+    .select('id', 'username', 'name', 'nameIsPublic')
+    .first()
+
+  if (!user) {
+    return res.status(404).json({
+      error: 'User not found',
+    })
+  }
+
+  const page = z.coerce
+    .number()
+    .int()
+    .min(1)
+    .safeParse(req.query.page ?? 1)
+
+  const limit = z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .safeParse(req.query.limit ?? 12)
+
+  if (!page.success || !limit.success) {
+    return res.status(400).json({
+      error: 'Invalid pagination parameters',
+    })
+  }
+
+  const postType = z
+    .enum(['IMAGE', 'JOURNAL'])
+    .safeParse(req.query.type ?? 'IMAGE')
+
+  if (!postType.success) {
+    return res.status(400).json({
+      error: 'Invalid post type',
+    })
+  }
+
+  const pageSize = limit.data
+  const offset = (page.data - 1) * pageSize
+
+  const posts = await db.orm.public.Post.where({
+    authorId: user.id,
+    publicationStatus: 'APPROVED',
+    type: postType.data,
+  })
+    .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
+    .orderBy([(post) => post.createdAt.desc(), (post) => post.id.desc()])
+    .limit(pageSize + 1)
+    .offset(offset)
+    .all()
+
+  const hasMore = posts.length > pageSize
+  const pagePosts = posts.slice(0, pageSize)
+
+  const data = await Promise.all(
+    pagePosts.map(async (post) => {
+      const postMedia = await db.orm.public.PostMedia.where({
+        postId: post.id,
+      })
+        .orderBy((item) => item.position.asc())
+        .all()
+
+      const images = await Promise.all(
+        postMedia.map(async (item) => {
+          const media = await db.orm.public.Media.where({
+            id: item.mediaId,
+            status: 'READY',
+          })
+            .select('id', 'width', 'height')
+            .first()
+
+          if (!media) return null
+
+          const variants = await db.orm.public.MediaVariant.where({
+            mediaId: media.id,
+          })
+            .orderBy((variant) => variant.width.asc())
+            .select('width', 'height', 'format', 'publicObjectKey')
+            .all()
+
+          return {
+            id: media.id,
+            width: media.width,
+            height: media.height,
+            variants: variants
+              .filter((variant) => variant.publicObjectKey !== null)
+              .map((variant) => ({
+                width: variant.width,
+                height: variant.height,
+                format: variant.format,
+                url: getMediaVariantUrl(variant.publicObjectKey!),
+              })),
+          }
+        }),
+      )
+
+      return {
+        ...post,
+        author: {
+          id: user.id,
+          username: user.username,
+          name: user.nameIsPublic ? user.name : null,
+        },
+        images: images.filter((image) => image !== null),
+      }
+    }),
+  )
+
+  return res.json({
+    data,
+    pagination: {
+      page: page.data,
+      limit: pageSize,
+      hasMore,
+    },
+  })
+})
+
 export default router

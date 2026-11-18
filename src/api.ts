@@ -1,3 +1,5 @@
+import type { ProfileWidgetType } from './types/profile'
+
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 ).replace(/\/$/, '')
@@ -100,6 +102,25 @@ export async function apiRequest<T>(
   }
 
   return result as T
+}
+
+export interface ProfileWidget {
+  id: string
+  type: ProfileWidgetType
+}
+
+export interface ProfileColumn {
+  id: 'main' | 'sidebar'
+  widgets: ProfileWidget[]
+}
+
+export interface ProfileLayout {
+  columns: ProfileColumn[]
+}
+
+export interface ProfileLayoutResponse {
+  version: number
+  layout: ProfileLayout
 }
 
 // Convenience methods
@@ -242,6 +263,26 @@ export const profilesApi = {
       { authenticated: false },
     )
   },
+
+  getMyLayout() {
+    return api.get<ApiResponse<ProfileLayoutResponse>>(
+      '/api/profiles/me/layout',
+    )
+  },
+
+  updateMyLayout(layout: ProfileLayout) {
+    return api.put<ApiResponse<ProfileLayoutResponse>>(
+      '/api/profiles/me/layout',
+      { layout },
+    )
+  },
+
+  getLayoutByUsername(username: string) {
+    return api.get<ApiResponse<ProfileLayoutResponse>>(
+      `/api/profiles/username/${encodeURIComponent(username)}/layout`,
+      { authenticated: false },
+    )
+  },
 }
 
 // -----------------------------------------------------------------------------
@@ -371,6 +412,24 @@ export const postsApi = {
   // POST /api/posts
   create(input: CreatePostInput) {
     return api.post<ApiResponse<Post>>('/api/posts', input)
+  },
+
+  listByUsername(
+    username: string,
+    page = 1,
+    limit = 12,
+    type: 'IMAGE' | 'JOURNAL' = 'IMAGE',
+  ) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      type,
+    })
+
+    return api.get<PostListResponse>(
+      `/api/posts/user/${encodeURIComponent(username)}?${params}`,
+      { authenticated: false },
+    )
   },
 }
 

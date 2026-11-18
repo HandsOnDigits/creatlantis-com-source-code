@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 
 import { db } from '../../src/prisma/db'
+import { PROFILE_WIDGET_TYPES } from '../../src/types/profile'
 import { requireAuth } from '../auth/auth.middleware'
 import { renderProfileBBCode } from './profile-renderer'
 
@@ -22,6 +23,125 @@ const updateCustomizationSchema = z
       message: 'At least one field must be provided',
     },
   )
+
+const profileWidgetSchema = z.object({
+  id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/),
+  type: z.enum(PROFILE_WIDGET_TYPES),
+})
+
+const profileColumnSchema = z.object({
+  id: z.enum(['main', 'sidebar']),
+  widgets: z.array(profileWidgetSchema).max(20),
+})
+
+const profileLayoutSchema = z
+  .object({
+    columns: z.array(profileColumnSchema).length(2),
+  })
+  .refine(
+    (layout) =>
+      layout.columns.some((column) => column.id === 'main') &&
+      layout.columns.some((column) => column.id === 'sidebar'),
+    { message: 'Layout must contain main and sidebar columns' },
+  )
+  .refine(
+    (layout) => {
+      const ids = layout.columns.flatMap((column) =>
+        column.widgets.map((widget) => widget.id),
+      )
+
+      return new Set(ids).size === ids.length
+    },
+    { message: 'Widget IDs must be unique' },
+  )
+
+const updateProfileLayoutSchema = z.object({
+  layout: profileLayoutSchema,
+})
+
+const DEFAULT_PROFILE_LAYOUT = {
+  columns: [
+    {
+      id: 'main',
+      widgets: [
+        { id: 'header', type: 'header' },
+        { id: 'bio', type: 'bio' },
+        { id: 'gallery', type: 'gallery' },
+      ],
+    },
+    {
+      id: 'sidebar',
+      widgets: [
+        { id: 'statistics', type: 'statistics' },
+        { id: 'journal', type: 'journal' },
+      ],
+    },
+  ],
+}
+
+function normalizeProfileLayout(value: unknown) {
+  const parsed = profileLayoutSchema.safeParse(value)
+
+  if (parsed.success) {
+    return parsed.data
+  }
+
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('columns' in value) ||
+    !Array.isArray(value.columns)
+  ) {
+    return DEFAULT_PROFILE_LAYOUT
+  }
+
+  const normalized = {
+    columns: value.columns
+      .map((column) => {
+        if (
+          typeof column !== 'object' ||
+          column === null ||
+          !('id' in column) ||
+          !('widgets' in column) ||
+          !Array.isArray(column.widgets)
+        ) {
+          return null
+        }
+
+        return {
+          id: column.id,
+          widgets: column.widgets.flatMap((widget: unknown) => {
+            if (
+              typeof widget !== 'object' ||
+              widget === null ||
+              !('id' in widget) ||
+              !('type' in widget) ||
+              typeof widget.id !== 'string' ||
+              typeof widget.type !== 'string'
+            ) {
+              return []
+            }
+
+            const type = widget.type === 'about' ? 'bio' : widget.type
+
+            if (
+              !PROFILE_WIDGET_TYPES.includes(
+                type as (typeof PROFILE_WIDGET_TYPES)[number],
+              )
+            ) {
+              return []
+            }
+
+            return [{ id: widget.id, type }]
+          }),
+        }
+      })
+      .filter((column) => column !== null),
+  }
+
+  const result = profileLayoutSchema.safeParse(normalized)
+  return result.success ? result.data : DEFAULT_PROFILE_LAYOUT
+}
 
 function parseUserId(value: string | string[] | undefined): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
@@ -106,6 +226,108 @@ router.get('/:id', async (req, res) => {
   })
 })
 
+// Get own profile layout
+router.get('/me/layout', requireAuth, async (req, res) => {
+  const userId = req.auth!.userId
+
+  const savedLayout = await db.orm.public.ProfileLayout.where({
+    userId,
+  }).first()
+
+  res.json({
+    data: {
+      version: savedLayout?.version ?? 1,
+      layout: savedLayout?.layout ?? DEFAULT_PROFILE_LAYOUT,
+    },
+  })
+})
+
+// Update own profile layout
+router.put('/me/layout', requireAuth, async (req, res) => {
+  const parsed = updateProfileLayoutSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid profile layout',
+      details: parsed.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
+    })
+    return
+  }
+
+  const userId = req.auth!.userId
+
+  const existing = await db.orm.public.ProfileLayout.where({
+    userId,
+  }).first()
+
+  const savedLayout = existing
+    ? await db.orm.public.ProfileLayout.where({ userId }).update({
+        layout: parsed.data.layout,
+        version: 1,
+      })
+    : await db.orm.public.ProfileLayout.create({
+        userId,
+        layout: parsed.data.layout,
+        version: 1,
+      })
+
+  if (!savedLayout) {
+    res.status(500).json({
+      error: 'Failed to save profile layout',
+    })
+    return
+  }
+
+  res.json({
+    data: {
+      version: savedLayout.version,
+      layout: savedLayout.layout,
+    },
+  })
+})
+
+// Get public profile layout by username
+router.get('/username/:username/layout', async (req, res) => {
+  const username = req.params.username
+
+  const user = await db.orm.public.User.where({ username }).select('id').first()
+
+  if (!user) {
+    res.status(404).json({ error: 'User not found' })
+    return
+  }
+
+  const savedLayout = await db.orm.public.ProfileLayout.where({
+    userId: user.id,
+  }).first()
+
+  res.json({
+    data: {
+      version: savedLayout?.version ?? 1,
+      layout: savedLayout?.layout ?? DEFAULT_PROFILE_LAYOUT,
+    },
+  })
+})
+
+// Get own profile customization (editor)
+router.get('/me/customization', requireAuth, async (req, res) => {
+  const userId = req.auth!.userId
+
+  const customization = await db.orm.public.ProfileCustomization.where({
+    userId,
+  }).first()
+
+  res.json({
+    data: customization ?? {
+      description: '',
+      customCss: '',
+    },
+  })
+})
+
 // Get public profile customization
 router.get('/:id/customization', async (req, res) => {
   const id = parseUserId(req.params.id)
@@ -133,22 +355,6 @@ router.get('/:id/customization', async (req, res) => {
   res.json({
     data: {
       descriptionHtml: renderProfileBBCode(description),
-    },
-  })
-})
-
-// Get own profile customization (editor)
-router.get('/me/customization', requireAuth, async (req, res) => {
-  const userId = req.auth!.userId
-
-  const customization = await db.orm.public.ProfileCustomization.where({
-    userId,
-  }).first()
-
-  res.json({
-    data: customization ?? {
-      description: '',
-      customCss: '',
     },
   })
 })
