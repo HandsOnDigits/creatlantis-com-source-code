@@ -112,6 +112,14 @@ router.get(
         })
       }
 
+      const pendingPostIds = await mainDb.orm.public.Post.where({
+        publicationStatus: 'PENDING_APPROVAL',
+      })
+        .select('id')
+        .all()
+
+      const total = pendingPostIds.length
+
       const posts = await mainDb.orm.public.Post.where({
         publicationStatus: 'PENDING_APPROVAL',
       })
@@ -209,6 +217,7 @@ router.get(
           page: page.data,
           limit: limit.data,
           hasMore,
+          total,
         },
       })
     } catch (error) {
@@ -241,6 +250,14 @@ router.get(
           error: 'Invalid pagination parameters.',
         })
       }
+
+      const pendingAvatarIds = await mainDb.orm.public.UserAvatar.where({
+        status: 'PENDING_APPROVAL',
+      })
+        .select('id')
+        .all()
+
+      const total = pendingAvatarIds.length
 
       const avatars = await mainDb.orm.public.UserAvatar.where({
         status: 'PENDING_APPROVAL',
@@ -304,6 +321,7 @@ router.get(
           page: page.data,
           limit: limit.data,
           hasMore,
+          total,
         },
       })
     } catch (error) {
@@ -424,6 +442,14 @@ router.get(
         })
       }
 
+      const matchingReportIds = await db.orm.public.Report.where(
+        status.data ? { status: status.data } : {},
+      )
+        .select('id')
+        .all()
+
+      const total = matchingReportIds.length
+
       const reports = await db.orm.public.Report.where(
         status.data ? { status: status.data } : {},
       )
@@ -455,6 +481,7 @@ router.get(
           page: page.data,
           limit: limit.data,
           hasMore,
+          total,
         },
       })
     } catch (error) {
