@@ -17,7 +17,7 @@ const inputClass =
 const buttonClass =
   'rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50'
 
-export default function CategoryManager() {
+export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
