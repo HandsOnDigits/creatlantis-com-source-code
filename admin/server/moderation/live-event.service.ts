@@ -1,8 +1,14 @@
-type ModerationLiveEvent = {
-  type: 'post.approved' | 'post.rejected'
-  postId: number
-  authorId: number
-}
+type ModerationLiveEvent =
+  | {
+      type: 'post.approved' | 'post.rejected'
+      postId: number
+      authorId: number
+    }
+  | {
+      type: 'avatar.approved' | 'avatar.rejected'
+      avatarId: string
+      userId: number
+    }
 
 export async function sendModerationLiveEvent(
   event: ModerationLiveEvent,

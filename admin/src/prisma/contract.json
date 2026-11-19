@@ -218,6 +218,10 @@
               {
                 "name": "MEDIA",
                 "value": "MEDIA"
+              },
+              {
+                "name": "AVATAR",
+                "value": "AVATAR"
               }
             ]
           },
@@ -2168,8 +2172,8 @@
                   "prefix": "ModerationAction_action_check"
                 },
                 {
-                  "expression": "\"targetType\" IN ('USER', 'POST', 'COMMENT', 'MEDIA')",
-                  "name": "ModerationAction_targetType_check_81f51ca1",
+                  "expression": "\"targetType\" IN ('USER', 'POST', 'COMMENT', 'MEDIA', 'AVATAR')",
+                  "name": "ModerationAction_targetType_check_36f0e520",
                   "prefix": "ModerationAction_targetType_check"
                 }
               ],
@@ -2345,8 +2349,8 @@
                   "prefix": "Report_status_check"
                 },
                 {
-                  "expression": "\"targetType\" IN ('USER', 'POST', 'COMMENT', 'MEDIA')",
-                  "name": "Report_targetType_check_81f51ca1",
+                  "expression": "\"targetType\" IN ('USER', 'POST', 'COMMENT', 'MEDIA', 'AVATAR')",
+                  "name": "Report_targetType_check_36f0e520",
                   "prefix": "Report_targetType_check"
                 }
               ],
@@ -2581,7 +2585,8 @@
                 "USER",
                 "POST",
                 "COMMENT",
-                "MEDIA"
+                "MEDIA",
+                "AVATAR"
               ]
             },
             "WebAuthnChallengeType": {
@@ -2597,7 +2602,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "16a172e3e4ab392496a5a4d3b30f163d0df782335ca562d3bbffe37efe279a4a"
+    "storageHash": "7a97e5e32f3ad758ea85128fa5d0b9337b595e087dbce4248c8a19127ffc1ff3"
   },
   "execution": {
     "executionHash": "a9a136a681d49939032874c3b7159fe57ec5984ee7ade59ae73001ac6051d7a4",

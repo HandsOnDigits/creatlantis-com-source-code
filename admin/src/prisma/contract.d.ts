@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'16a172e3e4ab392496a5a4d3b30f163d0df782335ca562d3bbffe37efe279a4a'>;
+  StorageHashBase<'7a97e5e32f3ad758ea85128fa5d0b9337b595e087dbce4248c8a19127ffc1ff3'>;
 export type ExecutionHash =
   ExecutionHashBase<'a9a136a681d49939032874c3b7159fe57ec5984ee7ade59ae73001ac6051d7a4'>;
 export type ProfileHash =
@@ -315,8 +315,8 @@ type FieldTypeOverrides = {
             | 'REPORT_DISMISSED';
         };
         readonly targetType: {
-          readonly output: 'USER' | 'POST' | 'COMMENT' | 'MEDIA';
-          readonly input: 'USER' | 'POST' | 'COMMENT' | 'MEDIA';
+          readonly output: 'USER' | 'POST' | 'COMMENT' | 'MEDIA' | 'AVATAR';
+          readonly input: 'USER' | 'POST' | 'COMMENT' | 'MEDIA' | 'AVATAR';
         };
       };
       readonly Report: {
@@ -345,8 +345,8 @@ type FieldTypeOverrides = {
           readonly input: 'PENDING' | 'REVIEWING' | 'RESOLVED' | 'DISMISSED';
         };
         readonly targetType: {
-          readonly output: 'USER' | 'POST' | 'COMMENT' | 'MEDIA';
-          readonly input: 'USER' | 'POST' | 'COMMENT' | 'MEDIA';
+          readonly output: 'USER' | 'POST' | 'COMMENT' | 'MEDIA' | 'AVATAR';
+          readonly input: 'USER' | 'POST' | 'COMMENT' | 'MEDIA' | 'AVATAR';
         };
       };
     };
@@ -407,8 +407,8 @@ type ColumnTypeOverrides = {
           | 'REPORT_DISMISSED';
       };
       readonly targetType: {
-        readonly output: 'USER' | 'POST' | 'COMMENT' | 'MEDIA';
-        readonly input: 'USER' | 'POST' | 'COMMENT' | 'MEDIA';
+        readonly output: 'USER' | 'POST' | 'COMMENT' | 'MEDIA' | 'AVATAR';
+        readonly input: 'USER' | 'POST' | 'COMMENT' | 'MEDIA' | 'AVATAR';
       };
     };
     readonly Report: {
@@ -437,8 +437,8 @@ type ColumnTypeOverrides = {
         readonly input: 'PENDING' | 'REVIEWING' | 'RESOLVED' | 'DISMISSED';
       };
       readonly targetType: {
-        readonly output: 'USER' | 'POST' | 'COMMENT' | 'MEDIA';
-        readonly input: 'USER' | 'POST' | 'COMMENT' | 'MEDIA';
+        readonly output: 'USER' | 'POST' | 'COMMENT' | 'MEDIA' | 'AVATAR';
+        readonly input: 'USER' | 'POST' | 'COMMENT' | 'MEDIA' | 'AVATAR';
       };
     };
   };
@@ -1472,7 +1472,7 @@ type ContractBase = Omit<
             };
             readonly ReportTargetType: {
               readonly kind: 'valueSet';
-              readonly values: readonly ['USER', 'POST', 'COMMENT', 'MEDIA'];
+              readonly values: readonly ['USER', 'POST', 'COMMENT', 'MEDIA', 'AVATAR'];
             };
             readonly WebAuthnChallengeType: {
               readonly kind: 'valueSet';
@@ -2372,6 +2372,7 @@ type ContractBase = Omit<
               { readonly name: 'POST'; readonly value: 'POST' },
               { readonly name: 'COMMENT'; readonly value: 'COMMENT' },
               { readonly name: 'MEDIA'; readonly value: 'MEDIA' },
+              { readonly name: 'AVATAR'; readonly value: 'AVATAR' },
             ];
           };
           readonly WebAuthnChallengeType: {
@@ -2432,6 +2433,7 @@ type ContractBase = Omit<
             { readonly name: 'POST'; readonly value: 'POST' },
             { readonly name: 'COMMENT'; readonly value: 'COMMENT' },
             { readonly name: 'MEDIA'; readonly value: 'MEDIA' },
+            { readonly name: 'AVATAR'; readonly value: 'AVATAR' },
           ];
           readonly WebAuthnChallengeType: readonly [
             { readonly name: 'REGISTRATION'; readonly value: 'REGISTRATION' },

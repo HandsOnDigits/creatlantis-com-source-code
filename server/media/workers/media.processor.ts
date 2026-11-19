@@ -7,6 +7,7 @@ import {
 } from '../../storage/b2.client'
 
 import type { MediaJob } from './media.worker'
+import { ALLOWED_TYPES } from '../media.constants'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 const MAX_IMAGE_PIXELS = 40_000_000
@@ -30,7 +31,7 @@ export async function processMediaJob(job: MediaJob): Promise<void> {
     !metadata.width ||
     !metadata.height ||
     !metadata.format ||
-    !['jpeg', 'png', 'webp'].includes(metadata.format)
+    !(ALLOWED_TYPES as readonly string[]).includes(metadata.format)
   ) {
     throw new Error('Unsupported or invalid image')
   }

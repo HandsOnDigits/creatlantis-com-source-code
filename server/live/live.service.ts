@@ -7,6 +7,8 @@ export type LiveEventType =
   | 'post.deleted'
   | 'post.approved'
   | 'post.rejected'
+  | 'avatar.approved'
+  | 'avatar.rejected'
   | 'report.created'
   | 'report.updated'
   | 'comment.created'

@@ -5,12 +5,24 @@ const API_BASE_URL = (
 ).replace(/\/$/, '')
 
 const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024
+const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024
 
 const ALLOWED_MEDIA_TYPES: MediaContentType[] = [
   'image/jpeg',
   'image/png',
   'image/webp',
+  'image/gif',
 ]
+
+export interface CreateAvatarUploadInput {
+  filename: string
+  contentType: MediaContentType
+  size: number
+}
+
+interface AvatarApiResponse<T> {
+  data: T
+}
 
 // Access token stays in memory.
 let accessToken: string | null = null
@@ -174,6 +186,7 @@ export interface User {
   username: string
   name: string | null
   nameIsPublic: boolean
+  avatarUrl: string | null
   createdAt: string
 }
 
@@ -217,7 +230,14 @@ export const usersApi = {
 export interface PublicProfile {
   id: number
   username: string
-  name?: string
+  name: string | null
+  tagline: string | null
+  createdAt: string
+  avatarUrl: string | null
+
+  customization: PublicProfileCustomization
+
+  layout: ProfileLayoutResponse
 }
 
 export const profilesApi = {
@@ -283,6 +303,12 @@ export const profilesApi = {
       { authenticated: false },
     )
   },
+
+  updateMyTagline: (tagline: string | null) =>
+    api.put<ApiResponse<{ tagline: string | null }>>(
+      '/api/profiles/me/tagline',
+      { tagline },
+    ),
 }
 
 // -----------------------------------------------------------------------------
@@ -445,7 +471,8 @@ export type MediaStatus =
 
 export type MediaUploadStage = 'UPLOADING' | 'COMPLETING' | MediaStatus
 
-export type MediaContentType = 'image/jpeg' | 'image/png' | 'image/webp'
+export type MediaContentType =
+  'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
 
 export interface CreateMediaUploadInput {
   filename: string
@@ -656,6 +683,86 @@ export const mediaApi = {
         } catch (cleanupError) {
           console.error('Failed to cancel media upload:', cleanupError)
         }
+      }
+
+      throw error
+    }
+  },
+}
+
+export interface AvatarUploadResponse {
+  id: string
+  uploadUrl: string
+  method: 'PUT'
+  headers: {
+    'Content-Type': string
+  }
+  expiresAt: string
+  expiresIn: number
+}
+
+export const avatarsApi = {
+  async createUpload(input: CreateAvatarUploadInput) {
+    const response = await api.post<AvatarApiResponse<AvatarUploadResponse>>(
+      '/api/avatars/upload',
+      input,
+    )
+
+    return response.data
+  },
+
+  async uploadFile(upload: AvatarUploadResponse, file: File) {
+    const response = await fetch(upload.uploadUrl, {
+      method: upload.method,
+      headers: upload.headers,
+      body: file,
+      credentials: 'omit',
+    })
+
+    if (!response.ok) {
+      const message = await response.text()
+      throw new ApiError(message || 'Avatar upload failed', response.status)
+    }
+  },
+
+  async complete(id: string) {
+    const response = await api.post<
+      AvatarApiResponse<{
+        status: 'PENDING_APPROVAL'
+        message: string
+      }>
+    >('/api/avatars/complete', { id })
+
+    return response.data
+  },
+
+  async upload(file: File) {
+    if (!ALLOWED_MEDIA_TYPES.includes(file.type as MediaContentType)) {
+      throw new Error('Only JPEG, PNG, WebP and GIF images are supported.')
+    }
+
+    if (file.size <= 0 || file.size > MAX_AVATAR_FILE_SIZE) {
+      throw new Error('Avatar must be between 1 byte and 5 MB.')
+    }
+
+    const upload = await this.createUpload({
+      filename: file.name,
+      contentType: file.type as MediaContentType,
+      size: file.size,
+    })
+
+    let completed = false
+
+    try {
+      await this.uploadFile(upload, file)
+
+      const result = await this.complete(upload.id)
+      completed = true
+
+      return result
+    } catch (error) {
+      if (!completed) {
+        console.error('Avatar upload failed:', error)
       }
 
       throw error

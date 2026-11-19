@@ -1,8 +1,20 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { randomUUID } from 'node:crypto'
 
 import { db } from '../../src/prisma/db'
 import { requireAuth } from '../auth/auth.middleware'
+import { ALLOWED_CONTENT_TYPES } from '../media/media.constants'
+import { createOriginalUploadUrl } from '../storage/b2.client'
+
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024
+const UPLOAD_LIFETIME_MS = 15 * 60 * 1000
+
+const createAvatarUploadSchema = z.object({
+  filename: z.string().trim().min(1).max(255),
+  contentType: z.enum(ALLOWED_CONTENT_TYPES),
+  size: z.number().int().positive().max(MAX_AVATAR_SIZE),
+})
 
 const router = Router()
 
@@ -173,6 +185,64 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 
   res.status(204).send()
+})
+
+router.post('/upload', requireAuth, async (req, res) => {
+  const parsed = createAvatarUploadSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Invalid avatar upload request.',
+      details: parsed.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
+    })
+  }
+
+  const userId = req.auth?.userId
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'Authentication required',
+    })
+  }
+
+  const { filename, contentType, size } = parsed.data
+
+  const uploadId = randomUUID()
+  const objectKey = `avatars/${userId}/${uploadId}/source`
+  const expiresAt = new Date(Date.now() + UPLOAD_LIFETIME_MS).toISOString()
+
+  try {
+    const uploadUrl = await createOriginalUploadUrl(
+      objectKey,
+      contentType,
+      size,
+    )
+
+    res.setHeader('Cache-Control', 'no-store')
+
+    return res.status(201).json({
+      data: {
+        id: uploadId,
+        objectKey,
+        uploadUrl,
+        method: 'PUT',
+        headers: {
+          'Content-Type': contentType,
+        },
+        expiresAt,
+        expiresIn: 300,
+      },
+    })
+  } catch (error) {
+    console.error('Failed to create avatar upload URL:', error)
+
+    return res.status(500).json({
+      error: 'Failed to prepare the avatar upload.',
+    })
+  }
 })
 
 export default router

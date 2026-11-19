@@ -3,11 +3,18 @@ import { z } from 'zod'
 
 import { db } from '../../src/prisma/db'
 import { mainDb } from '../../src/prisma/main-db'
+
 import { requireMfaVerifiedAdmin } from '../middleware/auth.middleware'
 import { requireModerator } from '../middleware/require-moderator'
-import { createOriginalDownloadUrl } from '../../../server/storage/b2.client'
+
+import {
+  createOriginalDownloadUrl,
+  getPublicObjectUrl,
+} from '../../../server/storage/b2.client'
+
 import { approvePost } from './post-approval.service'
 import { rejectPost } from './post-rejection.service'
+import { approveAvatar, rejectAvatar } from './avatar-approval.service'
 import { ReportStatusError, updateReportStatus } from './report-status.service'
 
 const router = Router()
@@ -203,6 +210,183 @@ router.get(
           limit: limit.data,
           hasMore,
         },
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+router.get(
+  '/avatars/pending',
+  requireMfaVerifiedAdmin,
+  requireModerator,
+  async (req, res, next) => {
+    try {
+      const page = z.coerce
+        .number()
+        .int()
+        .min(1)
+        .safeParse(req.query.page ?? 1)
+
+      const limit = z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .safeParse(req.query.limit ?? 10)
+
+      if (!page.success || !limit.success) {
+        return res.status(400).json({
+          error: 'Invalid pagination parameters.',
+        })
+      }
+
+      const avatars = await mainDb.orm.public.UserAvatar.where({
+        status: 'PENDING_APPROVAL',
+      })
+        .select(
+          'id',
+          'userId',
+          'stagingObjectKey',
+          'originalFilename',
+          'mimeType',
+          'size',
+          'width',
+          'height',
+          'createdAt',
+        )
+        .orderBy([
+          (avatar) => avatar.createdAt.asc(),
+          (avatar) => avatar.id.asc(),
+        ])
+        .limit(limit.data + 1)
+        .offset((page.data - 1) * limit.data)
+        .all()
+
+      const hasMore = avatars.length > limit.data
+
+      const data = await Promise.all(
+        avatars.slice(0, limit.data).map(async (avatar) => {
+          const author = await mainDb.orm.public.User.where({
+            id: avatar.userId,
+          })
+            .select('id', 'username', 'name', 'nameIsPublic')
+            .first()
+
+          const previewUrl = avatar.stagingObjectKey
+            ? await createOriginalDownloadUrl(avatar.stagingObjectKey)
+            : null
+
+          return {
+            id: avatar.id,
+            originalFilename: avatar.originalFilename,
+            mimeType: avatar.mimeType,
+            size: avatar.size === null ? null : Number(avatar.size),
+            width: avatar.width,
+            height: avatar.height,
+            createdAt: avatar.createdAt,
+            previewUrl,
+            author: author
+              ? {
+                  id: author.id,
+                  username: author.username,
+                  name: author.nameIsPublic ? author.name : null,
+                }
+              : null,
+          }
+        }),
+      )
+
+      return res.json({
+        data,
+        pagination: {
+          page: page.data,
+          limit: limit.data,
+          hasMore,
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+router.post(
+  '/avatars/:avatarId/approve',
+  requireMfaVerifiedAdmin,
+  requireModerator,
+  async (req, res, next) => {
+    try {
+      const parsedId = z.string().uuid().safeParse(req.params.avatarId)
+
+      if (!parsedId.success) {
+        return res.status(400).json({
+          error: 'Invalid avatar ID.',
+        })
+      }
+
+      if (!req.adminAuth) {
+        return res.status(401).json({
+          error: 'Authentication required.',
+        })
+      }
+
+      await approveAvatar(parsedId.data, req.adminAuth.adminId)
+
+      return res.json({
+        success: true,
+        avatarId: parsedId.data,
+        status: 'APPROVED',
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+router.post(
+  '/avatars/:avatarId/reject',
+  requireMfaVerifiedAdmin,
+  requireModerator,
+  async (req, res, next) => {
+    try {
+      const parsedId = z.string().uuid().safeParse(req.params.avatarId)
+
+      const parsedBody = z
+        .object({
+          reason: z.string().trim().min(1).max(2000),
+        })
+        .safeParse(req.body)
+
+      if (!parsedId.success) {
+        return res.status(400).json({
+          error: 'Invalid avatar ID.',
+        })
+      }
+
+      if (!parsedBody.success) {
+        return res.status(400).json({
+          error: 'A rejection reason is required.',
+        })
+      }
+
+      if (!req.adminAuth) {
+        return res.status(401).json({
+          error: 'Authentication required.',
+        })
+      }
+
+      await rejectAvatar(
+        parsedId.data,
+        req.adminAuth.adminId,
+        parsedBody.data.reason,
+      )
+
+      return res.json({
+        success: true,
+        avatarId: parsedId.data,
+        status: 'REJECTED',
       })
     } catch (error) {
       next(error)
@@ -463,6 +647,64 @@ router.get(
                   title: post.title,
                   publicationStatus: post.publicationStatus,
                   authorId: post.authorId,
+                }
+              : null,
+          }
+        }
+      }
+
+      if (report.targetType === 'AVATAR') {
+        const avatar = await mainDb.orm.public.UserAvatar.where({
+          id: report.targetId,
+        })
+          .select(
+            'id',
+            'userId',
+            'originalFilename',
+            'mimeType',
+            'size',
+            'width',
+            'height',
+            'status',
+            'rejectionReason',
+            'reviewedAt',
+            'createdAt',
+            'publicObjectKey',
+            'stagingObjectKey',
+          )
+          .first()
+
+        if (avatar) {
+          const author = await mainDb.orm.public.User.where({
+            id: avatar.userId,
+          })
+            .select('id', 'username', 'name', 'nameIsPublic')
+            .first()
+
+          const previewUrl = avatar.stagingObjectKey
+            ? await createOriginalDownloadUrl(avatar.stagingObjectKey)
+            : avatar.publicObjectKey
+              ? getPublicObjectUrl(avatar.publicObjectKey)
+              : null
+
+          target = {
+            id: avatar.id,
+            userId: avatar.userId,
+            originalFilename: avatar.originalFilename,
+            mimeType: avatar.mimeType,
+            size: avatar.size === null ? null : Number(avatar.size),
+            width: avatar.width,
+            height: avatar.height,
+            status: avatar.status,
+            rejectionReason: avatar.rejectionReason,
+            reviewedAt: avatar.reviewedAt,
+            createdAt: avatar.createdAt,
+            previewUrl,
+            author: author
+              ? {
+                  id: author.id,
+                  username: author.username,
+                  name: author.nameIsPublic ? author.name : null,
                 }
               : null,
           }

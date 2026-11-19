@@ -6,12 +6,44 @@ import { VerticalHR, HorizontalHR, ProfileIcon } from './Utilites'
 
 import SearchAndFilter from './SearchAndFilte'
 
+import { profilesApi, type PublicProfile } from './api'
+
 // Images
 import test_icon from './assets/images/test_icon.webp'
 import more_icon from './assets/images/icons/moreIcon.webp'
 
 function NavigationBar() {
   const { status, logout, user } = useAuth()
+
+  const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    setPublicProfile(null)
+
+    if (!user?.username) {
+      return
+    }
+
+    profilesApi
+      .getByUsername(user.username)
+      .then((response) => {
+        if (!cancelled) {
+          setPublicProfile(response.data)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPublicProfile(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.username])
+
   const handleLogout = async () => {
     try {
       await logout()
@@ -112,7 +144,12 @@ function NavigationBar() {
 
         {/* Profile Dropdown Container */}
         <div className="drop-down">
-          <ProfileIcon name="Name" />
+          <ProfileIcon
+            name={publicProfile?.name ?? user?.username ?? 'Name'}
+            image={publicProfile?.avatarUrl}
+            tagline={publicProfile?.tagline}
+          />
+
           <div className="drop-down-content">
             {status === AuthStatus.Authenticated ? (
               <button id="logout" onClick={handleLogout}>
@@ -160,11 +197,14 @@ function NavigationBar() {
               </div>
             </div>
 
-            <HorizontalHR />
-
-            <button id="edit" disabled>
-              Settings
-            </button>
+            {status === AuthStatus.Authenticated && (
+              <>
+                <HorizontalHR />
+                <button id="edit" onClick={() => navigate('/settings')}>
+                  Settings
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

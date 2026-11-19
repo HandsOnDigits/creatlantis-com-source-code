@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 
+// Taps
 import ProfileTabs from './profile/ProfileTabs'
 import ProfileTab from './profile/ProfileTab'
 import ContentTab from './profile/ContentTab'
@@ -318,16 +319,11 @@ function Profile() {
 
   return (
     <main className="min-h-screen">
-      {/* Profile header */}
-      <header className="mb-6 p-6">
-        <h1 className="big-text font-bold">
-          {profile.name ?? profile.username}
-        </h1>
-
-        <p className="mt-2 text-sm opacity-60">@{profile.username}</p>
-      </header>
-
-      <ProfileTabs activeTab={activeTab} onChange={changeTab} />
+      <ProfileTabs
+        activeTab={activeTab}
+        onChange={changeTab}
+        profileInfo={profile}
+      />
 
       {/* Profile tab */}
       {activeTab === 'profile' && (

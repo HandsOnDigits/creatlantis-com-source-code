@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
+import { useLive } from './LiveContext'
+
+// Pages
 import NavigationBar from './NavigationBar'
 import Home from './pages/Home'
 import Upload from './pages/Upload'
@@ -9,7 +12,7 @@ import Post from './pages/Post'
 import ProtectedRoute from './ProtectedRoute'
 import Profile from './pages/Profile'
 import ProfileEditor from './pages/ProfileEditor'
-import { useLive } from './LiveContext'
+import Settings from './pages/Settings'
 
 function App() {
   const { connected, subscribe } = useLive()
@@ -34,6 +37,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/posts/:id" element={<Post />} />
+        <Route path="/settings" element={<Settings />} />
 
         {/* Public profile */}
         <Route path="/profile/:username" element={<Profile />} />

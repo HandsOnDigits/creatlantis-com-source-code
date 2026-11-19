@@ -41,6 +41,32 @@ interface PendingResponse {
   }
 }
 
+interface PendingAvatar {
+  id: string
+  originalFilename: string | null
+  mimeType: string | null
+  size: number | null
+  width: number | null
+  height: number | null
+  createdAt: string
+  previewUrl: string | null
+  author: {
+    id: number
+    username: string
+    name: string | null
+  } | null
+}
+
+interface PendingAvatarsResponse {
+  data: PendingAvatar[]
+  pagination: {
+    page: number
+    limit: number
+    hasMore: boolean
+  }
+  size: number | string | null
+}
+
 interface AdminReport {
   id: string
   reporterUserId: number | null
@@ -140,12 +166,15 @@ const API_URL = 'http://localhost:3001/api'
 export default function AdminPage() {
   const [posts, setPosts] = useState<PendingPost[]>([])
   const [page, setPage] = useState(1)
+
+  const [error, setError] = useState<string | null>(null)
+
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
   const [busyPostId, setBusyPostId] = useState<number | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [rejectingPostId, setRejectingPostId] = useState<number | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
+
   const [reports, setReports] = useState<AdminReport[]>([])
   const [selectedReport, setSelectedReport] = useState<ReportDetails | null>(
     null,
@@ -163,6 +192,17 @@ export default function AdminPage() {
   const [reportActionError, setReportActionError] = useState<string | null>(
     null,
   )
+
+  const [avatars, setAvatars] = useState<PendingAvatar[]>([])
+  const [avatarsPage, setAvatarsPage] = useState(1)
+  const [avatarsHasMore, setAvatarsHasMore] = useState(false)
+  const [avatarsLoading, setAvatarsLoading] = useState(true)
+  const [avatarsError, setAvatarsError] = useState<string | null>(null)
+  const [busyAvatarId, setBusyAvatarId] = useState<string | null>(null)
+  const [rejectingAvatarId, setRejectingAvatarId] = useState<string | null>(
+    null,
+  )
+  const [avatarRejectionReason, setAvatarRejectionReason] = useState('')
 
   const loadPending = useCallback(async (targetPage: number) => {
     setLoading(true)
@@ -194,6 +234,39 @@ export default function AdminPage() {
       )
     } finally {
       setLoading(false)
+    }
+  }, [])
+
+  const loadPendingAvatars = useCallback(async (targetPage: number) => {
+    setAvatarsLoading(true)
+    setAvatarsError(null)
+
+    try {
+      const response = await fetch(
+        `${API_URL}/moderation/avatars/pending?page=${targetPage}&limit=10`,
+        {
+          credentials: 'include',
+          cache: 'no-store',
+        },
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error ?? 'Unable to load pending avatars.')
+      }
+
+      const data = result as PendingAvatarsResponse
+
+      setAvatars(data.data)
+      setAvatarsPage(data.pagination.page)
+      setAvatarsHasMore(data.pagination.hasMore)
+    } catch (err) {
+      setAvatarsError(
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
+      )
+    } finally {
+      setAvatarsLoading(false)
     }
   }, [])
 
@@ -326,6 +399,10 @@ export default function AdminPage() {
     void loadReports(1)
   }, [loadReports])
 
+  useEffect(() => {
+    void loadPendingAvatars(1)
+  }, [loadPendingAvatars])
+
   async function moderatePost(postId: number, action: 'approve' | 'reject') {
     if (action === 'reject' && !rejectionReason.trim()) {
       setError('Please provide a rejection reason.')
@@ -366,6 +443,56 @@ export default function AdminPage() {
       )
     } finally {
       setBusyPostId(null)
+    }
+  }
+
+  async function moderateAvatar(
+    avatarId: string,
+    action: 'approve' | 'reject',
+  ) {
+    if (action === 'reject' && !avatarRejectionReason.trim()) {
+      setAvatarsError('Please provide a rejection reason.')
+      return
+    }
+
+    setBusyAvatarId(avatarId)
+    setAvatarsError(null)
+
+    try {
+      const response = await fetch(
+        `${API_URL}/moderation/avatars/${avatarId}/${action}`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          ...(action === 'reject'
+            ? {
+                body: JSON.stringify({
+                  reason: avatarRejectionReason.trim(),
+                }),
+              }
+            : {}),
+        },
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error ?? `Unable to ${action} avatar.`)
+      }
+
+      setRejectingAvatarId(null)
+      setAvatarRejectionReason('')
+      await loadPendingAvatars(avatarsPage)
+    } catch (err) {
+      setAvatarsError(
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
+      )
+    } finally {
+      setBusyAvatarId(null)
     }
   }
 

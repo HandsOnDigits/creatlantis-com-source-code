@@ -2,13 +2,20 @@ import default_pp from './assets/images/default_pp.webp'
 
 interface profileURL {
   name: string
+  image?: string | null
+  tagline?: string | null
 }
 
-export function ProfileIcon({ name }: profileURL) {
+export function ProfileIcon({ name, image, tagline }: profileURL) {
   return (
-    <div className="user-profile items-cente flex">
-      <img className="h-auto max-w-14" src={default_pp} />
-      <p className="p-4">{name}</p>
+    <div className="user-profile inline-flex items-center">
+      <img className="h-auto max-w-14" src={image ?? default_pp} alt="" />
+
+      <div className="p-4">
+        <p className="text-lg font-semibold">{name}</p>
+
+        {tagline && <p className="text-sm opacity-70">{tagline}</p>}
+      </div>
     </div>
   )
 }

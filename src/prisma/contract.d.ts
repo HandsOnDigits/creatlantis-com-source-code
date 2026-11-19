@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'270b613c729ca339bfb728a492dfb5e5b745ed1cf833905b72e5e962268eda52'>;
+  StorageHashBase<'2ff197ade86ec85dc28bd37e01b74f83942f08d1b8725b5c9bea3b309c3fd7eb'>;
 export type ExecutionHash =
-  ExecutionHashBase<'c32848d2c989db56e1c960e277fe28f8099d44dbcd23a6f5a7c35fecbbab199f'>;
+  ExecutionHashBase<'0001059360246d5bfa7e8b3ab448e730d5abf664f06fb0a15e1dcf792217fd52'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -294,6 +294,12 @@ type FieldTypeOverrides = {
           readonly input: 'IMAGE' | 'JOURNAL' | 'MODEL';
         };
       };
+      readonly UserAvatar: {
+        readonly status: {
+          readonly output: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+          readonly input: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+        };
+      };
     };
   };
 };
@@ -334,6 +340,12 @@ type ColumnTypeOverrides = {
         readonly input: 'IMAGE' | 'JOURNAL' | 'MODEL';
       };
     };
+    readonly UserAvatar: {
+      readonly status: {
+        readonly output: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+        readonly input: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+      };
+    };
   };
 };
 export type StorageColumnTypes = ColumnTypesFromStorage<
@@ -352,6 +364,18 @@ export type StorageColumnInputTypes = ColumnTypesFromStorage<
 >;
 
 export namespace Models {
+  export type public_AvatarUploadReservation = {
+    contentType: FieldOutputTypes['public']['AvatarUploadReservation']['contentType'];
+    createdAt: FieldOutputTypes['public']['AvatarUploadReservation']['createdAt'];
+    expiresAt: FieldOutputTypes['public']['AvatarUploadReservation']['expiresAt'];
+    filename: FieldOutputTypes['public']['AvatarUploadReservation']['filename'];
+    id: FieldOutputTypes['public']['AvatarUploadReservation']['id'];
+    objectKey: FieldOutputTypes['public']['AvatarUploadReservation']['objectKey'];
+    size: FieldOutputTypes['public']['AvatarUploadReservation']['size'];
+    userId: FieldOutputTypes['public']['AvatarUploadReservation']['userId'];
+    user: public_User;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_Category = {
     createdAt: FieldOutputTypes['public']['Category']['createdAt'];
     description: FieldOutputTypes['public']['Category']['description'];
@@ -481,8 +505,11 @@ export namespace Models {
     name: FieldOutputTypes['public']['User']['name'];
     nameIsPublic: FieldOutputTypes['public']['User']['nameIsPublic'];
     passwordHash: FieldOutputTypes['public']['User']['passwordHash'];
+    tagline: FieldOutputTypes['public']['User']['tagline'];
     updatedAt: FieldOutputTypes['public']['User']['updatedAt'];
     username: FieldOutputTypes['public']['User']['username'];
+    avatar: public_UserAvatar | null;
+    avatarUploadReservations: public_AvatarUploadReservation[];
     media: public_Media[];
     posts: public_Post[];
     profileCustomization: public_ProfileCustomization | null;
@@ -490,6 +517,8 @@ export namespace Models {
     sessions: public_Session[];
     uploadReservations: public_UploadReservation[];
     readonly [RelationKeys]?:
+      | 'avatar'
+      | 'avatarUploadReservations'
       | 'media'
       | 'posts'
       | 'profileCustomization'
@@ -497,10 +526,33 @@ export namespace Models {
       | 'sessions'
       | 'uploadReservations';
   };
+  export type public_UserAvatar = {
+    createdAt: FieldOutputTypes['public']['UserAvatar']['createdAt'];
+    height: FieldOutputTypes['public']['UserAvatar']['height'];
+    id: FieldOutputTypes['public']['UserAvatar']['id'];
+    mimeType: FieldOutputTypes['public']['UserAvatar']['mimeType'];
+    originalFilename: FieldOutputTypes['public']['UserAvatar']['originalFilename'];
+    pendingPublicObjectKey: FieldOutputTypes['public']['UserAvatar']['pendingPublicObjectKey'];
+    publicFileId: FieldOutputTypes['public']['UserAvatar']['publicFileId'];
+    publicObjectKey: FieldOutputTypes['public']['UserAvatar']['publicObjectKey'];
+    rejectionReason: FieldOutputTypes['public']['UserAvatar']['rejectionReason'];
+    reviewedAt: FieldOutputTypes['public']['UserAvatar']['reviewedAt'];
+    reviewedByAdminId: FieldOutputTypes['public']['UserAvatar']['reviewedByAdminId'];
+    size: FieldOutputTypes['public']['UserAvatar']['size'];
+    stagingFileId: FieldOutputTypes['public']['UserAvatar']['stagingFileId'];
+    stagingObjectKey: FieldOutputTypes['public']['UserAvatar']['stagingObjectKey'];
+    status: FieldOutputTypes['public']['UserAvatar']['status'];
+    updatedAt: FieldOutputTypes['public']['UserAvatar']['updatedAt'];
+    userId: FieldOutputTypes['public']['UserAvatar']['userId'];
+    width: FieldOutputTypes['public']['UserAvatar']['width'];
+    user: public_User;
+    readonly [RelationKeys]?: 'user';
+  };
 }
 
 export declare const models: {
   public: {
+    AvatarUploadReservation: Models.public_AvatarUploadReservation;
     Category: Models.public_Category;
     CategoryPost: Models.public_CategoryPost;
     Media: Models.public_Media;
@@ -512,6 +564,7 @@ export declare const models: {
     Session: Models.public_Session;
     UploadReservation: Models.public_UploadReservation;
     User: Models.public_User;
+    UserAvatar: Models.public_UserAvatar;
   };
 };
 
@@ -533,6 +586,95 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly AvatarUploadReservation: {
+              columns: {
+                readonly contentType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly expiresAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly filename: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly objectKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly size: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['objectKey'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'AvatarUploadReservation_expiresAt_idx_6b6b8c10';
+                  readonly prefix: 'AvatarUploadReservation_expiresAt_idx';
+                  readonly columns: readonly ['expiresAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'AvatarUploadReservation_userId_createdAt_idx_f726f04a';
+                  readonly prefix: 'AvatarUploadReservation_userId_createdAt_idx';
+                  readonly columns: readonly ['userId', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'AvatarUploadReservation_userId_idx_a489d58a';
+                  readonly prefix: 'AvatarUploadReservation_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'AvatarUploadReservation';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly Category: {
               columns: {
                 readonly createdAt: {
@@ -1413,6 +1555,13 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly tagline: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 160 };
+                  readonly many: false;
+                };
                 readonly updatedAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -1438,8 +1587,158 @@ type ContractBase = Omit<
               ];
               foreignKeys: readonly [];
             };
+            readonly UserAvatar: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly height: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly mimeType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly originalFilename: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly pendingPublicObjectKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly publicFileId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly publicObjectKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly rejectionReason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewedByAdminId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly size: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly stagingFileId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly stagingObjectKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING_APPROVAL'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly width: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['userId'] },
+                { readonly columns: readonly ['publicObjectKey'] },
+                { readonly columns: readonly ['stagingObjectKey'] },
+                { readonly columns: readonly ['pendingPublicObjectKey'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'UserAvatar_status_createdAt_idx_58610442';
+                  readonly prefix: 'UserAvatar_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'UserAvatar';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
           };
           readonly valueSet: {
+            readonly AvatarStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
+            };
             readonly MediaFormat: {
               readonly kind: 'valueSet';
               readonly values: readonly ['WEBP', 'AVIF'];
@@ -1474,6 +1773,10 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
+    readonly AvatarUploadReservation: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AvatarUploadReservation';
+    };
     readonly Category: { readonly namespace: 'public' & NamespaceId; readonly model: 'Category' };
     readonly CategoryPost: {
       readonly namespace: 'public' & NamespaceId;
@@ -1500,11 +1803,82 @@ type ContractBase = Omit<
       readonly model: 'UploadReservation';
     };
     readonly User: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+    readonly UserAvatar: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'UserAvatar';
+    };
   };
   readonly domain: {
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly AvatarUploadReservation: {
+            readonly fields: {
+              readonly contentType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly expiresAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly filename: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly objectKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly size: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'AvatarUploadReservation';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly contentType: { readonly column: 'contentType' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly expiresAt: { readonly column: 'expiresAt' };
+                readonly filename: { readonly column: 'filename' };
+                readonly id: { readonly column: 'id' };
+                readonly objectKey: { readonly column: 'objectKey' };
+                readonly size: { readonly column: 'size' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly Category: {
             readonly fields: {
               readonly createdAt: {
@@ -2254,6 +2628,14 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly tagline: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 160 };
+                };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -2267,6 +2649,29 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly avatar: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'UserAvatar';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
+              readonly avatarUploadReservations: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AvatarUploadReservation';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
               readonly media: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -2343,13 +2748,142 @@ type ContractBase = Omit<
                 readonly name: { readonly column: 'name' };
                 readonly nameIsPublic: { readonly column: 'nameIsPublic' };
                 readonly passwordHash: { readonly column: 'passwordHash' };
+                readonly tagline: { readonly column: 'tagline' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly username: { readonly column: 'username' };
               };
             };
           };
+          readonly UserAvatar: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly height: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly mimeType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly originalFilename: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly pendingPublicObjectKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly publicFileId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly publicObjectKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly rejectionReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly reviewedByAdminId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly size: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly stagingFileId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly stagingObjectKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly width: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'UserAvatar';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly height: { readonly column: 'height' };
+                readonly id: { readonly column: 'id' };
+                readonly mimeType: { readonly column: 'mimeType' };
+                readonly originalFilename: { readonly column: 'originalFilename' };
+                readonly pendingPublicObjectKey: { readonly column: 'pendingPublicObjectKey' };
+                readonly publicFileId: { readonly column: 'publicFileId' };
+                readonly publicObjectKey: { readonly column: 'publicObjectKey' };
+                readonly rejectionReason: { readonly column: 'rejectionReason' };
+                readonly reviewedAt: { readonly column: 'reviewedAt' };
+                readonly reviewedByAdminId: { readonly column: 'reviewedByAdminId' };
+                readonly size: { readonly column: 'size' };
+                readonly stagingFileId: { readonly column: 'stagingFileId' };
+                readonly stagingObjectKey: { readonly column: 'stagingObjectKey' };
+                readonly status: { readonly column: 'status' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+                readonly width: { readonly column: 'width' };
+              };
+            };
+          };
         };
         readonly enum: {
+          readonly AvatarStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'PENDING_APPROVAL'; readonly value: 'PENDING_APPROVAL' },
+              { readonly name: 'APPROVED'; readonly value: 'APPROVED' },
+              { readonly name: 'REJECTED'; readonly value: 'REJECTED' },
+            ];
+          };
           readonly MediaFormat: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -2386,6 +2920,11 @@ type ContractBase = Omit<
           };
         };
         readonly enumMemberTypes?: {
+          readonly AvatarStatus: readonly [
+            { readonly name: 'PENDING_APPROVAL'; readonly value: 'PENDING_APPROVAL' },
+            { readonly name: 'APPROVED'; readonly value: 'APPROVED' },
+            { readonly name: 'REJECTED'; readonly value: 'REJECTED' },
+          ];
           readonly MediaFormat: readonly [
             { readonly name: 'WEBP'; readonly value: 'WEBP' },
             { readonly name: 'AVIF'; readonly value: 'AVIF' },
@@ -2444,6 +2983,14 @@ type ContractBase = Omit<
     readonly executionHash: ExecutionHash;
     readonly mutations: {
       readonly defaults: readonly [
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'AvatarUploadReservation';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
         {
           readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
@@ -2542,6 +3089,23 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'User';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'UserAvatar';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'UserAvatar';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

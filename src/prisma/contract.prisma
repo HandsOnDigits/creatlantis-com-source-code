@@ -26,6 +26,12 @@ enum PostPublicationStatus {
   REJECTED
 }
 
+enum AvatarStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 model User {
   @@index(
   expression: sql`lower(username)`,
@@ -33,23 +39,58 @@ model User {
   name: "User_username_lower_key"
   )
 
-  id           Int     @id @default(autoincrement())
-  email        String  @unique
+  id           Int         @id @default(autoincrement())
+  email        String      @unique
   username     String
   name         String?
-  nameIsPublic Boolean @default(false)
+  nameIsPublic Boolean     @default(false)
+  tagline VarChar(160)?
+  avatar       UserAvatar?
 
   passwordHash         String?
   posts                Post[]
   sessions             Session[]
   createdAt            TimestamptzString     @default(now())
-  updatedAt    temporal.UpdatedAtString
+  updatedAt            temporal.UpdatedAtString
   profileCustomization ProfileCustomization?
   profileLayout        ProfileLayout?
 
-  media Media[]
+  media                    Media[]
+  uploadReservations       UploadReservation[]
+  avatarUploadReservations AvatarUploadReservation[]
+}
 
-  uploadReservations UploadReservation[]
+model UserAvatar {
+  id String @id @onCreate(uuid())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @unique
+
+  // Currently active avatar in public storage
+  publicObjectKey String? @unique
+  publicFileId    String?
+
+  // Replacement waiting in private staging storage
+  stagingObjectKey String? @unique
+  stagingFileId    String?
+
+  originalFilename String?
+  mimeType         String?
+  size             BigInt?
+  width            Int?
+  height           Int?
+
+  pendingPublicObjectKey String?      @unique
+  status                 AvatarStatus @default(PENDING_APPROVAL)
+  rejectionReason        String?
+
+  reviewedAt        TimestamptzString?
+  reviewedByAdminId String?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+
+  @@index([status, createdAt])
 }
 
 model ProfileCustomization {
@@ -187,6 +228,24 @@ model UploadReservation {
   size        BigInt
   expiresAt   TimestamptzString
   createdAt   TimestamptzString @default(now())
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model AvatarUploadReservation {
+  id String @id @onCreate(uuid())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+
+  objectKey   String @unique
+  filename    String
+  contentType String
+  size        BigInt
+
+  expiresAt TimestamptzString
+  createdAt TimestamptzString @default(now())
 
   @@index([userId, createdAt])
   @@index([expiresAt])

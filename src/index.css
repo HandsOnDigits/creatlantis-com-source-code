@@ -128,7 +128,7 @@ html.green-theme {
   @layer components {
     /* Basic styling for ALL buttons */
     button {
-      @apply my-2 inline-flex h-12 w-24 items-center justify-center rounded-sm font-medium transition-colors duration-150;
+      @apply inline-flex h-12 w-24 items-center justify-center rounded-sm font-medium transition-colors duration-150;
       @apply cursor-pointer self-center;
 
       /* Base styling for when a button is disabled */
@@ -250,14 +250,14 @@ html.green-theme {
   .drop-down {
     @apply relative;
 
-    * {
-      @apply p-1;
-    }
-
     .drop-down-content {
       @apply absolute top-full right-0 left-auto sm:w-[20vw];
 
-      @apply flex flex-col items-center;
+      @apply flex flex-col items-center p-4;
+
+      button {
+        @apply m-2;
+      }
 
       div {
         @apply text-center whitespace-nowrap;
@@ -275,6 +275,19 @@ html.green-theme {
     @apply hidden;
   }
 
+  /* Navigation Tabs */
+  .nav-tabs {
+    @apply px-4 pt-2;
+
+    & button {
+      @apply mr-1;
+    }
+
+    .selected-tab {
+      @apply bg-background-blend rounded-t-xl;
+    }
+  }
+
   /* Universal Theme Application targeting HTML and its children */
   html[class*='-theme'] {
     @apply bg-bg text-text placeholder-text min-h-screen;
@@ -290,7 +303,7 @@ html.green-theme {
       @apply bg-journal-body text-text;
     }
 
-    & nav,
+    & nav:not(.nav-tabs),
     & footer,
     & #mobile-search {
       @apply bg-surface;

@@ -6,6 +6,8 @@ import { PROFILE_WIDGET_TYPES } from '../../src/types/profile'
 import { requireAuth } from '../auth/auth.middleware'
 import { renderProfileBBCode } from './profile-renderer'
 
+import { getPublicObjectUrl } from '../storage/b2.client'
+
 const router = Router()
 
 const MAX_DESCRIPTION_LENGTH = 20_000
@@ -23,6 +25,15 @@ const updateCustomizationSchema = z
       message: 'At least one field must be provided',
     },
   )
+
+const updateTaglineSchema = z.object({
+  tagline: z
+    .string()
+    .trim()
+    .max(160)
+    .transform((value) => (value === '' ? null : value))
+    .nullable(),
+})
 
 const profileWidgetSchema = z.object({
   id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/),
@@ -153,12 +164,17 @@ function parseUserId(value: string | string[] | undefined): number | null {
   return Number.isSafeInteger(id) ? id : null
 }
 
-// Get public profile by username
+// Get all public user information by username
 router.get('/username/:username', async (req, res) => {
   const username = req.params.username
 
+  if (typeof username !== 'string' || !/^[a-zA-Z0-9_]+$/.test(username)) {
+    res.status(400).json({ error: 'Invalid username' })
+    return
+  }
+
   const user = await db.orm.public.User.where({ username })
-    .select('id', 'username', 'name', 'nameIsPublic')
+    .select('id', 'username', 'name', 'nameIsPublic', 'createdAt', 'tagline')
     .first()
 
   if (!user) {
@@ -166,11 +182,81 @@ router.get('/username/:username', async (req, res) => {
     return
   }
 
+  // Load public profile information in parallel
+  const [customization, savedLayout, avatar] = await Promise.all([
+    db.orm.public.ProfileCustomization.where({
+      userId: user.id,
+    })
+      .select('description')
+      .first(),
+
+    db.orm.public.ProfileLayout.where({
+      userId: user.id,
+    }).first(),
+
+    db.orm.public.UserAvatar.where({
+      userId: user.id,
+    })
+      .select('publicObjectKey', 'status')
+      .first(),
+  ])
+
   res.json({
     data: {
       id: user.id,
       username: user.username,
-      ...(user.nameIsPublic && user.name !== null ? { name: user.name } : {}),
+      name: user.nameIsPublic && user.name !== null ? user.name : null,
+      createdAt: user.createdAt,
+      tagline: user.tagline,
+      avatarUrl: avatar?.publicObjectKey
+        ? getPublicObjectUrl(avatar.publicObjectKey)
+        : null,
+
+      customization: {
+        descriptionHtml: renderProfileBBCode(customization?.description ?? ''),
+      },
+
+      layout: {
+        version: savedLayout?.version ?? 1,
+        layout: normalizeProfileLayout(
+          savedLayout?.layout ?? DEFAULT_PROFILE_LAYOUT,
+        ),
+      },
+    },
+  })
+})
+
+// Update own public profile tagline
+router.put('/me/tagline', requireAuth, async (req, res) => {
+  const parsed = updateTaglineSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid tagline',
+      details: parsed.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
+    })
+    return
+  }
+
+  const userId = req.auth!.userId
+
+  const user = await db.orm.public.User.where({ id: userId }).update({
+    tagline: parsed.data.tagline,
+  })
+
+  if (!user) {
+    res.status(404).json({
+      error: 'User not found',
+    })
+    return
+  }
+
+  res.json({
+    data: {
+      tagline: user.tagline,
     },
   })
 })

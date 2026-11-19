@@ -28,6 +28,7 @@ enum ReportTargetType {
   POST
   COMMENT
   MEDIA
+  AVATAR
 }
 
 enum ReportReason {

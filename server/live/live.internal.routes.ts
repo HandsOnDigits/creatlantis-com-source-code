@@ -6,11 +6,18 @@ import { publishLiveEvent } from './live.service'
 
 const router = Router()
 
-const moderationEventSchema = z.object({
-  type: z.enum(['post.approved', 'post.rejected']),
-  postId: z.number().int().positive(),
-  authorId: z.number().int().positive(),
-})
+const moderationEventSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.enum(['post.approved', 'post.rejected']),
+    postId: z.number().int().positive(),
+    authorId: z.number().int().positive(),
+  }),
+  z.object({
+    type: z.enum(['avatar.approved', 'avatar.rejected']),
+    avatarId: z.string().uuid(),
+    userId: z.number().int().positive(),
+  }),
+])
 
 function isAuthorized(req: import('express').Request): boolean {
   const secret = process.env.LIVE_INTERNAL_SECRET
@@ -43,12 +50,33 @@ router.post('/moderation', (req, res) => {
     })
   }
 
-  const { type, postId, authorId } = parsed.data
+  const event = parsed.data
 
-  publishLiveEvent(type, { postId }, { userIds: [authorId] })
+  if (event.type === 'post.approved' || event.type === 'post.rejected') {
+    publishLiveEvent(
+      event.type,
+      { postId: event.postId },
+      {
+        userIds: [event.authorId],
+      },
+    )
 
-  if (type === 'post.approved') {
-    publishLiveEvent('post.created', { postId }, { audience: 'all-users' })
+    if (event.type === 'post.approved') {
+      publishLiveEvent(
+        'post.created',
+        { postId: event.postId },
+        { audience: 'all-users' },
+      )
+    }
+  } else if (
+    event.type === 'avatar.approved' ||
+    event.type === 'avatar.rejected'
+  ) {
+    publishLiveEvent(
+      event.type,
+      { avatarId: event.avatarId },
+      { userIds: [event.userId] },
+    )
   }
 
   return res.status(202).json({

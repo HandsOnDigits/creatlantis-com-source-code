@@ -3,7 +3,7 @@ import { db } from '../../src/prisma/db'
 export interface RecordModerationActionInput {
   adminId: string
   action: 'CONTENT_APPROVED' | 'CONTENT_REJECTED'
-  targetType: 'POST'
+  targetType: 'POST' | 'AVATAR'
   targetId: string
   reason?: string | null
 }

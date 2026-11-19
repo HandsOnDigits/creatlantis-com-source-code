@@ -16,6 +16,7 @@ import categoriesRoutes from './categories/categories.routes'
 import reportsRoutes from './reports/reports.routes'
 import liveRoutes from './live/live.routes'
 import liveInternalRoutes from './live/live.internal.routes'
+import avatarRoutes from './avatar/avatar.routes'
 
 import { closeReportSubmissionPool } from './reports/report-submission.service'
 
@@ -59,6 +60,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/profiles', profilesRoutes)
 app.use('/api/media', mediaRoutes)
+app.use('/api/avatars', avatarRoutes)
 app.use('/api/posts', postsRoutes)
 app.use('/api/categories', categoriesRoutes)
 app.use('/api/reports', reportsRoutes)
