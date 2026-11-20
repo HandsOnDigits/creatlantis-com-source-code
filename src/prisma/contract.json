@@ -1421,6 +1421,20 @@
           },
           "User": {
             "fields": {
+              "birthDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "birthDateIsPublic": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -1615,6 +1629,12 @@
             },
             "storage": {
               "fields": {
+                "birthDate": {
+                  "column": "birthDate"
+                },
+                "birthDateIsPublic": {
+                  "column": "birthDateIsPublic"
+                },
                 "createdAt": {
                   "column": "createdAt"
                 },
@@ -3039,6 +3059,20 @@
             },
             "User": {
               "columns": {
+                "birthDate": {
+                  "codecId": "pg/date-temporal@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "birthDateIsPublic": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -3349,7 +3383,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "2ff197ade86ec85dc28bd37e01b74f83942f08d1b8725b5c9bea3b309c3fd7eb"
+    "storageHash": "f9c4a45367327f7c96fda58e1cd5089cab4fcd779fc2ce8db9b936dac493b30d"
   },
   "execution": {
     "executionHash": "0001059360246d5bfa7e8b3ab448e730d5abf664f06fb0a15e1dcf792217fd52",

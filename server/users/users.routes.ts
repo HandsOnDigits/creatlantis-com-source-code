@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
+import { Temporal } from 'temporal-polyfill'
 
 import { db } from '../../src/prisma/db'
 import { requireAuth } from '../auth/auth.middleware'
@@ -17,6 +18,18 @@ const createAvatarUploadSchema = z.object({
 })
 
 const router = Router()
+
+function isValidDateOnly(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`)
+
+  return (
+    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+  )
+}
 
 // Validation
 const updateUserSchema = z
@@ -43,6 +56,14 @@ const updateUserSchema = z
     name: z.string().trim().min(1).max(100).optional(),
 
     nameIsPublic: z.boolean().optional(),
+
+    birthDate: z
+      .string()
+      .refine(isValidDateOnly, 'Invalid date of birth')
+      .nullable()
+      .optional(),
+
+    birthDateIsPublic: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
     message: 'At least one field must be provided',
@@ -72,7 +93,16 @@ function parseUserId(value: string | string[] | undefined): number | null {
 // List users (only the authenticated user's own record)
 router.get('/', requireAuth, async (req, res) => {
   const users = await db.orm.public.User.where({ id: req.auth!.userId })
-    .select('id', 'email', 'username', 'name', 'nameIsPublic', 'createdAt')
+    .select(
+      'id',
+      'email',
+      'username',
+      'name',
+      'nameIsPublic',
+      'birthDate',
+      'birthDateIsPublic',
+      'createdAt',
+    )
     .all()
 
   res.json({ data: users })
@@ -93,7 +123,16 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 
   const user = await db.orm.public.User.where({ id })
-    .select('id', 'email', 'username', 'name', 'nameIsPublic', 'createdAt')
+    .select(
+      'id',
+      'email',
+      'username',
+      'name',
+      'nameIsPublic',
+      'birthDate',
+      'birthDateIsPublic',
+      'createdAt',
+    )
     .first()
 
   if (!user) {
@@ -134,7 +173,19 @@ router.patch('/:id', requireAuth, async (req, res) => {
   let user
 
   try {
-    user = await db.orm.public.User.where({ id }).update(parsed.data)
+    const { birthDate, ...otherData } = parsed.data
+
+    const updateData = {
+      ...otherData,
+      ...(birthDate !== undefined
+        ? {
+            birthDate:
+              birthDate === null ? null : Temporal.PlainDate.from(birthDate),
+          }
+        : {}),
+    }
+
+    user = await db.orm.public.User.where({ id }).update(updateData)
   } catch (error) {
     if (isUniqueConstraintError(error)) {
       res.status(409).json({
@@ -158,6 +209,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
       username: user.username,
       name: user.name,
       nameIsPublic: user.nameIsPublic,
+      birthDate: user.birthDate,
+      birthDateIsPublic: user.birthDateIsPublic,
       createdAt: user.createdAt,
     },
   })

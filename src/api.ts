@@ -186,6 +186,8 @@ export interface User {
   username: string
   name: string | null
   nameIsPublic: boolean
+  birthDate: string | null
+  birthDateIsPublic: boolean
   avatarUrl: string | null
   createdAt: string
 }
@@ -195,6 +197,8 @@ export interface UpdateUserInput {
   username?: string
   name?: string
   nameIsPublic?: boolean
+  birthDate?: string | null
+  birthDateIsPublic?: boolean
 }
 
 interface ApiResponse<T> {
@@ -230,7 +234,8 @@ export const usersApi = {
 export interface PublicProfile {
   id: number
   username: string
-  name: string | null
+  name?: string
+  birthDate?: string
   tagline: string | null
   createdAt: string
   avatarUrl: string | null
@@ -840,15 +845,9 @@ export const authApi = {
       authenticated: false,
     })
   },
-}
 
-// Temporary development-only moderation media tests.
-export const mediaDebugApi = {
-  getStatus(id: string) {
-    return mediaApi.getStatus(id)
-  },
-
-  getOriginal(id: string) {
-    return mediaApi.getOriginalDownloadUrl(id)
+  // POST /api/auth/change-password
+  changePassword(data: { currentPassword: string; newPassword: string }) {
+    return api.post<{ message: string }>('/api/auth/change-password', data)
   },
 }

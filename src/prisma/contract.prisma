@@ -39,13 +39,18 @@ model User {
   name: "User_username_lower_key"
   )
 
-  id           Int         @id @default(autoincrement())
-  email        String      @unique
-  username     String
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  username String
+
   name         String?
-  nameIsPublic Boolean     @default(false)
+  nameIsPublic Boolean @default(false)
+
+  birthDate         Date?
+  birthDateIsPublic Boolean @default(false)
+
   tagline VarChar(160)?
-  avatar       UserAvatar?
+  avatar UserAvatar?
 
   passwordHash         String?
   posts                Post[]

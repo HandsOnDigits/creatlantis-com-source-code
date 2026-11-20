@@ -19,6 +19,7 @@ function ProfileTabs({ activeTab, onChange, profileInfo }: ProfileTabsProps) {
           image={profileInfo.avatarUrl}
           tagline={profileInfo.tagline}
         />
+
         <button
           type="button"
           onClick={() => onChange('profile')}
@@ -37,7 +38,14 @@ function ProfileTabs({ activeTab, onChange, profileInfo }: ProfileTabsProps) {
           Content
         </button>
       </nav>
-      <div className="light-to-dark-gradient"></div>
+      <p className="light-to-dark-gradient text-sm">
+        {profileInfo.birthDate && (
+          <>
+            / Date of birth:{' '}
+            {new Date(`${profileInfo.birthDate}T00:00:00`).toLocaleDateString()}
+          </>
+        )}
+      </p>
     </>
   )
 }

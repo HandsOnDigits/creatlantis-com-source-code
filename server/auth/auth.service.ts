@@ -209,3 +209,49 @@ export async function loginUser(input: LoginInput) {
     },
   }
 }
+
+export async function changeUserPassword(
+  userId: number,
+  currentPassword: string,
+  newPassword: string,
+) {
+  const user = await db.orm.public.User.where({ id: userId })
+    .select('id', 'passwordHash')
+    .first()
+
+  if (!user?.passwordHash) {
+    return false
+  }
+
+  let passwordMatches = false
+
+  if (isLegacyBcryptHash(user.passwordHash)) {
+    passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash)
+  } else if (user.passwordHash.startsWith('$argon2')) {
+    passwordMatches = await argon2.verify(user.passwordHash, currentPassword)
+  }
+
+  if (!passwordMatches) {
+    return false
+  }
+
+  const newPasswordHash = await argon2.hash(newPassword, {
+    type: argon2.argon2id,
+  })
+
+  const updated = await db.orm.public.User.where({
+    id: userId,
+    passwordHash: user.passwordHash,
+  }).update({
+    passwordHash: newPasswordHash,
+  })
+
+  if (!updated) {
+    return false
+  }
+
+  // Revoke all existing refresh sessions.
+  await db.orm.public.Session.where({ userId }).delete()
+
+  return true
+}

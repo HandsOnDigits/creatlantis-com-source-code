@@ -12,7 +12,7 @@ import Post from './pages/Post'
 import ProtectedRoute from './ProtectedRoute'
 import Profile from './pages/Profile'
 import ProfileEditor from './pages/ProfileEditor'
-import Settings from './pages/Settings'
+import Settings from './pages/settings'
 
 function App() {
   const { connected, subscribe } = useLive()

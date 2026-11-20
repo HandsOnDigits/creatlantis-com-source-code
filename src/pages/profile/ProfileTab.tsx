@@ -50,7 +50,15 @@ function ProfileTab({
             <h1 className="big-text bg-background-blend font-bold">
               {profile.name ?? profile.username}
             </h1>
+
             <p className="mt-2 text-sm opacity-60">@{profile.username}</p>
+
+            {profile.birthDate && (
+              <p className="mt-2 text-sm opacity-60">
+                Date of birth:{' '}
+                {new Date(`${profile.birthDate}T00:00:00`).toLocaleDateString()}
+              </p>
+            )}
           </header>
         )
 

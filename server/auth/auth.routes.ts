@@ -2,8 +2,13 @@ import { Router } from 'express'
 import { rateLimit } from 'express-rate-limit'
 
 import { db } from '../../src/prisma/db'
-import { loginSchema, registerSchema } from './auth.schemas'
 import {
+  loginSchema,
+  registerSchema,
+  changePasswordSchema,
+} from './auth.schemas'
+import {
+  changeUserPassword,
   loginUser,
   logoutUser,
   refreshUserSession,
@@ -167,6 +172,42 @@ router.get('/me', requireAuth, async (req, res) => {
   }
 
   res.json({ data: user })
+})
+
+router.post('/change-password', requireAuth, authLimiter, async (req, res) => {
+  const parsed = changePasswordSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid password data',
+      details: parsed.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
+    })
+    return
+  }
+
+  const { currentPassword, newPassword } = parsed.data
+
+  const changed = await changeUserPassword(
+    req.auth!.userId,
+    currentPassword,
+    newPassword,
+  )
+
+  if (!changed) {
+    res.status(400).json({
+      error: 'Current password is incorrect or password could not be changed.',
+    })
+    return
+  }
+
+  res.clearCookie('refreshToken', refreshCookieOptions)
+
+  res.json({
+    message: 'Password changed successfully. Please log in again.',
+  })
 })
 
 export default router

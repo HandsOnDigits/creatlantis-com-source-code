@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'2ff197ade86ec85dc28bd37e01b74f83942f08d1b8725b5c9bea3b309c3fd7eb'>;
+  StorageHashBase<'f9c4a45367327f7c96fda58e1cd5089cab4fcd779fc2ce8db9b936dac493b30d'>;
 export type ExecutionHash =
   ExecutionHashBase<'0001059360246d5bfa7e8b3ab448e730d5abf664f06fb0a15e1dcf792217fd52'>;
 export type ProfileHash =
@@ -499,6 +499,8 @@ export namespace Models {
     readonly [RelationKeys]?: 'user';
   };
   export type public_User = {
+    birthDate: FieldOutputTypes['public']['User']['birthDate'];
+    birthDateIsPublic: FieldOutputTypes['public']['User']['birthDateIsPublic'];
     createdAt: FieldOutputTypes['public']['User']['createdAt'];
     email: FieldOutputTypes['public']['User']['email'];
     id: FieldOutputTypes['public']['User']['id'];
@@ -1510,6 +1512,22 @@ type ContractBase = Omit<
             };
             readonly User: {
               columns: {
+                readonly birthDate: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-temporal@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly birthDateIsPublic: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
                 readonly createdAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -2601,6 +2619,14 @@ type ContractBase = Omit<
           };
           readonly User: {
             readonly fields: {
+              readonly birthDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-temporal@1' };
+              };
+              readonly birthDateIsPublic: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -2742,6 +2768,8 @@ type ContractBase = Omit<
               readonly table: 'User';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly birthDate: { readonly column: 'birthDate' };
+                readonly birthDateIsPublic: { readonly column: 'birthDateIsPublic' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly email: { readonly column: 'email' };
                 readonly id: { readonly column: 'id' };

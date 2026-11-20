@@ -174,7 +174,16 @@ router.get('/username/:username', async (req, res) => {
   }
 
   const user = await db.orm.public.User.where({ username })
-    .select('id', 'username', 'name', 'nameIsPublic', 'createdAt', 'tagline')
+    .select(
+      'id',
+      'username',
+      'name',
+      'nameIsPublic',
+      'birthDate',
+      'birthDateIsPublic',
+      'createdAt',
+      'tagline',
+    )
     .first()
 
   if (!user) {
@@ -205,7 +214,10 @@ router.get('/username/:username', async (req, res) => {
     data: {
       id: user.id,
       username: user.username,
-      name: user.nameIsPublic && user.name !== null ? user.name : null,
+      ...(user.nameIsPublic && user.name !== null ? { name: user.name } : {}),
+      ...(user.birthDateIsPublic && user.birthDate !== null
+        ? { birthDate: user.birthDate }
+        : {}),
       createdAt: user.createdAt,
       tagline: user.tagline,
       avatarUrl: avatar?.publicObjectKey
