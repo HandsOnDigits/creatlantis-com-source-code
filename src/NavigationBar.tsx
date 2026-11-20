@@ -12,6 +12,7 @@ import { profilesApi, type PublicProfile } from './api'
 import test_icon from './assets/images/test_icon.webp'
 import more_icon from './assets/images/icons/moreIcon.webp'
 import default_pp from './assets/images/default_pp.webp'
+import inbox_icon from './assets/images/icons/inboxIcon.webp'
 
 function NavigationBar() {
   const { status, logout, user } = useAuth()

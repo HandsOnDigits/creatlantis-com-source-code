@@ -24,6 +24,14 @@
       "model": "MediaVariant",
       "namespace": "public"
     },
+    "Notification": {
+      "model": "Notification",
+      "namespace": "public"
+    },
+    "NotificationPreference": {
+      "model": "NotificationPreference",
+      "namespace": "public"
+    },
     "Post": {
       "model": "Post",
       "namespace": "public"
@@ -117,6 +125,51 @@
               {
                 "name": "DELETING",
                 "value": "DELETING"
+              }
+            ]
+          },
+          "NotificationType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "FOLLOW",
+                "value": "FOLLOW"
+              },
+              {
+                "name": "POST_LIKE",
+                "value": "POST_LIKE"
+              },
+              {
+                "name": "POST_COMMENT",
+                "value": "POST_COMMENT"
+              },
+              {
+                "name": "COMMENT_REPLY",
+                "value": "COMMENT_REPLY"
+              },
+              {
+                "name": "POST_APPROVED",
+                "value": "POST_APPROVED"
+              },
+              {
+                "name": "POST_REJECTED",
+                "value": "POST_REJECTED"
+              },
+              {
+                "name": "PRIVATE_MESSAGE",
+                "value": "PRIVATE_MESSAGE"
+              },
+              {
+                "name": "CHAT_ROOM_INVITATION",
+                "value": "CHAT_ROOM_INVITATION"
+              },
+              {
+                "name": "CHAT_ROOM_MENTION",
+                "value": "CHAT_ROOM_MENTION"
+              },
+              {
+                "name": "SYSTEM",
+                "value": "SYSTEM"
               }
             ]
           },
@@ -803,6 +856,230 @@
               "table": "MediaVariant"
             }
           },
+          "Notification": {
+            "fields": {
+              "actorId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "data": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "message": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "readAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "recipientId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "type": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "NotificationType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              }
+            },
+            "relations": {
+              "actor": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "actorId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "recipient": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "recipientId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "actorId": {
+                  "column": "actorId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "data": {
+                  "column": "data"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "message": {
+                  "column": "message"
+                },
+                "readAt": {
+                  "column": "readAt"
+                },
+                "recipientId": {
+                  "column": "recipientId"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "type": {
+                  "column": "type"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Notification"
+            }
+          },
+          "NotificationPreference": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "enabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "type": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "NotificationType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "enabled": {
+                  "column": "enabled"
+                },
+                "type": {
+                  "column": "type"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "NotificationPreference"
+            }
+          },
           "Post": {
             "fields": {
               "authorId": {
@@ -1470,6 +1747,13 @@
                   "kind": "scalar"
                 }
               },
+              "identityId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": true,
                 "type": {
@@ -1560,6 +1844,51 @@
                 },
                 "to": {
                   "model": "Media",
+                  "namespace": "public"
+                }
+              },
+              "notificationPreferences": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "NotificationPreference",
+                  "namespace": "public"
+                }
+              },
+              "notificationsActed": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "actorId"
+                  ]
+                },
+                "to": {
+                  "model": "Notification",
+                  "namespace": "public"
+                }
+              },
+              "notificationsReceived": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "recipientId"
+                  ]
+                },
+                "to": {
+                  "model": "Notification",
                   "namespace": "public"
                 }
               },
@@ -1663,6 +1992,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "identityId": {
+                  "column": "identityId"
                 },
                 "name": {
                   "column": "name"
@@ -2499,6 +2831,245 @@
                 }
               ]
             },
+            "Notification": {
+              "checks": [
+                {
+                  "expression": "\"type\" IN ('FOLLOW', 'POST_LIKE', 'POST_COMMENT', 'COMMENT_REPLY', 'POST_APPROVED', 'POST_REJECTED', 'PRIVATE_MESSAGE', 'CHAT_ROOM_INVITATION', 'CHAT_ROOM_MENTION', 'SYSTEM')",
+                  "name": "Notification_type_check_2f38823e",
+                  "prefix": "Notification_type_check"
+                }
+              ],
+              "columns": {
+                "actorId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "data": {
+                  "codecId": "pg/json@1",
+                  "dataType": "pg/json",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "message": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "readAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "recipientId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "NotificationType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Notification_recipientId_idx_c9527cf8"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "recipientId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Notification"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "Notification_actorId_idx_a58f6b4b"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "actorId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Notification"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "actorId"
+                  ],
+                  "name": "Notification_actorId_idx_a58f6b4b",
+                  "prefix": "Notification_actorId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "recipientId",
+                    "createdAt"
+                  ],
+                  "name": "Notification_recipientId_createdAt_idx_4cb575bd",
+                  "prefix": "Notification_recipientId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "recipientId"
+                  ],
+                  "name": "Notification_recipientId_idx_c9527cf8",
+                  "prefix": "Notification_recipientId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "recipientId",
+                    "readAt"
+                  ],
+                  "name": "Notification_recipientId_readAt_idx_51a86344",
+                  "prefix": "Notification_recipientId_readAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "NotificationPreference": {
+              "checks": [
+                {
+                  "expression": "\"type\" IN ('FOLLOW', 'POST_LIKE', 'POST_COMMENT', 'COMMENT_REPLY', 'POST_APPROVED', 'POST_REJECTED', 'PRIVATE_MESSAGE', 'CHAT_ROOM_INVITATION', 'CHAT_ROOM_MENTION', 'SYSTEM')",
+                  "name": "NotificationPreference_type_check_2f38823e",
+                  "prefix": "NotificationPreference_type_check"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "enabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "NotificationType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "NotificationPreference_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "NotificationPreference"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "NotificationPreference_userId_idx_a489d58a",
+                  "prefix": "NotificationPreference_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "userId",
+                  "type"
+                ]
+              },
+              "uniques": []
+            },
             "Post": {
               "checks": [
                 {
@@ -3130,6 +3701,11 @@
                   },
                   "nullable": false
                 },
+                "identityId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -3183,6 +3759,11 @@
                 ]
               },
               "uniques": [
+                {
+                  "columns": [
+                    "identityId"
+                  ]
+                },
                 {
                   "columns": [
                     "email"
@@ -3395,6 +3976,21 @@
                 "DELETING"
               ]
             },
+            "NotificationType": {
+              "kind": "valueSet",
+              "values": [
+                "FOLLOW",
+                "POST_LIKE",
+                "POST_COMMENT",
+                "COMMENT_REPLY",
+                "POST_APPROVED",
+                "POST_REJECTED",
+                "PRIVATE_MESSAGE",
+                "CHAT_ROOM_INVITATION",
+                "CHAT_ROOM_MENTION",
+                "SYSTEM"
+              ]
+            },
             "PostPublicationStatus": {
               "kind": "valueSet",
               "values": [
@@ -3417,10 +4013,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3f802562cbf083bdacc26f44b9533881f018125fd870819a79868e885504cd1f"
+    "storageHash": "99f9c2416f033914e8b889395994f70ad7f081fed99d2c9d5d074ae08a4a1ca1"
   },
   "execution": {
-    "executionHash": "0001059360246d5bfa7e8b3ab448e730d5abf664f06fb0a15e1dcf792217fd52",
+    "executionHash": "cd4b35919c27b58b63b3b3ec108b05806ff167508ff4fa14d375dc83dbbbf726",
     "mutations": {
       "defaults": [
         {
@@ -3483,6 +4079,32 @@
           "ref": {
             "entry": "MediaVariant",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Notification",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "NotificationPreference",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },
@@ -3572,6 +4194,17 @@
           "ref": {
             "entry": "UploadReservation",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "User",
+            "field": "identityId",
             "namespace": "public"
           }
         },

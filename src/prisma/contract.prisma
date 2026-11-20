@@ -32,6 +32,19 @@ enum AvatarStatus {
   REJECTED
 }
 
+enum NotificationType {
+  FOLLOW
+  POST_LIKE
+  POST_COMMENT
+  COMMENT_REPLY
+  POST_APPROVED
+  POST_REJECTED
+  PRIVATE_MESSAGE
+  CHAT_ROOM_INVITATION
+  CHAT_ROOM_MENTION
+  SYSTEM
+}
+
 model User {
   @@index(
   expression: sql`lower(username)`,
@@ -39,8 +52,13 @@ model User {
   name: "User_username_lower_key"
   )
 
+  // Internal database identity
+  id Int @id @default(autoincrement())
+
+  // Permanent cross-service identity
+  identityId String @unique @onCreate(uuid())
+
   // Private
-  id       Int    @id @default(autoincrement())
   email    String @unique
   username String
 
@@ -56,17 +74,25 @@ model User {
   tagline VarChar(160)?
   avatar UserAvatar?
 
-  passwordHash         String?
-  posts                Post[]
-  sessions             Session[]
-  createdAt            TimestamptzString     @default(now())
-  updatedAt            temporal.UpdatedAtString
+  passwordHash String?
+
+  posts    Post[]
+  sessions Session[]
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+
   profileCustomization ProfileCustomization?
   profileLayout        ProfileLayout?
 
   media                    Media[]
   uploadReservations       UploadReservation[]
   avatarUploadReservations AvatarUploadReservation[]
+
+  // Notifications
+  notificationsReceived   Notification[]           @relation(name: "NotificationRecipient")
+  notificationsActed      Notification[]           @relation(name: "NotificationActor")
+  notificationPreferences NotificationPreference[]
 }
 
 model UserAvatar {
@@ -135,9 +161,11 @@ model ProfileLayout {
 }
 
 model Session {
-  id               String            @id @onCreate(uuid())
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId           Int
+  id String @id @onCreate(uuid())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+
   refreshTokenHash String            @unique
   expiresAt        TimestamptzString
   createdAt        TimestamptzString @default(now())
@@ -154,7 +182,7 @@ model Media {
   originalFilename  String
   originalMimeType  String
   originalSize      BigInt?
-  publicOriginalKey String? @unique // Public bucket key
+  publicOriginalKey String? @unique
 
   width  Int?
   height Int?
@@ -185,8 +213,8 @@ model MediaVariant {
   width           Int
   height          Int
   size            BigInt
-  objectKey       String      @unique // Private staging key
-  publicObjectKey String?     @unique // Public bucket key
+  objectKey       String      @unique
+  publicObjectKey String?     @unique
   fileId          String?
 
   createdAt TimestamptzString @default(now())
@@ -196,13 +224,15 @@ model MediaVariant {
 }
 
 model Post {
-  id                Int                   @id @default(autoincrement())
-  title             String
-  content           String?
-  author            User                  @relation(fields: [authorId], references: [id])
-  authorId          Int
-  createdAt         TimestamptzString     @default(now())
+  id       Int     @id @default(autoincrement())
+  title    String
+  content  String?
+  author   User    @relation(fields: [authorId], references: [id])
+  authorId Int
+
+  createdAt TimestamptzString @default(now())
   updatedAt temporal.UpdatedAtString
+
   type              PostType              @default(IMAGE)
   publicationStatus PostPublicationStatus @default(PENDING_APPROVAL)
 
@@ -228,9 +258,11 @@ model PostMedia {
 }
 
 model UploadReservation {
-  id          String            @id @onCreate(uuid())
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      Int
+  id String @id @onCreate(uuid())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+
   objectKey   String            @unique
   filename    String
   contentType String
@@ -286,4 +318,40 @@ model CategoryPost {
   @@id([categoryId, postId])
   @@index([postId])
   @@index([categoryId, position])
+}
+
+model Notification {
+  id String @id @onCreate(uuid())
+
+  recipient   User @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId Int
+
+  actor   User? @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorId Int?
+
+  type NotificationType
+
+  title   String
+  message String?
+  data    Json?
+
+  readAt TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([recipientId, createdAt])
+  @@index([recipientId, readAt])
+}
+
+model NotificationPreference {
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+
+  type    NotificationType
+  enabled Boolean          @default(true)
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+
+  @@id([userId, type])
 }

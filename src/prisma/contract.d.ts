@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3f802562cbf083bdacc26f44b9533881f018125fd870819a79868e885504cd1f'>;
+  StorageHashBase<'99f9c2416f033914e8b889395994f70ad7f081fed99d2c9d5d074ae08a4a1ca1'>;
 export type ExecutionHash =
-  ExecutionHashBase<'0001059360246d5bfa7e8b3ab448e730d5abf664f06fb0a15e1dcf792217fd52'>;
+  ExecutionHashBase<'cd4b35919c27b58b63b3b3ec108b05806ff167508ff4fa14d375dc83dbbbf726'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -284,6 +284,58 @@ type FieldTypeOverrides = {
       readonly MediaVariant: {
         readonly format: { readonly output: 'WEBP' | 'AVIF'; readonly input: 'WEBP' | 'AVIF' };
       };
+      readonly Notification: {
+        readonly type: {
+          readonly output:
+            | 'FOLLOW'
+            | 'POST_LIKE'
+            | 'POST_COMMENT'
+            | 'COMMENT_REPLY'
+            | 'POST_APPROVED'
+            | 'POST_REJECTED'
+            | 'PRIVATE_MESSAGE'
+            | 'CHAT_ROOM_INVITATION'
+            | 'CHAT_ROOM_MENTION'
+            | 'SYSTEM';
+          readonly input:
+            | 'FOLLOW'
+            | 'POST_LIKE'
+            | 'POST_COMMENT'
+            | 'COMMENT_REPLY'
+            | 'POST_APPROVED'
+            | 'POST_REJECTED'
+            | 'PRIVATE_MESSAGE'
+            | 'CHAT_ROOM_INVITATION'
+            | 'CHAT_ROOM_MENTION'
+            | 'SYSTEM';
+        };
+      };
+      readonly NotificationPreference: {
+        readonly type: {
+          readonly output:
+            | 'FOLLOW'
+            | 'POST_LIKE'
+            | 'POST_COMMENT'
+            | 'COMMENT_REPLY'
+            | 'POST_APPROVED'
+            | 'POST_REJECTED'
+            | 'PRIVATE_MESSAGE'
+            | 'CHAT_ROOM_INVITATION'
+            | 'CHAT_ROOM_MENTION'
+            | 'SYSTEM';
+          readonly input:
+            | 'FOLLOW'
+            | 'POST_LIKE'
+            | 'POST_COMMENT'
+            | 'COMMENT_REPLY'
+            | 'POST_APPROVED'
+            | 'POST_REJECTED'
+            | 'PRIVATE_MESSAGE'
+            | 'CHAT_ROOM_INVITATION'
+            | 'CHAT_ROOM_MENTION'
+            | 'SYSTEM';
+        };
+      };
       readonly Post: {
         readonly publicationStatus: {
           readonly output: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
@@ -329,6 +381,58 @@ type ColumnTypeOverrides = {
     };
     readonly MediaVariant: {
       readonly format: { readonly output: 'WEBP' | 'AVIF'; readonly input: 'WEBP' | 'AVIF' };
+    };
+    readonly Notification: {
+      readonly type: {
+        readonly output:
+          | 'FOLLOW'
+          | 'POST_LIKE'
+          | 'POST_COMMENT'
+          | 'COMMENT_REPLY'
+          | 'POST_APPROVED'
+          | 'POST_REJECTED'
+          | 'PRIVATE_MESSAGE'
+          | 'CHAT_ROOM_INVITATION'
+          | 'CHAT_ROOM_MENTION'
+          | 'SYSTEM';
+        readonly input:
+          | 'FOLLOW'
+          | 'POST_LIKE'
+          | 'POST_COMMENT'
+          | 'COMMENT_REPLY'
+          | 'POST_APPROVED'
+          | 'POST_REJECTED'
+          | 'PRIVATE_MESSAGE'
+          | 'CHAT_ROOM_INVITATION'
+          | 'CHAT_ROOM_MENTION'
+          | 'SYSTEM';
+      };
+    };
+    readonly NotificationPreference: {
+      readonly type: {
+        readonly output:
+          | 'FOLLOW'
+          | 'POST_LIKE'
+          | 'POST_COMMENT'
+          | 'COMMENT_REPLY'
+          | 'POST_APPROVED'
+          | 'POST_REJECTED'
+          | 'PRIVATE_MESSAGE'
+          | 'CHAT_ROOM_INVITATION'
+          | 'CHAT_ROOM_MENTION'
+          | 'SYSTEM';
+        readonly input:
+          | 'FOLLOW'
+          | 'POST_LIKE'
+          | 'POST_COMMENT'
+          | 'COMMENT_REPLY'
+          | 'POST_APPROVED'
+          | 'POST_REJECTED'
+          | 'PRIVATE_MESSAGE'
+          | 'CHAT_ROOM_INVITATION'
+          | 'CHAT_ROOM_MENTION'
+          | 'SYSTEM';
+      };
     };
     readonly Post: {
       readonly publicationStatus: {
@@ -432,6 +536,29 @@ export namespace Models {
     media: public_Media;
     readonly [RelationKeys]?: 'media';
   };
+  export type public_Notification = {
+    actorId: FieldOutputTypes['public']['Notification']['actorId'];
+    createdAt: FieldOutputTypes['public']['Notification']['createdAt'];
+    data: FieldOutputTypes['public']['Notification']['data'];
+    id: FieldOutputTypes['public']['Notification']['id'];
+    message: FieldOutputTypes['public']['Notification']['message'];
+    readAt: FieldOutputTypes['public']['Notification']['readAt'];
+    recipientId: FieldOutputTypes['public']['Notification']['recipientId'];
+    title: FieldOutputTypes['public']['Notification']['title'];
+    type: FieldOutputTypes['public']['Notification']['type'];
+    actor: public_User | null;
+    recipient: public_User;
+    readonly [RelationKeys]?: 'actor' | 'recipient';
+  };
+  export type public_NotificationPreference = {
+    createdAt: FieldOutputTypes['public']['NotificationPreference']['createdAt'];
+    enabled: FieldOutputTypes['public']['NotificationPreference']['enabled'];
+    type: FieldOutputTypes['public']['NotificationPreference']['type'];
+    updatedAt: FieldOutputTypes['public']['NotificationPreference']['updatedAt'];
+    userId: FieldOutputTypes['public']['NotificationPreference']['userId'];
+    user: public_User;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_Post = {
     authorId: FieldOutputTypes['public']['Post']['authorId'];
     content: FieldOutputTypes['public']['Post']['content'];
@@ -506,6 +633,7 @@ export namespace Models {
     gender: FieldOutputTypes['public']['User']['gender'];
     genderIsPublic: FieldOutputTypes['public']['User']['genderIsPublic'];
     id: FieldOutputTypes['public']['User']['id'];
+    identityId: FieldOutputTypes['public']['User']['identityId'];
     name: FieldOutputTypes['public']['User']['name'];
     nameIsPublic: FieldOutputTypes['public']['User']['nameIsPublic'];
     passwordHash: FieldOutputTypes['public']['User']['passwordHash'];
@@ -515,6 +643,9 @@ export namespace Models {
     avatar: public_UserAvatar | null;
     avatarUploadReservations: public_AvatarUploadReservation[];
     media: public_Media[];
+    notificationPreferences: public_NotificationPreference[];
+    notificationsActed: public_Notification[];
+    notificationsReceived: public_Notification[];
     posts: public_Post[];
     profileCustomization: public_ProfileCustomization | null;
     profileLayout: public_ProfileLayout | null;
@@ -524,6 +655,9 @@ export namespace Models {
       | 'avatar'
       | 'avatarUploadReservations'
       | 'media'
+      | 'notificationPreferences'
+      | 'notificationsActed'
+      | 'notificationsReceived'
       | 'posts'
       | 'profileCustomization'
       | 'profileLayout'
@@ -561,6 +695,8 @@ export declare const models: {
     CategoryPost: Models.public_CategoryPost;
     Media: Models.public_Media;
     MediaVariant: Models.public_MediaVariant;
+    Notification: Models.public_Notification;
+    NotificationPreference: Models.public_NotificationPreference;
     Post: Models.public_Post;
     PostMedia: Models.public_PostMedia;
     ProfileCustomization: Models.public_ProfileCustomization;
@@ -1058,6 +1194,182 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'Media';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly Notification: {
+              columns: {
+                readonly actorId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly data: {
+                  readonly dataType: 'pg/json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly message: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly readAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recipientId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'Notification_actorId_idx_a58f6b4b';
+                  readonly prefix: 'Notification_actorId_idx';
+                  readonly columns: readonly ['actorId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Notification_recipientId_createdAt_idx_4cb575bd';
+                  readonly prefix: 'Notification_recipientId_createdAt_idx';
+                  readonly columns: readonly ['recipientId', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Notification_recipientId_idx_c9527cf8';
+                  readonly prefix: 'Notification_recipientId_idx';
+                  readonly columns: readonly ['recipientId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Notification_recipientId_readAt_idx_51a86344';
+                  readonly prefix: 'Notification_recipientId_readAt_idx';
+                  readonly columns: readonly ['recipientId', 'readAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Notification';
+                    readonly columns: readonly ['recipientId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Notification';
+                    readonly columns: readonly ['actorId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly NotificationPreference: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly enabled: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['userId', 'type'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'NotificationPreference_userId_idx_a489d58a';
+                  readonly prefix: 'NotificationPreference_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'NotificationPreference';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -1569,6 +1881,12 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly identityId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
                 readonly name: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -1612,7 +1930,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['email'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['identityId'] },
+                { readonly columns: readonly ['email'] },
+              ];
               indexes: readonly [
                 {
                   readonly name: 'User_username_lower_key_4babe768';
@@ -1790,6 +2111,21 @@ type ContractBase = Omit<
                 'DELETING',
               ];
             };
+            readonly NotificationType: {
+              readonly kind: 'valueSet';
+              readonly values: readonly [
+                'FOLLOW',
+                'POST_LIKE',
+                'POST_COMMENT',
+                'COMMENT_REPLY',
+                'POST_APPROVED',
+                'POST_REJECTED',
+                'PRIVATE_MESSAGE',
+                'CHAT_ROOM_INVITATION',
+                'CHAT_ROOM_MENTION',
+                'SYSTEM',
+              ];
+            };
             readonly PostPublicationStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
@@ -1822,6 +2158,14 @@ type ContractBase = Omit<
     readonly MediaVariant: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'MediaVariant';
+    };
+    readonly Notification: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'Notification';
+    };
+    readonly NotificationPreference: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'NotificationPreference';
     };
     readonly Post: { readonly namespace: 'public' & NamespaceId; readonly model: 'Post' };
     readonly PostMedia: { readonly namespace: 'public' & NamespaceId; readonly model: 'PostMedia' };
@@ -2247,6 +2591,139 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly Notification: {
+            readonly fields: {
+              readonly actorId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly data: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly message: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly readAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly recipientId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly actor: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['actorId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly recipient: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['recipientId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Notification';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly actorId: { readonly column: 'actorId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly data: { readonly column: 'data' };
+                readonly id: { readonly column: 'id' };
+                readonly message: { readonly column: 'message' };
+                readonly readAt: { readonly column: 'readAt' };
+                readonly recipientId: { readonly column: 'recipientId' };
+                readonly title: { readonly column: 'title' };
+                readonly type: { readonly column: 'type' };
+              };
+            };
+          };
+          readonly NotificationPreference: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly enabled: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'NotificationPreference';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly enabled: { readonly column: 'enabled' };
+                readonly type: { readonly column: 'type' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly Post: {
             readonly fields: {
               readonly authorId: {
@@ -2668,6 +3145,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly identityId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly name: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -2733,6 +3214,39 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['userId'];
+                };
+              };
+              readonly notificationPreferences: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NotificationPreference';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
+              readonly notificationsActed: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Notification';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['actorId'];
+                };
+              };
+              readonly notificationsReceived: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Notification';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['recipientId'];
                 };
               };
               readonly posts: {
@@ -2801,6 +3315,7 @@ type ContractBase = Omit<
                 readonly gender: { readonly column: 'gender' };
                 readonly genderIsPublic: { readonly column: 'genderIsPublic' };
                 readonly id: { readonly column: 'id' };
+                readonly identityId: { readonly column: 'identityId' };
                 readonly name: { readonly column: 'name' };
                 readonly nameIsPublic: { readonly column: 'nameIsPublic' };
                 readonly passwordHash: { readonly column: 'passwordHash' };
@@ -2958,6 +3473,21 @@ type ContractBase = Omit<
               { readonly name: 'DELETING'; readonly value: 'DELETING' },
             ];
           };
+          readonly NotificationType: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'FOLLOW'; readonly value: 'FOLLOW' },
+              { readonly name: 'POST_LIKE'; readonly value: 'POST_LIKE' },
+              { readonly name: 'POST_COMMENT'; readonly value: 'POST_COMMENT' },
+              { readonly name: 'COMMENT_REPLY'; readonly value: 'COMMENT_REPLY' },
+              { readonly name: 'POST_APPROVED'; readonly value: 'POST_APPROVED' },
+              { readonly name: 'POST_REJECTED'; readonly value: 'POST_REJECTED' },
+              { readonly name: 'PRIVATE_MESSAGE'; readonly value: 'PRIVATE_MESSAGE' },
+              { readonly name: 'CHAT_ROOM_INVITATION'; readonly value: 'CHAT_ROOM_INVITATION' },
+              { readonly name: 'CHAT_ROOM_MENTION'; readonly value: 'CHAT_ROOM_MENTION' },
+              { readonly name: 'SYSTEM'; readonly value: 'SYSTEM' },
+            ];
+          };
           readonly PostPublicationStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -2992,6 +3522,18 @@ type ContractBase = Omit<
             { readonly name: 'READY'; readonly value: 'READY' },
             { readonly name: 'FAILED'; readonly value: 'FAILED' },
             { readonly name: 'DELETING'; readonly value: 'DELETING' },
+          ];
+          readonly NotificationType: readonly [
+            { readonly name: 'FOLLOW'; readonly value: 'FOLLOW' },
+            { readonly name: 'POST_LIKE'; readonly value: 'POST_LIKE' },
+            { readonly name: 'POST_COMMENT'; readonly value: 'POST_COMMENT' },
+            { readonly name: 'COMMENT_REPLY'; readonly value: 'COMMENT_REPLY' },
+            { readonly name: 'POST_APPROVED'; readonly value: 'POST_APPROVED' },
+            { readonly name: 'POST_REJECTED'; readonly value: 'POST_REJECTED' },
+            { readonly name: 'PRIVATE_MESSAGE'; readonly value: 'PRIVATE_MESSAGE' },
+            { readonly name: 'CHAT_ROOM_INVITATION'; readonly value: 'CHAT_ROOM_INVITATION' },
+            { readonly name: 'CHAT_ROOM_MENTION'; readonly value: 'CHAT_ROOM_MENTION' },
+            { readonly name: 'SYSTEM'; readonly value: 'SYSTEM' },
           ];
           readonly PostPublicationStatus: readonly [
             { readonly name: 'PENDING_APPROVAL'; readonly value: 'PENDING_APPROVAL' },
@@ -3082,6 +3624,23 @@ type ContractBase = Omit<
           };
         },
         {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Notification';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'NotificationPreference';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
           readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
@@ -3137,6 +3696,14 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'UploadReservation';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'User';
+            readonly field: 'identityId';
             readonly namespace: 'public';
           };
         },
