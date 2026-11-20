@@ -189,6 +189,8 @@ export interface User {
   birthDate: string | null
   birthDateIsPublic: boolean
   avatarUrl: string | null
+  gender: string | null
+  genderIsPublic: boolean
   createdAt: string
 }
 
@@ -198,6 +200,8 @@ export interface UpdateUserInput {
   name?: string
   nameIsPublic?: boolean
   birthDate?: string | null
+  gender?: string | null
+  genderIsPublic?: boolean
   birthDateIsPublic?: boolean
 }
 
@@ -236,6 +240,7 @@ export interface PublicProfile {
   username: string
   name?: string
   birthDate?: string
+  gender?: string
   tagline: string | null
   createdAt: string
   avatarUrl: string | null

@@ -1449,6 +1449,20 @@
                   "kind": "scalar"
                 }
               },
+              "gender": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "genderIsPublic": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -1640,6 +1654,12 @@
                 },
                 "email": {
                   "column": "email"
+                },
+                "gender": {
+                  "column": "gender"
+                },
+                "genderIsPublic": {
+                  "column": "genderIsPublic"
                 },
                 "id": {
                   "column": "id"
@@ -3087,6 +3107,20 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "gender": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "genderIsPublic": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "id": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -3383,7 +3417,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f9c4a45367327f7c96fda58e1cd5089cab4fcd779fc2ce8db9b936dac493b30d"
+    "storageHash": "3f802562cbf083bdacc26f44b9533881f018125fd870819a79868e885504cd1f"
   },
   "execution": {
     "executionHash": "0001059360246d5bfa7e8b3ab448e730d5abf664f06fb0a15e1dcf792217fd52",

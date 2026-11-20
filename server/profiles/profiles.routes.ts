@@ -181,6 +181,8 @@ router.get('/username/:username', async (req, res) => {
       'nameIsPublic',
       'birthDate',
       'birthDateIsPublic',
+      'gender',
+      'genderIsPublic',
       'createdAt',
       'tagline',
     )
@@ -217,6 +219,9 @@ router.get('/username/:username', async (req, res) => {
       ...(user.nameIsPublic && user.name !== null ? { name: user.name } : {}),
       ...(user.birthDateIsPublic && user.birthDate !== null
         ? { birthDate: user.birthDate }
+        : {}),
+      ...(user.genderIsPublic && user.gender !== null
+        ? { gender: user.gender }
         : {}),
       createdAt: user.createdAt,
       tagline: user.tagline,

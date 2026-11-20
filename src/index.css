@@ -281,10 +281,16 @@ html.green-theme {
 
   /* Navigation Tabs */
   .nav-tabs {
-    @apply px-4 pt-2;
+    @apply flex px-4 pt-2;
 
     & button {
-      @apply mr-1;
+      @apply mr-1 self-end;
+    }
+
+    & .user-profile {
+      img {
+        @apply self-end;
+      }
     }
 
     .selected-tab {

@@ -64,6 +64,10 @@ const updateUserSchema = z
       .optional(),
 
     birthDateIsPublic: z.boolean().optional(),
+
+    gender: z.string().trim().min(1).max(100).nullable().optional(),
+
+    genderIsPublic: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
     message: 'At least one field must be provided',
@@ -101,6 +105,8 @@ router.get('/', requireAuth, async (req, res) => {
       'nameIsPublic',
       'birthDate',
       'birthDateIsPublic',
+      'gender',
+      'genderIsPublic',
       'createdAt',
     )
     .all()
@@ -131,6 +137,8 @@ router.get('/:id', requireAuth, async (req, res) => {
       'nameIsPublic',
       'birthDate',
       'birthDateIsPublic',
+      'gender',
+      'genderIsPublic',
       'createdAt',
     )
     .first()
@@ -211,6 +219,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
       nameIsPublic: user.nameIsPublic,
       birthDate: user.birthDate,
       birthDateIsPublic: user.birthDateIsPublic,
+      gender: user.gender,
+      genderIsPublic: user.genderIsPublic,
       createdAt: user.createdAt,
     },
   })

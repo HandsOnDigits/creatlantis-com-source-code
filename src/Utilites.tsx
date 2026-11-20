@@ -8,10 +8,10 @@ interface profileInfo {
 
 export function ProfileIcon({ name, image, tagline }: profileInfo) {
   return (
-    <div className="user-profile inline-flex items-center">
-      <img className="h-auto max-w-14" src={image ?? default_pp} alt="" />
+    <div className="user-profile inline-flex items-center p-2">
+      <img className="h-auto max-w-20" src={image ?? default_pp} alt="" />
 
-      <div className="p-4">
+      <div className="p-3 pb-0">
         <p className="text-lg font-semibold">{name}</p>
 
         {tagline && <p className="text-sm opacity-70">{tagline}</p>}

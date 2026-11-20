@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'f9c4a45367327f7c96fda58e1cd5089cab4fcd779fc2ce8db9b936dac493b30d'>;
+  StorageHashBase<'3f802562cbf083bdacc26f44b9533881f018125fd870819a79868e885504cd1f'>;
 export type ExecutionHash =
   ExecutionHashBase<'0001059360246d5bfa7e8b3ab448e730d5abf664f06fb0a15e1dcf792217fd52'>;
 export type ProfileHash =
@@ -503,6 +503,8 @@ export namespace Models {
     birthDateIsPublic: FieldOutputTypes['public']['User']['birthDateIsPublic'];
     createdAt: FieldOutputTypes['public']['User']['createdAt'];
     email: FieldOutputTypes['public']['User']['email'];
+    gender: FieldOutputTypes['public']['User']['gender'];
+    genderIsPublic: FieldOutputTypes['public']['User']['genderIsPublic'];
     id: FieldOutputTypes['public']['User']['id'];
     name: FieldOutputTypes['public']['User']['name'];
     nameIsPublic: FieldOutputTypes['public']['User']['nameIsPublic'];
@@ -1539,6 +1541,22 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly gender: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly genderIsPublic: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
                   readonly many: false;
                 };
                 readonly id: {
@@ -2638,6 +2656,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly gender: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly genderIsPublic: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -2772,6 +2798,8 @@ type ContractBase = Omit<
                 readonly birthDateIsPublic: { readonly column: 'birthDateIsPublic' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly email: { readonly column: 'email' };
+                readonly gender: { readonly column: 'gender' };
+                readonly genderIsPublic: { readonly column: 'genderIsPublic' };
                 readonly id: { readonly column: 'id' };
                 readonly name: { readonly column: 'name' };
                 readonly nameIsPublic: { readonly column: 'nameIsPublic' };

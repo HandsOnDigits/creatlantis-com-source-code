@@ -39,16 +39,20 @@ model User {
   name: "User_username_lower_key"
   )
 
+  // Private
   id       Int    @id @default(autoincrement())
   email    String @unique
   username String
 
-  name         String?
-  nameIsPublic Boolean @default(false)
-
+  // Optional public (default private)
+  name              String?
+  nameIsPublic      Boolean @default(false)
   birthDate         Date?
   birthDateIsPublic Boolean @default(false)
+  gender            String?
+  genderIsPublic    Boolean @default(false)
 
+  // Public
   tagline VarChar(160)?
   avatar UserAvatar?
 

@@ -3,12 +3,18 @@ import { useEffect, useState } from 'react'
 import { usersApi } from '../../../api'
 import { useAuth } from '../../../AuthContext'
 
+const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary']
+
 function AccountInformation() {
   const { user } = useAuth()
 
   const [email, setEmail] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [birthDateIsPublic, setBirthDateIsPublic] = useState(false)
+
+  const [genderOption, setGenderOption] = useState('')
+  const [customGender, setCustomGender] = useState('')
+  const [genderIsPublic, setGenderIsPublic] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -27,9 +33,24 @@ function AccountInformation() {
       .get(user.id)
       .then((response) => {
         if (!cancelled) {
+          const gender = response.data.gender
+
           setEmail(response.data.email)
           setBirthDate(response.data.birthDate ?? '')
           setBirthDateIsPublic(response.data.birthDateIsPublic)
+
+          if (!gender) {
+            setGenderOption('')
+            setCustomGender('')
+          } else if (GENDER_OPTIONS.includes(gender)) {
+            setGenderOption(gender)
+            setCustomGender('')
+          } else {
+            setGenderOption('custom')
+            setCustomGender(gender)
+          }
+
+          setGenderIsPublic(response.data.genderIsPublic)
         }
       })
       .catch(() => {
@@ -56,9 +77,16 @@ function AccountInformation() {
     setMessage('')
 
     try {
+      const gender =
+        genderOption === 'custom'
+          ? customGender.trim() || null
+          : genderOption || null
+
       await usersApi.update(user.id, {
         birthDate: birthDate || null,
         birthDateIsPublic,
+        gender,
+        genderIsPublic,
       })
 
       setMessage('Account information updated.')
@@ -130,6 +158,57 @@ function AccountInformation() {
               onChange={(event) => setBirthDateIsPublic(event.target.checked)}
             />
             Make my date of birth public
+          </label>
+
+          <div>
+            <label htmlFor="gender" className="mb-1 block text-sm opacity-70">
+              Gender
+            </label>
+
+            <select
+              id="gender"
+              value={genderOption}
+              onChange={(event) => setGenderOption(event.target.value)}
+              className="w-full rounded border p-3"
+            >
+              <option value="">Prefer not to say</option>
+              {GENDER_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+              <option value="custom">Other / custom</option>
+            </select>
+          </div>
+
+          {genderOption === 'custom' && (
+            <div>
+              <label
+                htmlFor="customGender"
+                className="mb-1 block text-sm opacity-70"
+              >
+                Describe your gender
+              </label>
+
+              <input
+                id="customGender"
+                type="text"
+                value={customGender}
+                maxLength={100}
+                onChange={(event) => setCustomGender(event.target.value)}
+                placeholder="Enter your gender"
+                className="w-full rounded border p-3"
+              />
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={genderIsPublic}
+              onChange={(event) => setGenderIsPublic(event.target.checked)}
+            />
+            Make my gender public
           </label>
 
           {error && (

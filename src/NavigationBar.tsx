@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, AuthStatus } from './AuthContext'
 
-import { VerticalHR, HorizontalHR, ProfileIcon } from './Utilites'
+import { VerticalHR, HorizontalHR } from './Utilites'
 
 import SearchAndFilter from './SearchAndFilte'
 
@@ -122,17 +122,15 @@ function NavigationBar() {
         <SearchAndFilter />
       </div>
 
-      <div className="flex gap-4">
-        <VerticalHR />
-
+      <div className="flex h-10 gap-4">
         {/* Drop-down menu for uploads */}
         <select
           onChange={handleSelectChange}
           defaultValue=""
-          className="submit w-35"
+          className="submit w-30"
         >
           <option value="" disabled>
-            Submit...
+            Submit
           </option>
           <option value="/upload/image">Upload Image</option>
           <option value="/upload/journal">Upload Journal</option>
@@ -144,12 +142,13 @@ function NavigationBar() {
 
         {/* Profile Dropdown Container */}
         <div className="drop-down">
-          <ProfileIcon
-            name={publicProfile?.name ?? user?.username ?? 'Name'}
-            image={publicProfile?.avatarUrl}
-            tagline={publicProfile?.tagline}
-          />
+          {/* User short info */}
+          <div className="flex items-center gap-2">
+            <img src={publicProfile?.avatarUrl} className="navigation-icon" />
+            <p> {user?.username ?? 'Guest'} </p>
+          </div>
 
+          {/* Drop-down container */}
           <div className="drop-down-content">
             {status === AuthStatus.Authenticated ? (
               <button id="logout" onClick={handleLogout}>
