@@ -11,6 +11,7 @@ import { profilesApi, type PublicProfile } from './api'
 // Images
 import test_icon from './assets/images/test_icon.webp'
 import more_icon from './assets/images/icons/moreIcon.webp'
+import default_pp from './assets/images/default_pp.webp'
 
 function NavigationBar() {
   const { status, logout, user } = useAuth()
@@ -53,7 +54,7 @@ function NavigationBar() {
   }
 
   const navigate = useNavigate()
-  const handleSelectChange = (e: any) => {
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const path = e.target.value
     if (path) {
       navigate(path)
@@ -94,7 +95,7 @@ function NavigationBar() {
           aria-expanded={isMobileSearchOpen}
           className="cursor-pointer p-2"
         >
-          <img src={more_icon} alt="Åbn søgning og filtre" />
+          <img src={more_icon} alt="Open search and filters" />
         </button>
 
         {/* Dropdown triggered by a click */}
@@ -125,8 +126,8 @@ function NavigationBar() {
       <div className="flex h-10 gap-4">
         {/* Drop-down menu for uploads */}
         <select
-          onChange={handleSelectChange}
           defaultValue=""
+          onChange={handleSelectChange}
           className="submit w-30"
         >
           <option value="" disabled>
@@ -144,7 +145,10 @@ function NavigationBar() {
         <div className="drop-down">
           {/* User short info */}
           <div className="flex items-center gap-2">
-            <img src={publicProfile?.avatarUrl} className="navigation-icon" />
+            <img
+              src={publicProfile?.avatarUrl ?? default_pp}
+              className="navigation-icon"
+            />
             <p> {user?.username ?? 'Guest'} </p>
           </div>
 

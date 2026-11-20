@@ -1,10 +1,14 @@
 import AccountInformation from './AccountInformation'
 import ChangePassword from './ChangePassword'
 
+import { HorizontalHR } from '../../../Utilites'
+
 function AccountSettings() {
   return (
-    <section className="space-y-6">
-      <h2 className="text-xl font-semibold">Account</h2>
+    <section className="bg-background-blend space-y-6 p-4">
+      <h2 className="big-text font-semibold">Account</h2>
+
+      <HorizontalHR />
 
       <AccountInformation />
 

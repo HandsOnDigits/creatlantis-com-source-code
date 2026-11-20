@@ -84,6 +84,7 @@ function ProfilePicture({ username }: ProfilePictureProps) {
         accept="image/jpeg,image/png,image/webp,image/gif"
         disabled={uploading}
         onChange={handleUpload}
+        className="bg-background-blend rounded border"
       />
 
       {uploading && <p>Uploading avatar...</p>}

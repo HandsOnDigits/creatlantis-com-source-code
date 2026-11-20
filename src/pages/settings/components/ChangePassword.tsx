@@ -66,7 +66,7 @@ function ChangePassword() {
   }
 
   return (
-    <div className="space-y-4 border-t pt-6">
+    <div className="space-y-4 pt-6">
       <div>
         <h3 className="font-medium">Change password</h3>
 
@@ -86,7 +86,7 @@ function ChangePassword() {
           value={currentPassword}
           onChange={(event) => setCurrentPassword(event.target.value)}
           disabled={saving}
-          className="w-full rounded border p-3"
+          className="bg-background-blend w-full rounded border p-3"
         />
       </div>
 
@@ -100,7 +100,7 @@ function ChangePassword() {
           onChange={(event) => setNewPassword(event.target.value)}
           disabled={saving}
           maxLength={128}
-          className="w-full rounded border p-3"
+          className="bg-background-blend w-full rounded border p-3"
         />
 
         <p className="mt-1 text-xs opacity-60">
@@ -120,7 +120,7 @@ function ChangePassword() {
           onChange={(event) => setConfirmPassword(event.target.value)}
           disabled={saving}
           maxLength={128}
-          className="w-full rounded border p-3"
+          className="bg-background-blend w-full rounded border p-3"
         />
       </div>
 
@@ -134,7 +134,7 @@ function ChangePassword() {
         Show passwords
       </label>
 
-      <div className="flex justify-end">
+      <div className="flex justify-center">
         <button
           type="button"
           onClick={savePassword}

@@ -3,50 +3,21 @@ import { useEffect, useState } from 'react'
 import { profilesApi, usersApi } from '../../../api'
 import { useAuth } from '../../../AuthContext'
 
+import { HorizontalHR } from '../../../Utilites'
+
 import ProfilePicture from './ProfilePicture'
 
 function ProfileSettings() {
-  const { user } = useAuth()
+  const { user, updateUsername } = useAuth()
 
-  const [displayName, setDisplayName] = useState('')
-  const [nameIsPublic, setNameIsPublic] = useState(false)
-  const [nameLoading, setNameLoading] = useState(true)
-  const [nameSaving, setNameSaving] = useState(false)
-  const [nameMessage, setNameMessage] = useState('')
+  const [username, setUsername] = useState(user?.username ?? '')
+  const [usernameSaving, setUsernameSaving] = useState(false)
+  const [usernameMessage, setUsernameMessage] = useState('')
 
   const [tagline, setTagline] = useState('')
   const [taglineLoading, setTaglineLoading] = useState(true)
   const [taglineSaving, setTaglineSaving] = useState(false)
   const [taglineMessage, setTaglineMessage] = useState('')
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!user?.id) return
-
-    usersApi
-      .get(user.id)
-      .then((response) => {
-        if (!cancelled) {
-          setDisplayName(response.data.name ?? '')
-          setNameIsPublic(response.data.nameIsPublic)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setNameMessage('Failed to load display name settings.')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setNameLoading(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [user?.id])
 
   useEffect(() => {
     let cancelled = false
@@ -76,23 +47,32 @@ function ProfileSettings() {
     }
   }, [user?.username])
 
-  const saveDisplayName = async () => {
-    if (!user?.id) return
+  const saveUsername = async () => {
+    const trimmedUsername = username.trim()
 
-    setNameSaving(true)
-    setNameMessage('')
+    if (!trimmedUsername || trimmedUsername === user?.username) return
+
+    const confirmed = window.confirm(
+      `Are you sure you want to change your username from "${user?.username}" to "${trimmedUsername}"?\n\nYour old profile URL will stop working. Anyone using links to your old profile will no longer be able to reach it.`,
+    )
+
+    if (!confirmed) return
+
+    setUsernameSaving(true)
+    setUsernameMessage('')
 
     try {
-      await usersApi.update(user.id, {
-        name: displayName.trim(),
-        nameIsPublic,
+      const response = await usersApi.update(user!.id, {
+        username: trimmedUsername,
       })
 
-      setNameMessage('Display name saved.')
+      updateUsername(response.data.username)
+      setUsername(response.data.username)
+      setUsernameMessage('Username changed successfully.')
     } catch {
-      setNameMessage('Failed to save display name.')
+      setUsernameMessage('Failed to change username. It may already be taken.')
     } finally {
-      setNameSaving(false)
+      setUsernameSaving(false)
     }
   }
 
@@ -113,64 +93,62 @@ function ProfileSettings() {
   if (!user) return null
 
   return (
-    <section className="space-y-6">
-      <h2 className="text-xl font-semibold">Public profile</h2>
+    <section className="bg-background-blend space-y-6 p-4">
+      <h2 className="big-text font-semibold">Public profile</h2>
 
-      <ProfilePicture username={user.username} />
+      <HorizontalHR />
 
-      <div className="space-y-3 border-t pt-6">
-        <h3 className="font-medium">Display name</h3>
+      <div className="space-y-3">
+        <h3 className="font-medium">Username</h3>
 
         <p className="text-sm opacity-70">
-          Choose a display name for your account. You can keep it private or
-          show it on your public profile.
+          Your username is used in your public profile URL.
         </p>
 
-        {nameLoading ? (
-          <p>Loading display name settings...</p>
-        ) : (
-          <>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              maxLength={100}
-              disabled={nameSaving}
-              placeholder="Your display name..."
-              className="w-full rounded border p-3"
-            />
+        <p className="text-sm text-amber-600">
+          Changing your username will invalidate your old profile URL. Existing
+          links to your old username will stop working.
+        </p>
 
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={nameIsPublic}
-                onChange={(event) => setNameIsPublic(event.target.checked)}
-                disabled={nameSaving}
-              />
-              Show display name on my public profile
-            </label>
+        <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            maxLength={30}
+            disabled={usernameSaving}
+            className="bg-background-blend w-full rounded border p-3"
+            autoComplete="username"
+          />
 
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={saveDisplayName}
-                disabled={nameSaving || displayName.trim().length === 0}
-                className="submit"
-              >
-                {nameSaving ? 'Saving...' : 'Save display name'}
-              </button>
-            </div>
-          </>
-        )}
+          <button
+            type="button"
+            onClick={saveUsername}
+            disabled={
+              usernameSaving ||
+              !username.trim() ||
+              username.trim() === user.username
+            }
+            className="submit self-center"
+          >
+            {usernameSaving ? 'Saving...' : 'Change username'}
+          </button>
+        </div>
 
-        {nameMessage && (
+        {usernameMessage && (
           <p className="text-sm" role="status">
-            {nameMessage}
+            {usernameMessage}
           </p>
         )}
       </div>
 
-      <div className="space-y-3 border-t pt-6">
+      <HorizontalHR />
+
+      <ProfilePicture username={user.username} />
+
+      <HorizontalHR />
+
+      <div className="space-y-3 pt-6">
         <h3 className="font-medium">Tagline</h3>
 
         <p className="text-sm opacity-70">
@@ -180,7 +158,7 @@ function ProfileSettings() {
         {taglineLoading ? (
           <p>Loading tagline...</p>
         ) : (
-          <>
+          <div className="flex flex-col">
             <textarea
               value={tagline}
               onChange={(event) => setTagline(event.target.value)}
@@ -191,19 +169,19 @@ function ProfileSettings() {
               rows={3}
             />
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm opacity-70">{tagline.length}/160</span>
+            <span className="self-start text-sm opacity-70">
+              {tagline.length}/160
+            </span>
 
-              <button
-                type="button"
-                onClick={saveTagline}
-                disabled={taglineSaving || tagline.length > 160}
-                className="submit"
-              >
-                {taglineSaving ? 'Saving...' : 'Save tagline'}
-              </button>
-            </div>
-          </>
+            <button
+              type="button"
+              onClick={saveTagline}
+              disabled={taglineSaving || tagline.length > 160}
+              className="submit self-center"
+            >
+              {taglineSaving ? 'Saving...' : 'Save tagline'}
+            </button>
+          </div>
         )}
 
         {taglineMessage && (

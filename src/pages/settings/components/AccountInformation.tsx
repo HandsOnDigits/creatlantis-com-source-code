@@ -3,12 +3,17 @@ import { useEffect, useState } from 'react'
 import { usersApi } from '../../../api'
 import { useAuth } from '../../../AuthContext'
 
+import { HorizontalHR } from '../../../Utilites'
+
 const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary']
 
 function AccountInformation() {
   const { user } = useAuth()
 
   const [email, setEmail] = useState('')
+  const [realName, setRealName] = useState('')
+  const [nameIsPublic, setNameIsPublic] = useState(false)
+
   const [birthDate, setBirthDate] = useState('')
   const [birthDateIsPublic, setBirthDateIsPublic] = useState(false)
 
@@ -36,6 +41,9 @@ function AccountInformation() {
           const gender = response.data.gender
 
           setEmail(response.data.email)
+          setRealName(response.data.name ?? '')
+          setNameIsPublic(response.data.nameIsPublic)
+
           setBirthDate(response.data.birthDate ?? '')
           setBirthDateIsPublic(response.data.birthDateIsPublic)
 
@@ -83,6 +91,8 @@ function AccountInformation() {
           : genderOption || null
 
       await usersApi.update(user.id, {
+        ...(realName.trim() ? { name: realName.trim() } : {}),
+        nameIsPublic,
         birthDate: birthDate || null,
         birthDateIsPublic,
         gender,
@@ -98,7 +108,7 @@ function AccountInformation() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col space-y-4">
       <h3 className="font-medium">Account information</h3>
 
       {loading ? (
@@ -110,17 +120,6 @@ function AccountInformation() {
       ) : (
         <>
           <div>
-            <label className="mb-1 block text-sm opacity-70">Username</label>
-
-            <input
-              type="text"
-              value={user?.username ?? ''}
-              disabled
-              className="w-full rounded border p-3 opacity-70"
-            />
-          </div>
-
-          <div>
             <label className="mb-1 block text-sm opacity-70">
               Email address
             </label>
@@ -129,9 +128,41 @@ function AccountInformation() {
               type="email"
               value={email}
               disabled
-              className="w-full rounded border p-3 opacity-70"
+              className="bg-background-blend w-full rounded border p-3 opacity-70"
             />
           </div>
+
+          <div>
+            <label htmlFor="realName" className="mb-1 block text-sm opacity-70">
+              Real name
+            </label>
+
+            <input
+              id="realName"
+              type="text"
+              value={realName}
+              maxLength={100}
+              disabled={saving}
+              onChange={(event) => setRealName(event.target.value)}
+              placeholder="Your real name..."
+              className="bg-background-blend w-full rounded border p-3"
+            />
+
+            <p className="mt-1 text-sm opacity-70">
+              Your real name is private by default. You can choose whether to
+              show it on your public profile.
+            </p>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={nameIsPublic}
+              onChange={(event) => setNameIsPublic(event.target.checked)}
+              disabled={saving}
+            />
+            Make my real name public
+          </label>
 
           <div>
             <label
@@ -147,15 +178,23 @@ function AccountInformation() {
               value={birthDate}
               max={new Date().toISOString().slice(0, 10)}
               onChange={(event) => setBirthDate(event.target.value)}
-              className="w-full rounded border p-3"
+              className="bg-background-blend w-full rounded border p-3"
+              disabled={saving}
             />
           </div>
+
+          <p>
+            <b>Note: Don't lie; this is used for age verification.</b> This will
+            not be collected for statistics if it is not made public.
+          </p>
 
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={birthDateIsPublic}
               onChange={(event) => setBirthDateIsPublic(event.target.checked)}
+              disabled={saving}
+              className="bg-background-blend"
             />
             Make my date of birth public
           </label>
@@ -169,7 +208,8 @@ function AccountInformation() {
               id="gender"
               value={genderOption}
               onChange={(event) => setGenderOption(event.target.value)}
-              className="w-full rounded border p-3"
+              disabled={saving}
+              className="bg-background-blend w-full rounded border p-3"
             >
               <option value="">Prefer not to say</option>
               {GENDER_OPTIONS.map((option) => (
@@ -195,18 +235,24 @@ function AccountInformation() {
                 type="text"
                 value={customGender}
                 maxLength={100}
+                disabled={saving}
                 onChange={(event) => setCustomGender(event.target.value)}
                 placeholder="Enter your gender"
-                className="w-full rounded border p-3"
+                className="bg-background-blend w-full rounded border p-3"
               />
             </div>
           )}
+
+          <p>
+            This will not be collected for statistics if it is not made public.
+          </p>
 
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={genderIsPublic}
               onChange={(event) => setGenderIsPublic(event.target.checked)}
+              disabled={saving}
             />
             Make my gender public
           </label>
@@ -227,10 +273,12 @@ function AccountInformation() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-blue-600 px-5 py-2 text-white disabled:opacity-50"
+            className="submit"
           >
             {saving ? 'Saving...' : 'Save changes'}
           </button>
+
+          <HorizontalHR />
         </>
       )}
     </div>
