@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 import { useLive } from './LiveContext'
@@ -8,6 +8,7 @@ import NavigationBar from './NavigationBar'
 import Home from './pages/Home'
 import Upload from './pages/Upload'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import Post from './pages/Post'
 import ProtectedRoute from './ProtectedRoute'
 import Profile from './pages/Profile'
@@ -35,7 +36,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Login />} />`r`n        <Route path="/register" element={<Register />} />
         <Route path="/posts/:id" element={<Post />} />
         <Route path="/settings" element={<Settings />} />
 
@@ -53,3 +54,4 @@ function App() {
 }
 
 export default App
+

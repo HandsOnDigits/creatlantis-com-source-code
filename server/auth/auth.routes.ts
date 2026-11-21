@@ -9,6 +9,7 @@ import {
 } from './auth.schemas'
 import {
   changeUserPassword,
+  InvalidInviteKeyError,
   loginUser,
   logoutUser,
   refreshUserSession,
@@ -35,7 +36,7 @@ const refreshCookieOptions = {
   path: '/api/auth',
 }
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', authLimiter, async (req, res, next) => {
   const parsed = registerSchema.safeParse(req.body)
 
   if (!parsed.success) {
@@ -54,6 +55,13 @@ router.post('/register', async (req, res, next) => {
 
     res.status(201).json({ data: user })
   } catch (error) {
+    if (error instanceof InvalidInviteKeyError) {
+      res.status(400).json({
+        error: 'Invalid or expired invite key',
+      })
+      return
+    }
+
     if (
       typeof error === 'object' &&
       error !== null &&

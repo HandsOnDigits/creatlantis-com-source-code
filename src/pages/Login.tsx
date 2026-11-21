@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+﻿import { useState, type FormEvent } from 'react'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth, AuthStatus } from '../AuthContext'
 
 import { VerticalHR } from '../Utilites'
@@ -15,6 +15,7 @@ function Login() {
   const [loading, setLoading] = useState(false)
 
   const from = location.state?.from?.pathname ?? '/'
+  const registrationComplete = location.state?.registrationComplete === true
 
   if (status === 'loading') {
     return <p>Checking session...</p>
@@ -43,6 +44,12 @@ function Login() {
     <main className="mt-12 flex justify-center">
       <form onSubmit={handleSubmit} id="login" className="w-2/3">
         <h1 className="extra-big-text">Log in</h1>
+
+        {registrationComplete && (
+          <p role="status" className="text-center">
+            Your account has been created. You can now log in.
+          </p>
+        )}
 
         <br />
 
@@ -89,6 +96,13 @@ function Login() {
             <VerticalHR />
           </div>
         </div>
+
+        <p className="mt-4 text-center">
+          Don't have an account?{' '}
+          <Link to="/register" className="underline">
+            Create one
+          </Link>
+        </p>
       </form>
     </main>
   )

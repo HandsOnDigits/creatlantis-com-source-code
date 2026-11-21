@@ -16,6 +16,10 @@
       "model": "CategoryPost",
       "namespace": "public"
     },
+    "InviteKey": {
+      "model": "InviteKey",
+      "namespace": "public"
+    },
     "Media": {
       "model": "Media",
       "namespace": "public"
@@ -486,6 +490,57 @@
               },
               "namespaceId": "public",
               "table": "CategoryPost"
+            }
+          },
+          "InviteKey": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "keyHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "expiresAt": {
+                  "column": "expiresAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "keyHash": {
+                  "column": "keyHash"
+                }
+              },
+              "namespaceId": "public",
+              "table": "InviteKey"
             }
           },
           "Media": {
@@ -2524,6 +2579,57 @@
               },
               "uniques": []
             },
+            "InviteKey": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "expiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "keyHash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "expiresAt"
+                  ],
+                  "name": "InviteKey_expiresAt_idx_6b6b8c10",
+                  "prefix": "InviteKey_expiresAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "keyHash"
+                  ]
+                }
+              ]
+            },
             "Media": {
               "checks": [
                 {
@@ -4013,10 +4119,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "99f9c2416f033914e8b889395994f70ad7f081fed99d2c9d5d074ae08a4a1ca1"
+    "storageHash": "2246bd16b53e2e7781fccaf57b5fdc62c0f9893cb0bbf1e98d7a2bad4c883bc3"
   },
   "execution": {
-    "executionHash": "cd4b35919c27b58b63b3b3ec108b05806ff167508ff4fa14d375dc83dbbbf726",
+    "executionHash": "1a4300e501ae749078cbc524e83d2355fa9e18a3a51d8a31098c0b95d43aba21",
     "mutations": {
       "defaults": [
         {
@@ -4042,6 +4148,17 @@
           "ref": {
             "entry": "Category",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "InviteKey",
+            "field": "id",
             "namespace": "public"
           }
         },

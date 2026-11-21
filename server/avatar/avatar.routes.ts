@@ -12,10 +12,15 @@ import {
 
 const router = Router()
 
-const MAX_AVATAR_SIZE = 10 * 1024 * 1024
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024
 const UPLOAD_LIFETIME_MS = 15 * 60 * 1000
 
-const allowedContentTypes = ['image/jpeg', 'image/png', 'image/webp'] as const
+const allowedContentTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const
 
 const createAvatarUploadSchema = z.object({
   filename: z.string().trim().min(1).max(255),

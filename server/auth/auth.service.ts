@@ -43,29 +43,59 @@ async function createAccessToken(
     .sign(secret)
 }
 
+export class InvalidInviteKeyError extends Error {
+  constructor() {
+    super('Invalid or expired invite key')
+    this.name = 'InvalidInviteKeyError'
+  }
+}
+
 export async function registerUser(input: RegisterInput) {
   const passwordHash = await argon2.hash(input.password, {
     type: argon2.argon2id,
   })
 
-  try {
-    const user = await db.orm.public.User.create({
+  const keyHash = createHash('sha256').update(input.inviteKey).digest('hex')
+
+  const now = new Date().toISOString()
+
+  const user = await db.transaction(async (tx) => {
+    const invite = await tx.orm.public.InviteKey.where((key, { fns }) =>
+      fns.and(
+        key.keyHash.eq(keyHash),
+        fns.or(key.expiresAt.isNull(), key.expiresAt.gt(now)),
+      ),
+    )
+      .forUpdate()
+      .first()
+
+    if (!invite) {
+      throw new InvalidInviteKeyError()
+    }
+
+    const consumed = await tx.orm.public.InviteKey.where({
+      id: invite.id,
+    }).delete()
+
+    if (!consumed) {
+      throw new InvalidInviteKeyError()
+    }
+
+    return tx.orm.public.User.create({
       email: input.email,
       username: input.username,
       name: input.name ?? null,
       nameIsPublic: false,
       passwordHash,
     })
+  })
 
-    return {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      name: user.name,
-      createdAt: user.createdAt,
-    }
-  } catch (error) {
-    throw error
+  return {
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    name: user.name,
+    createdAt: user.createdAt,
   }
 }
 

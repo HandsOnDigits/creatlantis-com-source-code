@@ -25,6 +25,7 @@ export interface RegisterInput {
   email: string
   username: string
   password: string
+  inviteKey: string
   name?: string
 }
 

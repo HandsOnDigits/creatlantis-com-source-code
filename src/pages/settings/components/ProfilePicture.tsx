@@ -3,8 +3,7 @@ import { useEffect, useState, type ChangeEvent } from 'react'
 // images
 import default_pp from '../../../assets/images/default_pp.webp'
 
-import { profilesApi } from '../../../api'
-import { avatarsApi } from '../../../api'
+import { profilesApi, avatarsApi } from '../../../api'
 
 interface ProfilePictureProps {
   username: string

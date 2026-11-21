@@ -8,6 +8,12 @@ export const registerSchema = z.object({
     .max(254)
     .transform((value) => value.toLowerCase()),
 
+  inviteKey: z
+    .string()
+    .trim()
+    .length(43)
+    .regex(/^[A-Za-z0-9_-]{43}$/, 'Invalid invite key format'),
+
   password: z.string().min(12).max(128),
 
   username: z

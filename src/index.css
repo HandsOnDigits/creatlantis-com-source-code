@@ -320,7 +320,8 @@ html.green-theme {
     }
 
     & .drop-down:hover *:not(button),
-    & #login {
+    & #login,
+    & #register {
       @apply bg-drop-down;
     }
   }

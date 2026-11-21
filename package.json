@@ -13,7 +13,8 @@
     "db:init:preview": "prisma db init --db \"%DATABASE_URL%\" --dry-run",
     "db:migrate:plan": "prisma migration plan",
     "db:migrate": "prisma db migrate",
-    "db:migrate:status": "prisma migration status"
+    "db:migrate:status": "prisma migration status",
+    "invite-create": "tsx scripts/create-invite-key.ts"
   },
   "dependencies": {
     "@backblaze-labs/b2-sdk": "^0.4.0",

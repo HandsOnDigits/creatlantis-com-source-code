@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'99f9c2416f033914e8b889395994f70ad7f081fed99d2c9d5d074ae08a4a1ca1'>;
+  StorageHashBase<'2246bd16b53e2e7781fccaf57b5fdc62c0f9893cb0bbf1e98d7a2bad4c883bc3'>;
 export type ExecutionHash =
-  ExecutionHashBase<'cd4b35919c27b58b63b3b3ec108b05806ff167508ff4fa14d375dc83dbbbf726'>;
+  ExecutionHashBase<'1a4300e501ae749078cbc524e83d2355fa9e18a3a51d8a31098c0b95d43aba21'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -499,6 +499,13 @@ export namespace Models {
     post: public_Post;
     readonly [RelationKeys]?: 'category' | 'post';
   };
+  export type public_InviteKey = {
+    createdAt: FieldOutputTypes['public']['InviteKey']['createdAt'];
+    expiresAt: FieldOutputTypes['public']['InviteKey']['expiresAt'];
+    id: FieldOutputTypes['public']['InviteKey']['id'];
+    keyHash: FieldOutputTypes['public']['InviteKey']['keyHash'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_Media = {
     createdAt: FieldOutputTypes['public']['Media']['createdAt'];
     height: FieldOutputTypes['public']['Media']['height'];
@@ -693,6 +700,7 @@ export declare const models: {
     AvatarUploadReservation: Models.public_AvatarUploadReservation;
     Category: Models.public_Category;
     CategoryPost: Models.public_CategoryPost;
+    InviteKey: Models.public_InviteKey;
     Media: Models.public_Media;
     MediaVariant: Models.public_MediaVariant;
     Notification: Models.public_Notification;
@@ -951,6 +959,46 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly InviteKey: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly expiresAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly keyHash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['keyHash'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'InviteKey_expiresAt_idx_6b6b8c10';
+                  readonly prefix: 'InviteKey_expiresAt_idx';
+                  readonly columns: readonly ['expiresAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly Media: {
               columns: {
@@ -2154,6 +2202,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'CategoryPost';
     };
+    readonly InviteKey: { readonly namespace: 'public' & NamespaceId; readonly model: 'InviteKey' };
     readonly Media: { readonly namespace: 'public' & NamespaceId; readonly model: 'Media' };
     readonly MediaVariant: {
       readonly namespace: 'public' & NamespaceId;
@@ -2371,6 +2420,43 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly position: { readonly column: 'position' };
                 readonly postId: { readonly column: 'postId' };
+              };
+            };
+          };
+          readonly InviteKey: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly expiresAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly keyHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'InviteKey';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly expiresAt: { readonly column: 'expiresAt' };
+                readonly id: { readonly column: 'id' };
+                readonly keyHash: { readonly column: 'keyHash' };
               };
             };
           };
@@ -3595,6 +3681,14 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Category';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'InviteKey';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },

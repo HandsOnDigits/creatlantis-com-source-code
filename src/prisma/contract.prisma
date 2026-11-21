@@ -355,3 +355,15 @@ model NotificationPreference {
 
   @@id([userId, type])
 }
+
+model InviteKey {
+  id String @id @onCreate(uuid())
+
+  keyHash String @unique
+
+  expiresAt TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([expiresAt])
+}
