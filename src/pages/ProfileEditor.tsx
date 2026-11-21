@@ -371,7 +371,8 @@ function ProfileEditor() {
                         <div>
                           <h4 className="font-bold">BIO content</h4>
                           <p className="mt-1 text-xs opacity-60">
-                            Write your profile biography using BBCode.
+                            Write your profile biography using BBCode, Markdown,
+                            or HTML. HTML is sanitized before display.
                           </p>
                         </div>
 
@@ -379,7 +380,7 @@ function ProfileEditor() {
                           htmlFor="profile-bio"
                           className="text-sm font-bold"
                         >
-                          BBCode
+                          Biography content
                         </label>
 
                         <textarea

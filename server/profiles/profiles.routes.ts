@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { db } from '../../src/prisma/db'
 import { PROFILE_WIDGET_TYPES } from '../../src/types/profile'
 import { requireAuth } from '../auth/auth.middleware'
-import { renderProfileBBCode } from './profile-renderer'
+import { renderContent } from '../utils/rendering'
 
 import { getPublicObjectUrl } from '../storage/b2.client'
 
@@ -230,7 +230,9 @@ router.get('/username/:username', async (req, res) => {
         : null,
 
       customization: {
-        descriptionHtml: renderProfileBBCode(customization?.description ?? ''),
+        descriptionHtml: renderContent(customization?.description ?? '', {
+          context: 'profile',
+        }),
       },
 
       layout: {
@@ -297,7 +299,9 @@ router.get('/username/:username/customization', async (req, res) => {
 
   res.json({
     data: {
-      descriptionHtml: renderProfileBBCode(customization?.description ?? ''),
+      descriptionHtml: renderContent(customization?.description ?? '', {
+        context: 'profile',
+      }),
     },
   })
 })
@@ -457,7 +461,9 @@ router.get('/:id/customization', async (req, res) => {
 
   res.json({
     data: {
-      descriptionHtml: renderProfileBBCode(description),
+      descriptionHtml: renderContent(description, {
+        context: 'profile',
+      }),
     },
   })
 })

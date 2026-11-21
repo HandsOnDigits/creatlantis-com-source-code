@@ -1,10 +1,4 @@
-import bbobHTML from '@bbob/html'
-import presetHTML5 from '@bbob/preset-html5'
 import sanitizeHtml from 'sanitize-html'
-
-const MAX_PROFILE_BBCODE_LENGTH = 20_000
-
-const preset = presetHTML5()
 
 const sanitizeOptions: sanitizeHtml.IOptions = {
   allowedTags: [
@@ -89,23 +83,14 @@ const sanitizeOptions: sanitizeHtml.IOptions = {
 }
 
 /**
- * Converts BBCode into sanitized HTML.
+ * Sanitizes HTML using the shared CreAtlantis HTML policy.
  *
  * Always call this function on the server.
  */
-export function renderProfileBBCode(input: string): string {
+export function sanitizeHTML(input: string): string {
   if (typeof input !== 'string') {
-    throw new TypeError('Profile BBCode must be a string.')
+    throw new TypeError('HTML input must be a string.')
   }
 
-  if (input.length > MAX_PROFILE_BBCODE_LENGTH) {
-    throw new Error('Profile BBCode exceeds the maximum allowed length.')
-  }
-
-  const rendered = bbobHTML(input, preset, {
-    caseFreeTags: true,
-    enableEscapeTags: true,
-  })
-
-  return sanitizeHtml(rendered, sanitizeOptions)
+  return sanitizeHtml(input, sanitizeOptions)
 }
