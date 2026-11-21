@@ -1,0 +1,54 @@
+// use prisma-8
+
+model Conversation {
+  id String @id @onCreate(uuid())
+
+  // Deterministic key generated from the two sorted identity UUIDs.
+  // Prevents duplicate one-to-one conversations.
+  directKey String @unique
+
+  participants ConversationParticipant[]
+  messages     PrivateMessage[]
+
+  lastMessageAt TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.UpdatedAtString
+}
+
+model ConversationParticipant {
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+
+  // Cross-database identity from the main User.identityId.
+  // This is deliberately not a relation to the main User model.
+  identityId String
+
+  joinedAt   TimestamptzString  @default(now())
+  lastReadAt TimestamptzString?
+  archivedAt TimestamptzString?
+  mutedAt    TimestamptzString?
+
+  @@id([conversationId, identityId])
+  @@index([identityId, archivedAt])
+  @@index([identityId, lastReadAt])
+}
+
+model PrivateMessage {
+  id String @id @onCreate(uuid())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+
+  // Nullable so messages can remain after an account is anonymized.
+  senderIdentityId String?
+
+  content String
+
+  createdAt TimestamptzString  @default(now())
+  editedAt  TimestamptzString?
+  deletedAt TimestamptzString?
+
+  @@index([conversationId, createdAt])
+  @@index([senderIdentityId, createdAt])
+}

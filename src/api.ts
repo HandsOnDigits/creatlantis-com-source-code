@@ -4,6 +4,10 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 ).replace(/\/$/, '')
 
+const CHAT_API_BASE_URL = (
+  import.meta.env.VITE_CHAT_API_URL ?? 'http://localhost:3002'
+).replace(/\/$/, '')
+
 const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024
 const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024
 
@@ -108,6 +112,55 @@ export async function apiRequest<T>(
 
     throw new ApiError(
       errorData?.error ?? `Request failed (${response.status})`,
+      response.status,
+      errorData?.details,
+    )
+  }
+
+  return result as T
+}
+
+export async function chatApiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const headers = new Headers(options.headers)
+
+  headers.set('Accept', 'application/json')
+
+  if (options.body !== undefined) {
+    headers.set('Content-Type', 'application/json')
+  }
+
+  const token = getAccessToken()
+
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const response = await fetch(`${CHAT_API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: 'omit',
+  })
+
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  const contentType = response.headers.get('content-type')
+  const isJson = contentType?.includes('application/json')
+
+  const result: unknown = isJson ? await response.json() : await response.text()
+
+  if (!response.ok) {
+    const errorData =
+      typeof result === 'object' && result !== null
+        ? (result as { error?: string; details?: unknown })
+        : undefined
+
+    throw new ApiError(
+      errorData?.error ?? `Chat request failed (${response.status})`,
       response.status,
       errorData?.details,
     )
@@ -854,5 +907,28 @@ export const authApi = {
   // POST /api/auth/change-password
   changePassword(data: { currentPassword: string; newPassword: string }) {
     return api.post<{ message: string }>('/api/auth/change-password', data)
+  },
+}
+
+// -----------------------------------------------------------------------------
+// Notes (Private Messages)
+// -----------------------------------------------------------------------------
+
+export interface NotesConversationMembership {
+  conversationId: string
+  lastReadAt: string | null
+  mutedAt: string | null
+}
+
+export interface NotesConversationsResponse {
+  conversations: NotesConversationMembership[]
+}
+
+export const notesApi = {
+  // GET /api/notes/conversations
+  listConversations() {
+    return chatApiRequest<NotesConversationsResponse>(
+      '/api/notes/conversations',
+    )
   },
 }

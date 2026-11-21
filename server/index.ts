@@ -17,6 +17,7 @@ import reportsRoutes from './reports/reports.routes'
 import liveRoutes from './live/live.routes'
 import liveInternalRoutes from './live/live.internal.routes'
 import avatarRoutes from './avatar/avatar.routes'
+import chatInternalRoutes from './chat/chat.internal.routes'
 
 import { closeReportSubmissionPool } from './reports/report-submission.service'
 
@@ -53,6 +54,7 @@ const apiLimiter = rateLimit({
 
 app.use('/api/live', liveRoutes)
 app.use('/api/live/internal', liveInternalRoutes)
+app.use('/api/chat/internal', chatInternalRoutes)
 app.use('/api', apiLimiter)
 
 // API routes
