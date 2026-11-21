@@ -29,8 +29,11 @@ function hashRefreshToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
-async function createAccessToken(userId: number): Promise<string> {
-  return new SignJWT({})
+async function createAccessToken(
+  userId: number,
+  identityId: string,
+): Promise<string> {
+  return new SignJWT({ identityId })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(String(userId))
     .setIssuer('creatlantis-api')
@@ -92,7 +95,7 @@ export async function refreshUserSession(refreshToken: string) {
 
   // Make sure the associated user still exists.
   const user = await db.orm.public.User.where({ id: session.userId })
-    .select('id', 'email', 'username', 'name')
+    .select('id', 'identityId', 'email', 'username', 'name')
     .first()
 
   if (!user) {
@@ -120,7 +123,7 @@ export async function refreshUserSession(refreshToken: string) {
     return null
   }
 
-  const accessToken = await createAccessToken(user.id)
+  const accessToken = await createAccessToken(user.id, user.identityId)
 
   return {
     accessToken,
@@ -146,7 +149,7 @@ function isLegacyBcryptHash(hash: string): boolean {
 
 export async function loginUser(input: LoginInput) {
   const user = await db.orm.public.User.where({ email: input.email })
-    .select('id', 'email', 'username', 'name', 'passwordHash')
+    .select('id', 'identityId', 'email', 'username', 'name', 'passwordHash')
     .first()
 
   if (!user?.passwordHash) {
@@ -195,7 +198,7 @@ export async function loginUser(input: LoginInput) {
     expiresAt: expiresAt.toISOString(),
   })
 
-  const accessToken = await createAccessToken(user.id)
+  const accessToken = await createAccessToken(user.id, user.identityId)
 
   return {
     accessToken,
