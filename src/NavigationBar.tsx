@@ -160,9 +160,17 @@ function NavigationBar() {
                 Logout
               </button>
             ) : (
-              <button className="login" onClick={() => navigate('/login')}>
-                Login
-              </button>
+              <>
+                <button className="login" onClick={() => navigate('/login')}>
+                  Login
+                </button>
+                <button
+                  className="register"
+                  onClick={() => navigate('/register')}
+                >
+                  Sign up
+                </button>
+              </>
             )}
 
             {user && (

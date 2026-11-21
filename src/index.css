@@ -30,6 +30,7 @@
   --color-journal-body: var(--theme-journal-body);
   --color-hr-line: var(--theme-hr-line);
   --color-drop-down: var(--theme-drop-down);
+  --color-shadow-color: var(--theme-shadow-color);
 
   /* --- Assets --- */
   --star-rate-mask: url('../images/5-stars.webp');
@@ -46,6 +47,7 @@
   --theme-surface: #f1f5f9;
   --theme-drop-down: #fff000;
   --theme-hr-line: var(--color-vr-line);
+  --theme-shadow-color: black;
   --color-background-blend: #cecece;
   --color-journal-body: #fff499;
 }
@@ -56,6 +58,7 @@ html.dark-theme {
   --theme-surface: var(--color-dark-2);
   --theme-drop-down: var(--color-dark-4);
   --theme-hr-line: rgba(255, 255, 255, 0.33);
+  --theme-shadow-color: gray;
   --color-background-blend: var(--color-dark-1);
   --color-journal-body: var(--color-dark-0);
 }
@@ -65,6 +68,7 @@ html.light-theme {
   --theme-text: #000000;
   --theme-surface: var(--color-light-2);
   --theme-drop-down: var(--color-light-4);
+  --theme-shadow-color: darkgray;
   --color-background-blend: var(--color-light-1);
   --color-journal-body: var(--color-light-0);
 }
@@ -74,6 +78,7 @@ html.green-theme {
   --theme-text: #000000;
   --theme-surface: var(--color-green-2);
   --theme-drop-down: var(--color-green-4);
+  --theme-shadow-color: gray;
   --color-background-blend: var(--color-green-1);
   --color-journal-body: var(--color-green-0);
 }
@@ -154,6 +159,7 @@ html.green-theme {
       &#main-profile,
       &#cancel,
       &#edit,
+      &.register,
       &#go-to-account-settings,
       &#go-to-profile &.cancel {
         @apply bg-slate-400;
@@ -323,6 +329,12 @@ html.green-theme {
     & #login,
     & #register {
       @apply bg-drop-down;
+    }
+
+    /* Global post styling */
+
+    .post {
+      @apply shadow-shadow-color shadow-lg/40;
     }
   }
 }

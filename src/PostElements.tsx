@@ -4,7 +4,7 @@ import type { PostImageVariant } from './api'
 export function Journal({ content }: { content: string }) {
   return (
     <div
-      className="journal h-[40vh] overflow-y-scroll p-4 leading-relaxed sm:h-[65vh] md:h-[40vh]"
+      className="journal post h-[40vh] overflow-y-scroll p-4 leading-relaxed sm:h-[65vh] md:h-[40vh]"
       dangerouslySetInnerHTML={{ __html: content }}
     />
   )
@@ -38,7 +38,7 @@ export function Image({
     items.map((item) => `${item.url} ${item.width}w`).join(', ')
 
   return (
-    <picture className="block max-w-full overflow-hidden">
+    <picture className="post block max-w-full overflow-hidden">
       {avif.length > 0 && (
         <source
           type="image/avif"
