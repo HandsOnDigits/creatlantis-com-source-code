@@ -918,10 +918,42 @@ export interface NotesConversationMembership {
   conversationId: string
   lastReadAt: string | null
   mutedAt: string | null
+  recipient: {
+    identityId: string
+    username: string
+    name: string | null
+    avatarUrl: string | null
+  } | null
+  lastMessageAt: string | null
+  lastMessage: {
+    content: string
+    createdAt: string
+    senderIdentityId: string | null
+  } | null
+  unreadCount: number
 }
 
 export interface NotesConversationsResponse {
   conversations: NotesConversationMembership[]
+}
+
+export interface NotesMessage {
+  id: string
+  conversationId: string
+  senderIdentityId: string | null
+  content: string
+  createdAt: string
+  editedAt: string | null
+  deletedAt: string | null
+}
+
+export interface NotesMessagesResponse {
+  messages: NotesMessage[]
+  pagination: {
+    page: number
+    limit: number
+    hasMore: boolean
+  }
 }
 
 export const notesApi = {
@@ -930,5 +962,38 @@ export const notesApi = {
     return chatApiRequest<NotesConversationsResponse>(
       '/api/notes/conversations',
     )
+  },
+
+  // GET /api/notes/conversations/:conversationId/messages
+  listMessages(conversationId: string, page = 1, limit = 50) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    })
+
+    return chatApiRequest<NotesMessagesResponse>(
+      `/api/notes/conversations/${encodeURIComponent(conversationId)}/messages?${params}`,
+    )
+  },
+
+  // POST /api/notes/conversations/:conversationId/messages
+  sendMessage(conversationId: string, content: string) {
+    return chatApiRequest<{ message: NotesMessage }>(
+      `/api/notes/conversations/${encodeURIComponent(conversationId)}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      },
+    )
+  },
+
+  // POST /api/notes/conversations/:conversationId/read
+  markRead(conversationId: string) {
+    return chatApiRequest<{
+      conversationId: string
+      lastReadAt: string
+    }>(`/api/notes/conversations/${encodeURIComponent(conversationId)}/read`, {
+      method: 'POST',
+    })
   },
 }

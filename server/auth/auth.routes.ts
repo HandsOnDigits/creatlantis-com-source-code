@@ -171,7 +171,15 @@ router.post('/login', authLimiter, async (req, res) => {
 
 router.get('/me', requireAuth, async (req, res) => {
   const user = await db.orm.public.User.where({ id: req.auth!.userId })
-    .select('id', 'email', 'username', 'name', 'nameIsPublic', 'createdAt')
+    .select(
+      'id',
+      'identityId',
+      'email',
+      'username',
+      'name',
+      'nameIsPublic',
+      'createdAt',
+    )
     .first()
 
   if (!user) {

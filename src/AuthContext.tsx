@@ -14,6 +14,7 @@ interface ApiResponse<T> {
 
 export interface AuthUser {
   id: number
+  identityId: string
   email: string
   username: string
   name: string | null

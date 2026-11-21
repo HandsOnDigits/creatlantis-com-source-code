@@ -2,12 +2,18 @@ import { timingSafeEqual } from 'node:crypto'
 import { Router } from 'express'
 import { z } from 'zod'
 
+import { getPublicObjectUrl } from '../storage/b2.client'
+
 import { db } from '../../src/prisma/db'
 
 const router = Router()
 
 const recipientSchema = z.object({
   identityId: z.string().uuid(),
+})
+
+const recipientsSchema = z.object({
+  identityIds: z.array(z.string().uuid()).max(100),
 })
 
 function isAuthorized(req: import('express').Request): boolean {
@@ -41,7 +47,7 @@ router.post('/resolve-recipient', async (req, res) => {
     const user = await db.orm.public.User.where({
       identityId: parsed.data.identityId,
     })
-      .select('identityId', 'username', 'name', 'nameIsPublic')
+      .select('id', 'identityId', 'username', 'name', 'nameIsPublic')
       .first()
 
     if (!user) {
@@ -58,6 +64,54 @@ router.post('/resolve-recipient', async (req, res) => {
   } catch (error) {
     console.error('Failed to resolve Chat recipient:', error)
     return res.status(500).json({ error: 'Failed to resolve recipient' })
+  }
+})
+
+router.post('/resolve-recipients', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  const parsed = recipientsSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid recipient identities' })
+  }
+
+  try {
+    const identityIds = [...new Set(parsed.data.identityIds)]
+
+    const recipients = await Promise.all(
+      identityIds.map(async (identityId) => {
+        const user = await db.orm.public.User.where({ identityId })
+          .select('id', 'identityId', 'username', 'name', 'nameIsPublic')
+          .first()
+
+        if (!user) return null
+
+        const avatar = await db.orm.public.UserAvatar.where({
+          userId: user.id,
+        })
+          .select('publicObjectKey')
+          .first()
+
+        return {
+          identityId: user.identityId,
+          username: user.username,
+          name: user.nameIsPublic ? user.name : null,
+          avatarUrl: avatar?.publicObjectKey
+            ? getPublicObjectUrl(avatar.publicObjectKey)
+            : null,
+        }
+      }),
+    )
+
+    return res.json({
+      recipients: recipients.filter((recipient) => recipient !== null),
+    })
+  } catch (error) {
+    console.error('Failed to resolve Chat recipients:', error)
+    return res.status(500).json({ error: 'Failed to resolve recipients' })
   }
 })
 

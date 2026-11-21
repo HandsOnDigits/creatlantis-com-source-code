@@ -14,6 +14,7 @@ import ProtectedRoute from './ProtectedRoute'
 import Profile from './pages/Profile'
 import ProfileEditor from './pages/ProfileEditor'
 import Settings from './pages/settings'
+import Notes from './pages/Notes'
 
 function App() {
   const { connected, subscribe } = useLive()
@@ -36,7 +37,8 @@ function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />`r`n        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/posts/:id" element={<Post />} />
         <Route path="/settings" element={<Settings />} />
 
@@ -47,6 +49,7 @@ function App() {
           <Route path="/upload/:type" element={<Upload />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/profile/edit" element={<ProfileEditor />} />
+          <Route path="/notes" element={<Notes />} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -54,4 +57,3 @@ function App() {
 }
 
 export default App
-

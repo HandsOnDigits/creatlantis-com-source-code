@@ -219,6 +219,14 @@ function NavigationBar() {
             )}
           </div>
         </div>
+
+        {/* Inbox */}
+        {status === AuthStatus.Authenticated && (
+          <button id="notes" onClick={() => navigate('/notes')}>
+            <img src={inbox_icon} alt="" className="navigation-icon pr-2" />
+            Notes
+          </button>
+        )}
       </div>
     </nav>
   )
