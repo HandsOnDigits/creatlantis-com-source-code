@@ -5,6 +5,8 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import { rateLimit } from 'express-rate-limit'
 
+import { closeMainQueryPool } from './db/main-query.pool'
+
 import { db } from '../src/prisma/db'
 import { errorHandler } from './middleware/error-handler'
 import authRoutes from './auth/auth.routes'
@@ -101,7 +103,11 @@ const server = app.listen(port, () => {
 async function shutdown() {
   server.close(async () => {
     try {
-      await Promise.all([db.close(), closeReportSubmissionPool()])
+      await Promise.all([
+        db.close(),
+        closeReportSubmissionPool(),
+        closeMainQueryPool(),
+      ])
     } finally {
       process.exit(0)
     }

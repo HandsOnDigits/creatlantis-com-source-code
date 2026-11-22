@@ -3,10 +3,15 @@ import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import { Temporal } from 'temporal-polyfill'
 
+import { mainQueryPool } from '../db/main-query.pool'
+
 import { db } from '../../src/prisma/db'
 import { requireAuth } from '../auth/auth.middleware'
 import { ALLOWED_CONTENT_TYPES } from '../media/media.constants'
-import { createOriginalUploadUrl } from '../storage/b2.client'
+import {
+  createOriginalUploadUrl,
+  getPublicObjectUrl,
+} from '../storage/b2.client'
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
 const UPLOAD_LIFETIME_MS = 15 * 60 * 1000
@@ -18,6 +23,13 @@ const createAvatarUploadSchema = z.object({
 })
 
 const router = Router()
+
+const userDirectoryQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(1_000_000).default(1),
+  limit: z.coerce.number().int().min(1).max(48).default(24),
+  sort: z.enum(['newest', 'alphabetical']).default('newest'),
+  search: z.string().trim().min(1).max(50).optional(),
+})
 
 function isValidDateOnly(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -112,6 +124,94 @@ router.get('/', requireAuth, async (req, res) => {
     .all()
 
   res.json({ data: users })
+})
+
+// Browse public users
+router.get('/directory', async (req, res) => {
+  const parsed = userDirectoryQuerySchema.safeParse(req.query)
+
+  if (!parsed.success) {
+    res.status(400).json({
+      error: 'Invalid directory query',
+      details: parsed.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
+    })
+    return
+  }
+
+  const { page, limit, sort, search } = parsed.data
+  const offset = (page - 1) * limit
+
+  const orderBy =
+    sort === 'alphabetical'
+      ? '"username" ASC, "id" ASC'
+      : '"createdAt" DESC, "id" DESC'
+
+  const result = await mainQueryPool.query<{
+    id: number
+    username: string
+    name: string | null
+    nameIsPublic: boolean
+    tagline: string | null
+    createdAt: Date
+  }>(
+    `
+      SELECT
+        "id",
+        "username",
+        "name",
+        "nameIsPublic",
+        "tagline",
+        "createdAt"
+      FROM public."User"
+      WHERE (
+        $1::text IS NULL
+        OR strpos(lower("username"), lower($1)) > 0
+      )
+      ORDER BY ${orderBy}
+      LIMIT $2
+      OFFSET $3
+    `,
+    [search ?? null, limit + 1, offset],
+  )
+
+  const users = result.rows
+
+  const hasMore = users.length > limit
+  const pageUsers = users.slice(0, limit)
+
+  const data = await Promise.all(
+    pageUsers.map(async (user) => {
+      const avatar = await db.orm.public.UserAvatar.where({
+        userId: user.id,
+        status: 'APPROVED',
+      })
+        .select('publicObjectKey')
+        .first()
+
+      return {
+        id: user.id,
+        username: user.username,
+        ...(user.nameIsPublic && user.name !== null ? { name: user.name } : {}),
+        tagline: user.tagline,
+        createdAt: user.createdAt.toISOString(),
+        avatarUrl: avatar?.publicObjectKey
+          ? getPublicObjectUrl(avatar.publicObjectKey)
+          : null,
+      }
+    }),
+  )
+
+  res.json({
+    data,
+    pagination: {
+      page,
+      limit,
+      hasMore,
+    },
+  })
 })
 
 // Get user

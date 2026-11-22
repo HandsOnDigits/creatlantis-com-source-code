@@ -1,23 +1,42 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, AuthStatus } from './AuthContext'
+import SearchAndFilter, {
+  type CollectionType,
+  type CollectionSort,
+} from './SearchAndFilter'
 
 import { VerticalHR, HorizontalHR } from './Utilites'
-
-import SearchAndFilter from './SearchAndFilte'
 
 import { profilesApi, type PublicProfile } from './api'
 
 // Images
 import test_icon from './assets/images/test_icon.webp'
-import more_icon from './assets/images/icons/moreIcon.webp'
 import default_pp from './assets/images/default_pp.webp'
 import inbox_icon from './assets/images/icons/inboxIcon.webp'
+import more_icon from './assets/images/icons/moreIcon.webp'
 
-function NavigationBar() {
+interface NavigationBarProps {
+  collectionType: CollectionType
+  search: string
+  sort: CollectionSort
+  onCollectionTypeChange: (value: CollectionType) => void
+  onSearchChange: (value: string) => void
+  onSortChange: (value: CollectionSort) => void
+}
+
+function NavigationBar({
+  collectionType,
+  search,
+  sort,
+  onCollectionTypeChange,
+  onSearchChange,
+  onSortChange,
+}: NavigationBarProps) {
   const { status, logout, user } = useAuth()
 
   const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null)
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -81,13 +100,8 @@ function NavigationBar() {
     localStorage.setItem('theme', currentTheme)
   }, [currentTheme])
 
-  {
-    /* Mobile triggers */
-  }
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
-
   return (
-    <nav className="sticky top-0 z-20 flex items-center justify-between p-4 shadow-2xs transition-colors duration-200">
+    <nav className="sticky top-0 z-20 flex items-center justify-between gap-4 p-4 shadow-2xs transition-colors duration-200">
       {/* Mobile search and filters */}
       <div className="lg:hidden">
         <button
@@ -99,13 +113,19 @@ function NavigationBar() {
           <img src={more_icon} alt="Open search and filters" />
         </button>
 
-        {/* Dropdown triggered by a click */}
         {isMobileSearchOpen && (
           <div
             className="absolute left-0 z-50 w-fit p-4 shadow-md"
             id="mobile-search"
           >
-            <SearchAndFilter />
+            <SearchAndFilter
+              collectionType={collectionType}
+              search={search}
+              sort={sort}
+              onCollectionTypeChange={onCollectionTypeChange}
+              onSearchChange={onSearchChange}
+              onSortChange={onSortChange}
+            />
           </div>
         )}
       </div>
@@ -121,7 +141,14 @@ function NavigationBar() {
 
       {/* Desktop search and filters */}
       <div className="hidden lg:block">
-        <SearchAndFilter />
+        <SearchAndFilter
+          collectionType={collectionType}
+          search={search}
+          sort={sort}
+          onCollectionTypeChange={onCollectionTypeChange}
+          onSearchChange={onSearchChange}
+          onSortChange={onSortChange}
+        />
       </div>
 
       <div className="flex h-10 gap-4">

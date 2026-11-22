@@ -1,5 +1,7 @@
-﻿import { useEffect } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
+import type { CollectionType, CollectionSort } from './SearchAndFilter'
 
 import { useLive } from './LiveContext'
 
@@ -19,6 +21,10 @@ import Notes from './pages/Notes'
 function App() {
   const { connected, subscribe } = useLive()
 
+  const [collectionType, setCollectionType] = useState<CollectionType>('posts')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<CollectionSort>('newest')
+
   useEffect(() => {
     const unsubscribe = subscribe((event) => {
       console.log('Live event received:', event)
@@ -33,10 +39,22 @@ function App() {
 
   return (
     <BrowserRouter>
-      <NavigationBar />
+      <NavigationBar
+        collectionType={collectionType}
+        search={search}
+        sort={sort}
+        onCollectionTypeChange={setCollectionType}
+        onSearchChange={setSearch}
+        onSortChange={setSort}
+      />
 
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route
+          path="/"
+          element={
+            <Home collectionType={collectionType} search={search} sort={sort} />
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/posts/:id" element={<Post />} />

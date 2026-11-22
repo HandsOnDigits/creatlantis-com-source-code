@@ -1,22 +1,41 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import type { CollectionType, CollectionSort } from './SearchAndFilter'
+
 import { Journal, Image } from './PostElements'
 import { HorizontalHR } from './Utilites'
-import { categoriesApi, postsApi, type Category, type Post } from './api'
+import {
+  categoriesApi,
+  postsApi,
+  usersApi,
+  type Category,
+  type Post,
+  type UserDirectoryEntry,
+} from './api'
 
-function Collection() {
+interface CollectionProps {
+  collectionType: CollectionType
+  search: string
+  sort: CollectionSort
+}
+
+function Collection({ collectionType, search, sort }: CollectionProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   )
 
   const [categories, setCategories] = useState<Category[]>([])
   const [posts, setPosts] = useState<Post[]>([])
+  const [users, setUsers] = useState<UserDirectoryEntry[]>([])
+  const [, setUsersHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Load categories.
   useEffect(() => {
+    if (collectionType !== 'posts') return
+
     let cancelled = false
 
     async function loadCategories() {
@@ -40,13 +59,15 @@ function Collection() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [collectionType])
 
   // Load posts, optionally filtered by category.
   useEffect(() => {
     let cancelled = false
 
     async function loadPosts() {
+      if (collectionType !== 'posts') return
+
       try {
         setLoading(true)
         setError(null)
@@ -76,44 +97,84 @@ function Collection() {
     return () => {
       cancelled = true
     }
-  }, [selectedCategoryId])
+  }, [selectedCategoryId, collectionType])
+
+  // Load public users.
+  useEffect(() => {
+    if (collectionType !== 'users') return
+
+    let cancelled = false
+
+    async function loadUsers() {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const response = await usersApi.directory(1, 24, sort, search)
+
+        if (!cancelled) {
+          setUsers(response.data)
+          setUsersHasMore(response.pagination.hasMore)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load users.')
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadUsers()
+
+    return () => {
+      cancelled = true
+    }
+  }, [collectionType, search, sort])
 
   const selectedCategory = categories.find(
     (category) => category.id === selectedCategoryId,
   )
 
-  const heading = selectedCategory
-    ? `${selectedCategory.name} Posts`
-    : 'All Posts'
+  const heading =
+    collectionType === 'users'
+      ? 'Users'
+      : selectedCategory
+        ? `${selectedCategory.name} Posts`
+        : 'All Posts'
 
   return (
     <div className="flex min-h-screen">
       {/* Category Selection */}
-      <ol
-        id="category-list"
-        className="w-[18vw] space-y-2 p-4 text-nowrap lg:w-[8vw]"
-      >
-        <li
-          className={`cursor-pointer transition-colors ${
-            selectedCategoryId === null ? 'selected-index' : ''
-          }`}
-          onClick={() => setSelectedCategoryId(null)}
+      {collectionType === 'posts' && (
+        <ol
+          id="category-list"
+          className="w-[18vw] space-y-2 p-4 text-nowrap lg:w-[8vw]"
         >
-          All
-        </li>
-
-        {categories.map((category) => (
           <li
-            key={category.id}
             className={`cursor-pointer transition-colors ${
-              selectedCategoryId === category.id ? 'selected-index' : ''
+              selectedCategoryId === null ? 'selected-index' : ''
             }`}
-            onClick={() => setSelectedCategoryId(category.id)}
+            onClick={() => setSelectedCategoryId(null)}
           >
-            {category.name}
+            All
           </li>
-        ))}
-      </ol>
+
+          {categories.map((category) => (
+            <li
+              key={category.id}
+              className={`cursor-pointer transition-colors ${
+                selectedCategoryId === category.id ? 'selected-index' : ''
+              }`}
+              onClick={() => setSelectedCategoryId(category.id)}
+            >
+              {category.name}
+            </li>
+          ))}
+        </ol>
+      )}
 
       {/* Collection Display */}
       <div className="flex min-h-0 flex-1 flex-col p-6">
@@ -126,12 +187,19 @@ function Collection() {
 
           {error && <p className="p-4 text-red-500">{error}</p>}
 
-          {!loading && !error && posts.length === 0 && (
-            <p className="p-4">No posts available.</p>
-          )}
+          {!loading &&
+            !error &&
+            ((collectionType === 'posts' && posts.length === 0) ||
+              (collectionType === 'users' && users.length === 0)) && (
+              <p className="p-4">
+                {collectionType === 'users'
+                  ? 'No users found.'
+                  : 'No posts available.'}
+              </p>
+            )}
 
           {/* Masonry Layout */}
-          {!loading && !error && (
+          {!loading && !error && collectionType === 'posts' && (
             <div className="columns-1 gap-6 space-y-6 sm:columns-2 lg:columns-3">
               {posts.map((post) => (
                 <article
@@ -162,6 +230,36 @@ function Collection() {
                     )}
                   </Link>
                 </article>
+              ))}
+            </div>
+          )}
+
+          {!loading && !error && collectionType === 'users' && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {users.map((user) => (
+                <Link
+                  key={user.id}
+                  to={`/profile/${encodeURIComponent(user.username)}`}
+                  className="flex items-center gap-4"
+                >
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt=""
+                      className="h-16 w-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full">
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div className="min-w-0">
+                    <h3 className="font-semibold">{user.username}</h3>
+                    {user.name && <p>{user.name}</p>}
+                    {user.tagline && <p className="truncate">{user.tagline}</p>}
+                  </div>
+                </Link>
               ))}
             </div>
           )}

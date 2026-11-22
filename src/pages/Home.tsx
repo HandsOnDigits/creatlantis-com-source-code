@@ -1,11 +1,15 @@
 import Collection from '../Collection'
+import type { CollectionType, CollectionSort } from '../SearchAndFilter'
 
-function Home() {
+interface HomeProps {
+  collectionType: CollectionType
+  search: string
+  sort: CollectionSort
+}
+
+function Home({ collectionType, search, sort }: HomeProps) {
   return (
-    <>
-      {/* Category Selection */}
-      <Collection />
-    </>
+    <Collection collectionType={collectionType} search={search} sort={sort} />
   )
 }
 

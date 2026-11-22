@@ -247,6 +247,15 @@ export interface User {
   createdAt: string
 }
 
+export interface UserDirectoryEntry {
+  id: number
+  username: string
+  name?: string
+  tagline: string | null
+  createdAt: string
+  avatarUrl: string | null
+}
+
 export interface UpdateUserInput {
   email?: string
   username?: string
@@ -281,6 +290,35 @@ export const usersApi = {
   // DELETE /api/users/:id
   delete(id: number) {
     return api.delete<void>(`/api/users/${id}`)
+  },
+
+  directory(
+    page = 1,
+    limit = 24,
+    sort: 'newest' | 'alphabetical' = 'newest',
+    search?: string,
+  ) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      sort,
+    })
+
+    if (search) {
+      params.set('search', search)
+    }
+
+    return api.get<
+      ApiResponse<UserDirectoryEntry[]> & {
+        pagination: {
+          page: number
+          limit: number
+          hasMore: boolean
+        }
+      }
+    >(`/api/users/directory?${params}`, {
+      authenticated: false,
+    })
   },
 }
 
