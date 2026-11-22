@@ -916,6 +916,7 @@ export const authApi = {
 
 export interface NotesConversationMembership {
   conversationId: string
+  startedByIdentityId: string
   lastReadAt: string | null
   mutedAt: string | null
   recipient: {
@@ -995,5 +996,19 @@ export const notesApi = {
     }>(`/api/notes/conversations/${encodeURIComponent(conversationId)}/read`, {
       method: 'POST',
     })
+  },
+
+  deleteMessage(conversationId: string, messageId: string) {
+    return chatApiRequest<{ deleted: boolean }>(
+      `/api/notes/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,
+      { method: 'DELETE' },
+    )
+  },
+
+  endConversation(conversationId: string) {
+    return chatApiRequest<{ ended: boolean }>(
+      `/api/notes/conversations/${encodeURIComponent(conversationId)}`,
+      { method: 'DELETE' },
+    )
   },
 }

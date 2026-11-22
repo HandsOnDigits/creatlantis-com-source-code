@@ -149,6 +149,76 @@ function Notes() {
     }
   }
 
+  async function handleDeleteMessage(messageId: string) {
+    if (!selectedConversationId) return
+
+    try {
+      setError(null)
+
+      await notesApi.deleteMessage(selectedConversationId, messageId)
+
+      setMessages((current) =>
+        current.filter((message) => message.id !== messageId),
+      )
+
+      const remainingMessages = messages.filter(
+        (message) => message.id !== messageId,
+      )
+      const latestMessage = remainingMessages.at(-1)
+
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.conversationId === selectedConversationId
+            ? {
+                ...conversation,
+                lastMessage: latestMessage
+                  ? {
+                      content: latestMessage.content,
+                      createdAt: latestMessage.createdAt,
+                      senderIdentityId: latestMessage.senderIdentityId,
+                    }
+                  : null,
+                lastMessageAt: latestMessage?.createdAt ?? null,
+              }
+            : conversation,
+        ),
+      )
+    } catch (err) {
+      console.error('Failed to delete message:', err)
+      setError('Unable to delete your message.')
+    }
+  }
+
+  async function handleEndConversation() {
+    if (!selectedConversationId) return
+
+    const confirmed = window.confirm(
+      'End this conversation permanently? All messages from both participants will be deleted. This cannot be undone.',
+    )
+
+    if (!confirmed) return
+
+    try {
+      setError(null)
+
+      await notesApi.endConversation(selectedConversationId)
+
+      const remainingConversations = conversations.filter(
+        (conversation) =>
+          conversation.conversationId !== selectedConversationId,
+      )
+
+      setConversations(remainingConversations)
+      setSelectedConversationId(
+        remainingConversations[0]?.conversationId ?? null,
+      )
+      setMessages([])
+    } catch (err) {
+      console.error('Failed to end conversation:', err)
+      setError('Unable to end this conversation.')
+    }
+  }
+
   const selectedConversation = conversations.find(
     (conversation) => conversation.conversationId === selectedConversationId,
   )
@@ -231,11 +301,23 @@ function Notes() {
 
       {/* Conversation Context */}
       <div className="flex min-w-0 flex-1 flex-col p-6">
-        <h2 className="big-text font-bold">
-          {selectedConversation?.recipient?.name ||
-            selectedConversation?.recipient?.username ||
-            'Conversation'}
-        </h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="big-text font-bold">
+            {selectedConversation?.recipient?.name ||
+              selectedConversation?.recipient?.username ||
+              'Conversation'}
+          </h2>
+
+          {selectedConversation?.startedByIdentityId === user?.identityId && (
+            <button
+              type="button"
+              onClick={handleEndConversation}
+              className="rounded-lg border border-red-500 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10"
+            >
+              End conversation
+            </button>
+          )}
+        </div>
 
         <HorizontalHR />
 
@@ -278,9 +360,7 @@ function Notes() {
                       'Unknown user'}
                 </p>
                 <p className="wrap-break-word whitespace-pre-wrap">
-                  {message.deletedAt
-                    ? 'This message was deleted.'
-                    : message.content}
+                  {message.content}
                 </p>
 
                 <time
@@ -289,6 +369,16 @@ function Notes() {
                 >
                   {new Date(message.createdAt).toLocaleString()}
                 </time>
+
+                {ownMessage && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMessage(message.id)}
+                    className="mt-2 text-xs text-red-500 hover:underline"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             )
           })}

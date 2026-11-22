@@ -51,6 +51,13 @@
                   "kind": "scalar"
                 }
               },
+              "startedByIdentityId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -104,6 +111,9 @@
                 },
                 "lastMessageAt": {
                   "column": "lastMessageAt"
+                },
+                "startedByIdentityId": {
+                  "column": "startedByIdentityId"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -224,13 +234,6 @@
                   "kind": "scalar"
                 }
               },
-              "deletedAt": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "kind": "scalar"
-                }
-              },
               "editedAt": {
                 "nullable": true,
                 "type": {
@@ -282,9 +285,6 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
-                "deletedAt": {
-                  "column": "deletedAt"
-                },
                 "editedAt": {
                   "column": "editedAt"
                 },
@@ -333,6 +333,11 @@
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
                   "nullable": true
+                },
+                "startedByIdentityId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -471,11 +476,6 @@
                   },
                   "nullable": false
                 },
-                "deletedAt": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "dataType": "pg/timestamptz",
-                  "nullable": true
-                },
                 "editedAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -555,7 +555,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "240c9432c287b8816befc51091380dd5a29a872a7973a801517e5adb8cefe512"
+    "storageHash": "1ad1c847fed82c37e96f4228e60965a23ce0ce7f1223b36f5c54e23603ea0625"
   },
   "execution": {
     "executionHash": "82496ec43b97073bf94e35b8a8bd6a5ce79a2f9777fef1c4d31ec2d70fe4c37a",

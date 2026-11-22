@@ -5,7 +5,8 @@ model Conversation {
 
   // Deterministic key generated from the two sorted identity UUIDs.
   // Prevents duplicate one-to-one conversations.
-  directKey String @unique
+  directKey           String @unique
+  startedByIdentityId String
 
   participants ConversationParticipant[]
   messages     PrivateMessage[]
@@ -47,7 +48,6 @@ model PrivateMessage {
 
   createdAt TimestamptzString  @default(now())
   editedAt  TimestamptzString?
-  deletedAt TimestamptzString?
 
   @@index([conversationId, createdAt])
   @@index([senderIdentityId, createdAt])

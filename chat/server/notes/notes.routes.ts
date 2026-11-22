@@ -76,7 +76,6 @@ notesRouter.get('/conversations', async (req, res) => {
                 FROM "PrivateMessage"
                 WHERE "conversationId" = ${membership.conversationId}
                   AND "senderIdentityId" IS DISTINCT FROM ${identityId}
-                  AND "deletedAt" IS NULL
               `
                 .returnsRow({
                   unreadCount: 'pg/int4@1',
@@ -87,7 +86,6 @@ notesRouter.get('/conversations', async (req, res) => {
                 FROM "PrivateMessage"
                 WHERE "conversationId" = ${membership.conversationId}
                   AND "senderIdentityId" IS DISTINCT FROM ${identityId}
-                  AND "deletedAt" IS NULL
                   AND "createdAt" > ${membership.lastReadAt}::timestamptz
               `
                 .returnsRow({
@@ -98,12 +96,11 @@ notesRouter.get('/conversations', async (req, res) => {
         const conversation = await db.orm.public.Conversation.where({
           id: membership.conversationId,
         })
-          .select('lastMessageAt')
+          .select('lastMessageAt', 'startedByIdentityId')
           .first()
 
         const lastMessage = await db.orm.public.PrivateMessage.where({
           conversationId: membership.conversationId,
-          deletedAt: null,
         })
           .select('content', 'createdAt', 'senderIdentityId')
           .orderBy([
@@ -116,6 +113,7 @@ notesRouter.get('/conversations', async (req, res) => {
 
         return {
           ...membership,
+          startedByIdentityId: conversation?.startedByIdentityId ?? null,
           lastMessageAt: conversation?.lastMessageAt ?? null,
           lastMessage: lastMessage
             ? {
@@ -187,6 +185,7 @@ notesRouter.post('/conversations', async (req, res) => {
 
       const conversation = await tx.orm.public.Conversation.create({
         directKey,
+        startedByIdentityId: senderIdentityId,
       })
 
       await tx.orm.public.ConversationParticipant.create({
@@ -312,6 +311,85 @@ notesRouter.post(
   },
 )
 
+// DELETE /api/notes/conversations/:conversationId/messages/:messageId
+notesRouter.delete(
+  '/conversations/:conversationId/messages/:messageId',
+  async (req, res) => {
+    const conversationId = z
+      .string()
+      .uuid()
+      .safeParse(req.params.conversationId)
+    const messageId = z.string().uuid().safeParse(req.params.messageId)
+
+    if (!conversationId.success || !messageId.success) {
+      return res.status(400).json({
+        error: 'Invalid conversation or message ID',
+      })
+    }
+
+    const senderIdentityId = req.auth!.identityId
+
+    try {
+      const deleted = await db.transaction(async (tx) => {
+        const membership = await tx.orm.public.ConversationParticipant.where({
+          conversationId: conversationId.data,
+          identityId: senderIdentityId,
+        })
+          .select('conversationId')
+          .first()
+
+        if (!membership) return 'conversation-not-found'
+
+        const message = await tx.orm.public.PrivateMessage.where({
+          id: messageId.data,
+          conversationId: conversationId.data,
+          senderIdentityId,
+        }).delete()
+
+        if (!message) return 'message-not-found'
+
+        const latestMessage = await tx.orm.public.PrivateMessage.where({
+          conversationId: conversationId.data,
+        })
+          .select('createdAt')
+          .orderBy([
+            (message) => message.createdAt.desc(),
+            (message) => message.id.desc(),
+          ])
+          .first()
+
+        await tx.orm.public.Conversation.where({
+          id: conversationId.data,
+        }).update({
+          lastMessageAt: latestMessage?.createdAt ?? null,
+        })
+
+        return 'deleted'
+      })
+
+      if (deleted === 'conversation-not-found') {
+        return res.status(404).json({
+          error: 'Conversation not found',
+        })
+      }
+
+      if (deleted === 'message-not-found') {
+        return res.status(404).json({
+          error: 'Message not found',
+        })
+      }
+
+      return res.json({ deleted: true })
+    } catch (error) {
+      console.error('Failed to delete Notes message:', error)
+
+      return res.status(500).json({
+        error: 'Failed to delete message',
+      })
+    }
+  },
+)
+
 // GET /api/notes/conversations/:conversationId/messages
 notesRouter.get('/conversations/:conversationId/messages', async (req, res) => {
   const conversationId = z.string().uuid().safeParse(req.params.conversationId)
@@ -366,7 +444,6 @@ notesRouter.get('/conversations/:conversationId/messages', async (req, res) => {
         'content',
         'createdAt',
         'editedAt',
-        'deletedAt',
       )
       .orderBy([
         (message) => message.createdAt.desc(),
@@ -449,6 +526,40 @@ notesRouter.post('/conversations/:conversationId/read', async (req, res) => {
 
     return res.status(500).json({
       error: 'Failed to mark conversation as read',
+    })
+  }
+})
+
+// DELETE /api/notes/conversations/:conversationId
+notesRouter.delete('/conversations/:conversationId', async (req, res) => {
+  const conversationId = z.string().uuid().safeParse(req.params.conversationId)
+
+  if (!conversationId.success) {
+    return res.status(400).json({
+      error: 'Invalid conversation ID',
+    })
+  }
+
+  const identityId = req.auth!.identityId
+
+  try {
+    const deleted = await db.orm.public.Conversation.where({
+      id: conversationId.data,
+      startedByIdentityId: identityId,
+    }).delete()
+
+    if (!deleted) {
+      return res.status(404).json({
+        error: 'Conversation not found or you are not its starter',
+      })
+    }
+
+    return res.json({ ended: true })
+  } catch (error) {
+    console.error('Failed to end Notes conversation:', error)
+
+    return res.status(500).json({
+      error: 'Failed to end conversation',
     })
   }
 })
