@@ -25,7 +25,7 @@ const confirmEnrollmentSchema = z.object({
 
 const mfaConfirmationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 5,
+  limit: 7,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: {
