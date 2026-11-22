@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { HorizontalHR } from '../Utilites'
+import { HorizontalHR, ProfileIcon } from '../Utilites'
 
 import { postsApi, type Post as PostData, type PostImageVariant } from '../api'
 
@@ -280,6 +280,10 @@ function Post() {
     )
   }
 
+  let name = post.author
+    ? (post.author.name ?? post.author.username)
+    : 'Unknown author'
+
   return (
     <>
       <main className="flex min-h-screen flex-col p-6">
@@ -296,12 +300,21 @@ function Post() {
           <h1 className="big-text font-bold">{post.title}</h1>
 
           <div className="mt-3 flex flex-wrap gap-3 text-sm opacity-60">
-            {post.author && (
-              <span>By {post.author.name ?? post.author.username}</span>
-            )}
+            {post.author && <span>By {name}</span>}
 
             <span>{new Date(post.createdAt).toLocaleDateString()}</span>
           </div>
+
+          <HorizontalHR />
+
+          {post.author && (
+            <Link
+              to={'/profile/' + post.author.username}
+              className="mt-4 inline-block underline"
+            >
+              <ProfileIcon name={name} image={post.author.avatarUrl} />
+            </Link>
+          )}
         </header>
 
         {/* Post Content */}

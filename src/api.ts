@@ -464,6 +464,7 @@ export interface PostAuthor {
   id: number
   username: string
   name: string | null
+  avatarUrl: string | null
 }
 
 export interface PostListResponse {

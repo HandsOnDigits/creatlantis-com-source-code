@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 
 import { db } from '../../src/prisma/db'
-import { getMediaVariantUrl } from '../storage/b2.client'
+import { getMediaVariantUrl, getPublicObjectUrl } from '../storage/b2.client'
 import { requireAuth } from '../auth/auth.middleware'
 import { publishLiveEvent } from '../live/live.service'
 
@@ -115,6 +115,15 @@ router.get('/', async (req, res) => {
         .select('id', 'username', 'name', 'nameIsPublic')
         .first()
 
+      const avatar = author
+        ? await db.orm.public.UserAvatar.where({
+            userId: author.id,
+            status: 'APPROVED',
+          })
+            .select('publicObjectKey')
+            .first()
+        : null
+
       const postMedia = await db.orm.public.PostMedia.where({ postId: post.id })
         .orderBy((item) => item.position.asc())
         .all()
@@ -160,6 +169,9 @@ router.get('/', async (req, res) => {
               id: author.id,
               username: author.username,
               name: author.nameIsPublic ? author.name : null,
+              avatarUrl: avatar?.publicObjectKey
+                ? getPublicObjectUrl(avatar.publicObjectKey)
+                : null,
             }
           : null,
         images: images.filter((image) => image !== null),
@@ -319,6 +331,15 @@ router.get('/:id', async (req, res) => {
     .select('id', 'username', 'name', 'nameIsPublic')
     .first()
 
+  const avatar = author
+    ? await db.orm.public.UserAvatar.where({
+        userId: author.id,
+        status: 'APPROVED',
+      })
+        .select('publicObjectKey')
+        .first()
+    : null
+
   const postMedia = await db.orm.public.PostMedia.where({ postId: id })
     .orderBy((media) => media.position.asc())
     .all()
@@ -365,6 +386,9 @@ router.get('/:id', async (req, res) => {
             id: author.id,
             username: author.username,
             name: author.nameIsPublic ? author.name : null,
+            avatarUrl: avatar?.publicObjectKey
+              ? getPublicObjectUrl(avatar.publicObjectKey)
+              : null,
           }
         : null,
       images: images.filter((image) => image !== null),
