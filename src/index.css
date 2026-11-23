@@ -151,7 +151,7 @@ html.green-theme {
 
       &#delete,
       &.delete,
-      &#end,
+      &.end,
       &#logout {
         @apply bg-red-500 hover:bg-red-600;
       }
@@ -159,6 +159,7 @@ html.green-theme {
       &#watch-user,
       &#main-profile,
       &#cancel,
+      &.cancel,
       &#edit,
       &.register,
       &#go-to-account-settings,
