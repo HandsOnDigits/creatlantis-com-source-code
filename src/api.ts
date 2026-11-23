@@ -1049,6 +1049,16 @@ export const notesApi = {
     })
   },
 
+  editMessage(conversationId: string, messageId: string, content: string) {
+    return chatApiRequest<{ updated: boolean }>(
+      `/api/notes/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ content }),
+      },
+    )
+  },
+
   deleteMessage(conversationId: string, messageId: string) {
     return chatApiRequest<{ deleted: boolean }>(
       `/api/notes/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,

@@ -211,6 +211,8 @@ const sendMessageSchema = z.object({
   content: z.string().trim().min(1).max(10000),
 })
 
+const editMessageSchema = sendMessageSchema
+
 notesRouter.post(
   '/conversations/:conversationId/messages',
   async (req, res) => {
@@ -273,6 +275,73 @@ notesRouter.post(
 
       return res.status(500).json({
         error: 'Failed to send message',
+      })
+    }
+  },
+)
+
+// PATCH /api/notes/conversations/:conversationId/messages/:messageId
+notesRouter.patch(
+  '/conversations/:conversationId/messages/:messageId',
+  async (req, res) => {
+    const conversationId = z
+      .string()
+      .uuid()
+      .safeParse(req.params.conversationId)
+    const messageId = z.string().uuid().safeParse(req.params.messageId)
+    const parsed = editMessageSchema.safeParse(req.body)
+
+    if (!conversationId.success || !messageId.success || !parsed.success) {
+      return res.status(400).json({
+        error: 'Invalid message data',
+      })
+    }
+
+    const senderIdentityId = req.auth!.identityId
+
+    try {
+      const result = await db.transaction(async (tx) => {
+        const membership = await tx.orm.public.ConversationParticipant.where({
+          conversationId: conversationId.data,
+          identityId: senderIdentityId,
+        })
+          .select('conversationId')
+          .first()
+
+        if (!membership) return 'conversation-not-found'
+
+        const message = await tx.orm.public.PrivateMessage.where({
+          id: messageId.data,
+          conversationId: conversationId.data,
+          senderIdentityId,
+        }).update({
+          content: parsed.data.content,
+          editedAt: new Date().toISOString(),
+        })
+
+        return message ? 'updated' : 'message-not-found'
+      })
+
+      if (result === 'conversation-not-found') {
+        return res.status(404).json({
+          error: 'Conversation not found',
+        })
+      }
+
+      if (result === 'message-not-found') {
+        return res.status(404).json({
+          error: 'Message not found',
+        })
+      }
+
+      return res.json({
+        updated: true,
+      })
+    } catch (error) {
+      console.error('Failed to edit Notes message:', error)
+
+      return res.status(500).json({
+        error: 'Failed to edit message',
       })
     }
   },

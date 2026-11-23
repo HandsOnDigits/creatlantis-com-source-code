@@ -9,6 +9,9 @@ import {
 } from '../api'
 import NavTabs, { type NavTab, ProfileIcon, HorizontalHR } from '../Utilites'
 
+// Icons
+import editIcon from '../assets/images/icons/editIcon.webp'
+
 function Notes() {
   const { user } = useAuth()
 
@@ -24,6 +27,9 @@ function Notes() {
   const [activeTab, setActiveTab] = useState<'ALL' | 'UNREAD' | 'READ'>('ALL')
   const [messages, setMessages] = useState<NotesMessage[]>([])
   const [content, setContent] = useState('')
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
   const [loading, setLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [sending, setSending] = useState(false)
@@ -173,6 +179,48 @@ function Notes() {
       setError('Unable to send your message.')
     } finally {
       setSending(false)
+    }
+  }
+
+  async function handleSaveEdit(messageId: string) {
+    if (!selectedConversationId || savingEdit) return
+
+    const trimmedContent = editContent.trim()
+
+    if (!trimmedContent) {
+      setError('A message cannot be empty.')
+      return
+    }
+
+    try {
+      setSavingEdit(true)
+      setError(null)
+
+      await notesApi.editMessage(
+        selectedConversationId,
+        messageId,
+        trimmedContent,
+      )
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                content: trimmedContent,
+                editedAt: new Date().toISOString(),
+              }
+            : message,
+        ),
+      )
+
+      setEditingMessageId(null)
+      setEditContent('')
+    } catch (err) {
+      console.error('Failed to edit message:', err)
+      setError('Unable to edit your message.')
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -446,6 +494,7 @@ function Notes() {
               const ownMessage = message.senderIdentityId === user?.identityId
               const isConfirmingDelete =
                 confirmingDeleteMessageId === message.id
+              const isEditing = editingMessageId === message.id
               const isDeleting = deletingMessageId === message.id
 
               return (
@@ -474,13 +523,50 @@ function Notes() {
                     </time>
                   </div>
 
-                  <p className="wrap-break-word whitespace-pre-wrap">
-                    {message.content}
-                  </p>
+                  {editingMessageId === message.id ? (
+                    <textarea
+                      value={editContent}
+                      onChange={(event) => setEditContent(event.target.value)}
+                      rows={3}
+                      maxLength={10000}
+                      disabled={savingEdit}
+                      className="border-hr-line w-full resize-y rounded-lg border-2 p-3"
+                    />
+                  ) : (
+                    <p className="wrap-break-word whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                  )}
+
+                  {message.editedAt && (
+                    <span className="text-xs opacity-50">Edited</span>
+                  )}
 
                   {ownMessage && (
                     <div className="flex items-center justify-end gap-2 self-end">
-                      {isConfirmingDelete ? (
+                      {isEditing ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingMessageId(null)
+                              setEditContent('')
+                            }}
+                            disabled={savingEdit}
+                            className="cancel"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEdit(message.id)}
+                            disabled={savingEdit || !editContent.trim()}
+                            className="submit"
+                          >
+                            {savingEdit ? 'Saving...' : 'Save'}
+                          </button>
+                        </>
+                      ) : isConfirmingDelete ? (
                         <>
                           <span>Are you sure?</span>
                           <button
@@ -503,15 +589,29 @@ function Notes() {
                           </button>
                         </>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setConfirmingDeleteMessageId(message.id)
-                          }
-                          className="delete"
-                        >
-                          Delete
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingMessageId(message.id)
+                              setEditContent(message.content)
+                              setConfirmingDeleteMessageId(null)
+                            }}
+                            className="navigation-icon"
+                            title="Edit"
+                          >
+                            <img src={editIcon} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setConfirmingDeleteMessageId(message.id)
+                            }
+                            className="delete"
+                          >
+                            Delete
+                          </button>
+                        </>
                       )}
                     </div>
                   )}
