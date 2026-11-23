@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 import { authApi } from '../../../api'
 
@@ -143,6 +143,10 @@ function ChangePassword() {
         >
           {saving ? 'Changing password...' : 'Change password'}
         </button>
+
+        <Link to="/">
+          <button className="cancel">Cancel</button>
+        </Link>
       </div>
 
       {message && (

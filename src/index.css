@@ -133,7 +133,7 @@ html.green-theme {
   @layer components {
     /* Basic styling for ALL buttons */
     button {
-      @apply inline-flex h-12 w-24 items-center justify-center rounded-sm font-medium transition-colors duration-150;
+      @apply mx-2 inline-flex h-12 w-24 items-center justify-center gap-1 rounded-sm font-medium transition-colors duration-150;
       @apply cursor-pointer self-center;
 
       /* Base styling for when a button is disabled */
@@ -174,16 +174,21 @@ html.green-theme {
   }
 
   /* Icon scales */
-  img {
-    &.navigation-icon {
-      @apply h-5 sm:h-6 md:h-7 lg:h-10;
-    }
+
+  .navigation-icon {
+    @apply w-5 sm:w-6 md:w-7 lg:w-10;
   }
 
   /* Submit */
 
-  #error-feedback {
+  #error-feedback,
+  .error-feedback {
     @apply font-semibold text-red-500;
+  }
+
+  & input,
+  & textarea {
+    @apply border-hr-line rounded-sm border-2;
   }
 
   form {
@@ -192,11 +197,6 @@ html.green-theme {
 
     h1 {
       @apply self-center;
-    }
-
-    & input,
-    & textarea {
-      @apply border-hr-line rounded-sm border-2;
     }
 
     & .submit-input {

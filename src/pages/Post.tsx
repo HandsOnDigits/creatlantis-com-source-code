@@ -271,7 +271,7 @@ function Post() {
   if (error || !post) {
     return (
       <main className="mx-auto max-w-4xl p-8">
-        <p className="text-red-500">{error ?? 'Post not found.'}</p>
+        <p className="error-feedback">{error ?? 'Post not found.'}</p>
 
         <Link to="/" className="mt-4 inline-block underline">
           Back to collection

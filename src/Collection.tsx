@@ -187,7 +187,7 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
         <div className="h-[90vh] scrollbar-none overflow-y-auto">
           {loading && <p className="p-4">Loading posts...</p>}
 
-          {error && <p className="p-4 text-red-500">{error}</p>}
+          {error && <p className="error-feedback p-4">{error}</p>}
 
           {!loading &&
             !error &&

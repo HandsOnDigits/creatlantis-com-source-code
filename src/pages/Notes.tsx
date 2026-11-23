@@ -11,6 +11,7 @@ import NavTabs, { type NavTab, ProfileIcon, HorizontalHR } from '../Utilites'
 
 // Icons
 import editIcon from '../assets/images/icons/editIcon.webp'
+import benIcon from '../assets/images/icons/benIcon.webp'
 
 function Notes() {
   const { user } = useAuth()
@@ -500,28 +501,26 @@ function Notes() {
               return (
                 <div
                   key={message.id}
-                  className="flex w-full flex-col gap-3 py-4"
+                  className="flex w-full flex-col gap-2 pt-4"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <ProfileIcon
-                      image={
-                        ownMessage
-                          ? user?.avatarUrl
-                          : selectedConversation?.recipient?.avatarUrl
-                      }
-                      name={
-                        ownMessage
-                          ? user?.name || user?.username || 'You'
-                          : selectedConversation?.recipient?.name ||
-                            selectedConversation?.recipient?.username ||
-                            'Unknown user'
-                      }
-                    />
+                  <ProfileIcon
+                    image={
+                      ownMessage
+                        ? user?.avatarUrl
+                        : selectedConversation?.recipient?.avatarUrl
+                    }
+                    name={
+                      ownMessage
+                        ? user?.name || user?.username || 'You'
+                        : selectedConversation?.recipient?.name ||
+                          selectedConversation?.recipient?.username ||
+                          'Unknown user'
+                    }
+                  />
 
-                    <time className="opacity-80" dateTime={message.createdAt}>
-                      {new Date(message.createdAt).toLocaleString()}
-                    </time>
-                  </div>
+                  <time className="opacity-80" dateTime={message.createdAt}>
+                    {new Date(message.createdAt).toLocaleString()}
+                  </time>
 
                   {editingMessageId === message.id ? (
                     <textarea
@@ -543,7 +542,7 @@ function Notes() {
                   )}
 
                   {ownMessage && (
-                    <div className="flex items-center justify-end gap-2 self-end">
+                    <div className="flex items-center self-end">
                       {isEditing ? (
                         <>
                           <button
@@ -590,27 +589,25 @@ function Notes() {
                         </>
                       ) : (
                         <>
-                          <button
-                            type="button"
+                          <img
+                            src={editIcon}
                             onClick={() => {
                               setEditingMessageId(message.id)
                               setEditContent(message.content)
                               setConfirmingDeleteMessageId(null)
                             }}
-                            className="navigation-icon"
+
                             title="Edit"
-                          >
-                            <img src={editIcon} />
-                          </button>
-                          <button
-                            type="button"
+                            className="cursor-pointer"
+                          />
+                          <img
+                            src={benIcon}
                             onClick={() =>
                               setConfirmingDeleteMessageId(message.id)
                             }
-                            className="delete"
-                          >
-                            Delete
-                          </button>
+                            title="Delete"
+                            className="cursor-pointer"
+                          />
                         </>
                       )}
                     </div>
@@ -634,7 +631,7 @@ function Notes() {
               rows={2}
               maxLength={10000}
               disabled={!selectedConversationId || messagesLoading || sending}
-              className="border-hr-line min-h-12 w-full resize-y rounded-lg border-2 p-3 disabled:opacity-50 max-sm:max-h-6 max-sm:p-1.5"
+              className="min-h-12 w-full resize-y p-3 disabled:opacity-50 max-sm:max-h-6 max-sm:p-1.5"
             />
 
             <button

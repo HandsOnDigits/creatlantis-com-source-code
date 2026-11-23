@@ -5,6 +5,9 @@ import { profilesApi, type ProfileLayout, type ProfileWidget } from '../api'
 
 import { HorizontalHR } from '../Utilites'
 
+// Images
+import benIcon from '../assets/images/icons/benIcon.webp'
+
 const availableWidgets: {
   type: ProfileWidget['type']
   label: string
@@ -232,7 +235,7 @@ function ProfileEditor() {
   if (!layout) {
     return (
       <main className="p-8">
-        <p role="alert" className="text-red-500">
+        <p role="alert" className="error-feedback">
           {error ?? 'Could not load profile layout.'}
         </p>
         <Link to="/" className="mt-4 inline-block underline">
@@ -355,10 +358,10 @@ function ProfileEditor() {
                         type="button"
                         draggable={false}
                         onClick={() => removeWidget(widget.id)}
-                        className="delete"
                         aria-label={`Remove ${label}`}
+                        title={`Remove ${label}`}
                       >
-                        Delete
+                        <img src={benIcon} className="navigation-icon" />
                       </button>
                     </div>
 
@@ -430,8 +433,8 @@ function ProfileEditor() {
             {savingLayout ? 'Saving layout...' : 'Save layout'}
           </button>
 
-          <Link to="/" className="underline opacity-70 hover:opacity-100">
-            Cancel
+          <Link to="/">
+            <button className="cancel">Cancel</button>
           </Link>
 
           {layoutSuccess && (
@@ -473,7 +476,7 @@ function ProfileEditor() {
       </section>
 
       {error && (
-        <p role="alert" className="text-red-500">
+        <p role="alert" className="error-feedback">
           {error}
         </p>
       )}
@@ -494,8 +497,8 @@ function ProfileEditor() {
           {saving ? 'Saving...' : 'Save CSS'}
         </button>
 
-        <Link to="/" className="underline opacity-70 hover:opacity-100">
-          Cancel
+        <Link to="/">
+          <button className="cancel">Cancel</button>
         </Link>
       </div>
     </main>

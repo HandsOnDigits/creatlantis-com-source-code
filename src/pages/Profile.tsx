@@ -8,6 +8,10 @@ import ProfileTabs from './profile/ProfileTabs'
 import ProfileTab from './profile/ProfileTab'
 import ContentTab from './profile/ContentTab'
 
+// Images
+import wirteNoteIcon from '../assets/images/icons/wirteNoteIcon.webp'
+import editIcon from '../assets/images/icons/editIcon.webp'
+
 import {
   postsApi,
   profilesApi,
@@ -270,7 +274,7 @@ function Profile() {
   if (error || !profile || !layout) {
     return (
       <main className="mx-auto max-w-4xl p-8">
-        <p className="text-red-500">{error ?? 'Profile not found.'}</p>
+        <p className="error-feedback">{error ?? 'Profile not found.'}</p>
 
         <Link to="/" className="mt-4 inline-block underline">
           Back to collection
@@ -352,44 +356,42 @@ function Profile() {
 
   return (
     <main className="relative min-h-screen">
-      {user && profile.identityId !== user.identityId && (
-        <button
-          type="button"
-          onClick={() => setIsNoteComposerOpen(true)}
-          title="Write a note"
-          aria-label="Write a note"
-          className="absolute top-4 right-4 z-10 rounded-full border border-gray-300 bg-white p-2 text-gray-700 shadow-sm transition hover:bg-gray-100"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+      {/* Extra content */}
+      <div className="absolute right-0 m-4 flex">
+        {user && profile.identityId !== user.identityId && (
+          <button
+            onClick={() => setIsNoteComposerOpen(true)}
+            aria-label="Write a note"
+            className="bg-background-blend w-fit"
           >
-            <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z" />
-          </svg>
-        </button>
-      )}
+            <img src={wirteNoteIcon} className="navigation-icon" />
+            <p className="mr-2 text-nowrap">Write a note</p>
+          </button>
+        )}
+        {user && profile.identityId == user.identityId && (
+          <Link to="/profile/edit">
+            <button
+              aria-label="Edit profile"
+              className="bg-background-blend w-fit"
+            >
+              <img src={editIcon} className="navigation-icon" />
+              <p className="mr-2 text-nowrap">Edit profile</p>
+            </button>
+          </Link>
+        )}
+      </div>
 
+      {/* Wirte note to user poup */}
       {isNoteComposerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="note-composer-title"
-            className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
+            className="bg-drop-down flex size-full max-h-3/4 max-w-3/4 flex-col p-6 max-sm:h-2/3"
           >
-            <h2
-              id="note-composer-title"
-              className="mb-2 text-xl font-semibold text-gray-900"
-            >
-              Write a note to @{profile.username}
+            <h2 id="note-composer-title" className="big-text mb-2">
+              Write a note to <b>{profile.username}</b>:
             </h2>
 
             <textarea
@@ -398,34 +400,30 @@ function Profile() {
               maxLength={10000}
               rows={6}
               placeholder="Write your note..."
-              className="w-full resize-y rounded-md border border-gray-300 p-3 text-gray-900 outline-none focus:border-blue-500"
+              className="h-full max-h-[75%] w-full p-3"
               autoFocus
             />
 
-            {noteError && (
-              <p className="mt-2 text-sm text-red-600">{noteError}</p>
-            )}
+            {noteError && <p className="error-feedback">{noteError}</p>}
 
-            <div className="mt-4 flex justify-end gap-3">
+            <div className="mt-4 flex justify-end">
               <button
-                type="button"
                 onClick={() => {
                   setIsNoteComposerOpen(false)
                   setNoteError(null)
                 }}
                 disabled={noteSending}
-                className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                className="cancel"
               >
                 Cancel
               </button>
 
               <button
-                type="button"
                 onClick={sendNote}
                 disabled={!noteContent.trim() || noteSending}
-                className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="submit"
               >
-                {noteSending ? 'Sending...' : 'Send note'}
+                {noteSending ? 'Sending...' : 'Send'}
               </button>
             </div>
           </div>

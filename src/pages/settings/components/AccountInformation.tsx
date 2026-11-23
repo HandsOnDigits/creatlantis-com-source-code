@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { usersApi } from '../../../api'
 import { useAuth } from '../../../AuthContext'
@@ -269,14 +270,20 @@ function AccountInformation() {
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="submit"
-          >
-            {saving ? 'Saving...' : 'Save changes'}
-          </button>
+          <div className="flex self-center">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="submit"
+            >
+              {saving ? 'Saving...' : 'Save changes'}
+            </button>
+
+            <Link to="/">
+              <button className="cancel">Cancel</button>
+            </Link>
+          </div>
 
           <HorizontalHR />
         </>

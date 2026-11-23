@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { profilesApi, usersApi } from '../../../api'
 import { useAuth } from '../../../AuthContext'
@@ -121,18 +122,24 @@ function ProfileSettings() {
             autoComplete="username"
           />
 
-          <button
-            type="button"
-            onClick={saveUsername}
-            disabled={
-              usernameSaving ||
-              !username.trim() ||
-              username.trim() === user.username
-            }
-            className="submit self-center"
-          >
-            {usernameSaving ? 'Saving...' : 'Change username'}
-          </button>
+          <div className="flex self-center">
+            <button
+              type="button"
+              onClick={saveUsername}
+              disabled={
+                usernameSaving ||
+                !username.trim() ||
+                username.trim() === user.username
+              }
+              className="submit"
+            >
+              {usernameSaving ? 'Saving...' : 'Change username'}
+            </button>
+
+            <Link to="/">
+              <button className="cancel">Cancel</button>
+            </Link>
+          </div>
         </div>
 
         {usernameMessage && (
@@ -173,14 +180,19 @@ function ProfileSettings() {
               {tagline.length}/160
             </span>
 
-            <button
-              type="button"
-              onClick={saveTagline}
-              disabled={taglineSaving || tagline.length > 160}
-              className="submit self-center"
-            >
-              {taglineSaving ? 'Saving...' : 'Save tagline'}
-            </button>
+            <div className="self-center">
+              <button
+                type="button"
+                onClick={saveTagline}
+                disabled={taglineSaving || tagline.length > 160}
+                className="submit"
+              >
+                {taglineSaving ? 'Saving...' : 'Save tagline'}
+              </button>
+              <Link to="/">
+                <button className="cancel">Cancel</button>
+              </Link>
+            </div>
           </div>
         )}
 
