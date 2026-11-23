@@ -336,7 +336,7 @@ function Notes() {
 
           <HorizontalHR />
 
-          <div className="bg-background-blend">
+          <div className="bg-background-blend border-hr-line grow border-l-4">
             {selectedConversation?.startedByIdentityId === user?.identityId && (
               <button type="button" onClick={handleEndConversation} id="end">
                 End conversation
@@ -349,7 +349,7 @@ function Notes() {
               </p>
             )}
 
-            <div className="flex flex-col overflow-y-scroll py-4">
+            <div className="flex h-full flex-col overflow-y-scroll py-4">
               {messagesLoading && <p>Loading messages...</p>}
 
               {!messagesLoading &&
@@ -373,7 +373,7 @@ function Notes() {
                 return (
                   <div
                     key={message.id}
-                    className="border-hr-line flex w-full flex-col gap-4 border-x-4 p-3"
+                    className="flex w-full flex-col gap-4 p-3"
                   >
                     <ProfileIcon
                       image={
