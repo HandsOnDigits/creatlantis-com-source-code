@@ -59,6 +59,7 @@ router.post('/resolve-recipient', async (req, res) => {
         identityId: user.identityId,
         username: user.username,
         name: user.nameIsPublic ? user.name : null,
+        avatarUrl: null,
       },
     })
   } catch (error) {

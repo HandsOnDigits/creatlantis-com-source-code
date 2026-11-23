@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '../AuthContext'
 import {
@@ -10,6 +11,9 @@ import NavTabs, { type NavTab, ProfileIcon, HorizontalHR } from '../Utilites'
 
 function Notes() {
   const { user } = useAuth()
+
+  const [searchParams] = useSearchParams()
+  const requestedConversationId = searchParams.get('conversationId')
 
   const [conversations, setConversations] = useState<
     NotesConversationMembership[]
@@ -37,9 +41,17 @@ function Notes() {
 
         if (!cancelled) {
           setConversations(response.conversations)
+          const requestedConversation = response.conversations.find(
+            (conversation) =>
+              conversation.conversationId === requestedConversationId,
+          )
+
           setSelectedConversationId(
             (current) =>
-              current ?? response.conversations[0]?.conversationId ?? null,
+              current ??
+              requestedConversation?.conversationId ??
+              response.conversations[0]?.conversationId ??
+              null,
           )
         }
       } catch (err) {
@@ -57,7 +69,7 @@ function Notes() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [requestedConversationId])
 
   useEffect(() => {
     if (!selectedConversationId) {

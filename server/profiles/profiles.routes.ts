@@ -176,6 +176,7 @@ router.get('/username/:username', async (req, res) => {
   const user = await db.orm.public.User.where({ username })
     .select(
       'id',
+      'identityId',
       'username',
       'name',
       'nameIsPublic',
@@ -215,6 +216,7 @@ router.get('/username/:username', async (req, res) => {
   res.json({
     data: {
       id: user.id,
+      identityId: user.identityId,
       username: user.username,
       ...(user.nameIsPublic && user.name !== null ? { name: user.name } : {}),
       ...(user.birthDateIsPublic && user.birthDate !== null

@@ -328,6 +328,7 @@ export const usersApi = {
 
 export interface PublicProfile {
   id: number
+  identityId: string
   username: string
   name?: string
   birthDate?: string
@@ -1049,5 +1050,22 @@ export const notesApi = {
       `/api/notes/conversations/${encodeURIComponent(conversationId)}`,
       { method: 'DELETE' },
     )
+  },
+
+  // POST /api/notes/conversations
+  createConversation(recipientIdentityId: string) {
+    return chatApiRequest<{
+      conversationId: string
+      created: boolean
+      recipient: {
+        identityId: string
+        username: string
+        name: string | null
+        avatarUrl: string | null
+      }
+    }>('/api/notes/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ recipientIdentityId }),
+    })
   },
 }

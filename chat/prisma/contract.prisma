@@ -3,8 +3,8 @@
 model Conversation {
   id String @id @onCreate(uuid())
 
-  // Deterministic key generated from the two sorted identity UUIDs.
-  // Prevents duplicate one-to-one conversations.
+  // Unique key generated for each conversation.
+  // Allows multiple separate conversations between the same two identities.
   directKey           String @unique
   startedByIdentityId String
 

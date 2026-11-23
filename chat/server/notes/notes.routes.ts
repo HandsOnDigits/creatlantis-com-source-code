@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { randomUUID } from 'node:crypto'
 
 import { db } from '../../prisma/db.js'
 import { requireChatAuth } from '../auth/auth.middleware.js'
@@ -167,22 +168,9 @@ notesRouter.post('/conversations', async (req, res) => {
       })
     }
 
-    const directKey = [senderIdentityId, recipientIdentityId].sort().join(':')
+    const directKey = randomUUID()
 
     const result = await db.transaction(async (tx) => {
-      const existing = await tx.orm.public.Conversation.where({
-        directKey,
-      })
-        .select('id')
-        .first()
-
-      if (existing) {
-        return {
-          conversationId: existing.id,
-          created: false,
-        }
-      }
-
       const conversation = await tx.orm.public.Conversation.create({
         directKey,
         startedByIdentityId: senderIdentityId,
@@ -204,33 +192,12 @@ notesRouter.post('/conversations', async (req, res) => {
       }
     })
 
-    return res.status(result.created ? 201 : 200).json({
+    return res.status(201).json({
       conversationId: result.conversationId,
       created: result.created,
       recipient,
     })
   } catch (error) {
-    // Another request may have created the same direct conversation
-    // concurrently. Reuse it if it now exists.
-    try {
-      const directKey = [senderIdentityId, recipientIdentityId].sort().join(':')
-
-      const existing = await db.orm.public.Conversation.where({
-        directKey,
-      })
-        .select('id')
-        .first()
-
-      if (existing) {
-        return res.status(200).json({
-          conversationId: existing.id,
-          created: false,
-        })
-      }
-    } catch {
-      // Fall through to the original error.
-    }
-
     console.error('Failed to create Notes conversation:', error)
 
     return res.status(500).json({
