@@ -248,180 +248,205 @@ function Notes() {
   })
 
   return (
-    <div className="flex min-h-screen">
-      {/* Conversation Index */}
-      <ol
-        id="notes-index"
-        className="`min-w-45 w-[24vw] max-w-[320px] space-y-2 overflow-y-auto p-4"
-      >
-        <h2 className="mb-4 font-bold">Notes</h2>
+    <>
+      <div className="p-4">
+        <h1 className="extra-big-text">Notes</h1>
 
-        <NavTabs<'ALL' | 'UNREAD' | 'READ'>
-          tabs={tabs}
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          ariaLabel="Filter conversations"
-        />
+        <HorizontalHR />
+      </div>
 
-        {loading && <li>Loading conversations...</li>}
+      <div className="flex grow">
+        <div>
+          <NavTabs<'ALL' | 'UNREAD' | 'READ'>
+            tabs={tabs}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            ariaLabel="Filter conversations"
+          />
 
-        {!loading && conversations.length === 0 && (
-          <li className="text-sm opacity-60">No conversations yet.</li>
-        )}
+          <div className="light-to-dark-gradient h-8"></div>
 
-        {filteredConversations.map((conversation) => (
-          <li
-            key={conversation.conversationId}
-            onClick={() =>
-              setSelectedConversationId(conversation.conversationId)
-            }
-            className={`cursor-pointer rounded-lg p-3 transition-colors ${
-              selectedConversationId === conversation.conversationId
-                ? 'selected-index'
-                : 'hover:bg-black/5'
-            }`}
+          {/* Conversation Index */}
+          <ol
+            id="notes-index"
+            className="bg-background-blend h-[85vh] w-[24vw] max-w-[320px] min-w-45 overflow-y-scroll p-4"
           >
-            <div className="flex items-center justify-between gap-2">
-              <ProfileIcon
-                image={conversation.recipient?.avatarUrl}
-                name={
-                  conversation.recipient?.name ||
-                  conversation.recipient?.username ||
-                  'Unknown user'
-                }
-              />
+            {loading && <li>Loading conversations...</li>}
 
-              {conversation.unreadCount > 0 && (
-                <span className="shrink-0 rounded-full bg-blue-600 px-2 py-1 text-xs text-white">
-                  {conversation.unreadCount}
-                </span>
-              )}
-            </div>
-
-            <p className="mt-1 truncate text-sm opacity-70">
-              {conversation.lastMessage?.content ?? 'No messages yet'}
-            </p>
-
-            {conversation.lastMessageAt && (
-              <time className="mt-1 block text-xs opacity-50">
-                {new Date(conversation.lastMessageAt).toLocaleDateString()}
-              </time>
+            {!loading && conversations.length === 0 && (
+              <li className="text-sm opacity-60">No conversations yet.</li>
             )}
-          </li>
-        ))}
-      </ol>
 
-      {/* Conversation Context */}
-      <div className="flex min-w-0 flex-1 flex-col p-6">
-        <div className="flex items-center justify-between gap-4">
+            {filteredConversations.map((conversation) => (
+              <li
+                key={conversation.conversationId}
+                onClick={() =>
+                  setSelectedConversationId(conversation.conversationId)
+                }
+                className={`flex w-full cursor-pointer flex-col gap-2 p-3 transition-colors ${
+                  selectedConversationId === conversation.conversationId
+                    ? 'bg-background-blend'
+                    : 'hover:bg-background-blend'
+                }`}
+              >
+                {
+                  /*conversation.unreadCount > 0 &&*/ <var className="size-min self-end rounded-full bg-blue-600 p-2 text-xs text-white">
+                    {conversation.unreadCount}
+                  </var>
+                }
+
+                {/* Small lookup at last message */}
+
+                <ProfileIcon
+                  image={conversation.recipient?.avatarUrl}
+                  name={
+                    conversation.recipient?.name ||
+                    conversation.recipient?.username ||
+                    'Unknown user'
+                  }
+                />
+
+                <p
+                  className={`truncate ${
+                    selectedConversationId === conversation.conversationId
+                      ? 'selected-index'
+                      : ''
+                  }`}
+                >
+                  {conversation.lastMessage?.content ?? 'No messages yet'}
+                </p>
+
+                {conversation.lastMessageAt && (
+                  <time>
+                    {new Date(conversation.lastMessageAt).toLocaleDateString()}
+                  </time>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Conversation Context */}
+        <div className="flex flex-1 flex-col p-6">
           <h2 className="big-text font-bold">
             {selectedConversation?.recipient?.name ||
               selectedConversation?.recipient?.username ||
               'Conversation'}
           </h2>
 
-          {selectedConversation?.startedByIdentityId === user?.identityId && (
-            <button
-              type="button"
-              onClick={handleEndConversation}
-              className="rounded-lg border border-red-500 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10"
-            >
-              End conversation
-            </button>
-          )}
-        </div>
+          <HorizontalHR />
 
-        <HorizontalHR />
+          <div className="bg-background-blend">
+            {selectedConversation?.startedByIdentityId === user?.identityId && (
+              <button type="button" onClick={handleEndConversation} id="end">
+                End conversation
+              </button>
+            )}
 
-        {error && (
-          <p role="alert" className="text-red-500">
-            {error}
-          </p>
-        )}
-
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-4">
-          {messagesLoading && <p>Loading messages...</p>}
-
-          {!messagesLoading &&
-            selectedConversationId &&
-            messages.length === 0 && (
-              <p className="opacity-60">
-                No messages yet. Start the conversation below.
+            {error && (
+              <p role="alert" className="text-red-500">
+                {error}
               </p>
             )}
 
-          {!selectedConversationId && !loading && (
-            <p className="opacity-60">Select a conversation from the index.</p>
-          )}
+            <div className="flex flex-col overflow-y-scroll py-4">
+              {messagesLoading && <p>Loading messages...</p>}
 
-          {messages.map((message) => {
-            const ownMessage = message.senderIdentityId === user?.identityId
-
-            return (
-              <div
-                key={message.id}
-                className={`max-w-[85%] rounded-lg border p-3 ${
-                  ownMessage ? 'ml-auto' : 'mr-auto'
-                }`}
-              >
-                <p className="mb-1 text-xs font-semibold opacity-70">
-                  {ownMessage
-                    ? user?.name || user?.username || 'You'
-                    : selectedConversation?.recipient?.name ||
-                      selectedConversation?.recipient?.username ||
-                      'Unknown user'}
-                </p>
-                <p className="wrap-break-word whitespace-pre-wrap">
-                  {message.content}
-                </p>
-
-                <time
-                  className="mt-2 block text-xs opacity-50"
-                  dateTime={message.createdAt}
-                >
-                  {new Date(message.createdAt).toLocaleString()}
-                </time>
-
-                {ownMessage && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMessage(message.id)}
-                    className="mt-2 text-xs text-red-500 hover:underline"
-                  >
-                    Delete
-                  </button>
+              {!messagesLoading &&
+                selectedConversationId &&
+                messages.length === 0 && (
+                  <p className="opacity-60">
+                    No messages yet. Start the conversation below.
+                  </p>
                 )}
-              </div>
-            )
-          })}
-        </div>
 
-        <form onSubmit={handleSubmit} className="flex gap-2 pt-4">
-          <input
-            type="text"
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            placeholder="Write a message..."
-            maxLength={10000}
-            disabled={!selectedConversationId || messagesLoading || sending}
-            className="min-w-0 flex-1 rounded-lg border p-3"
-          />
+              {!selectedConversationId && !loading && (
+                <p className="opacity-60">
+                  Select a conversation from the index.
+                </p>
+              )}
 
-          <button
-            type="submit"
-            disabled={
-              !selectedConversationId ||
-              messagesLoading ||
-              sending ||
-              !content.trim()
-            }
-            className="rounded-lg border px-4"
+              {/* Message/Reply body */}
+              {messages.map((message) => {
+                const ownMessage = message.senderIdentityId === user?.identityId
+
+                return (
+                  <div
+                    key={message.id}
+                    className="border-hr-line flex w-full flex-col gap-4 border-x-4 p-3"
+                  >
+                    <ProfileIcon
+                      image={
+                        ownMessage
+                          ? user?.avatarUrl
+                          : selectedConversation?.recipient?.avatarUrl
+                      }
+                      name={
+                        ownMessage
+                          ? user?.name || user?.username || 'You'
+                          : selectedConversation?.recipient?.name ||
+                            selectedConversation?.recipient?.username ||
+                            'Unknown user'
+                      }
+                    />
+
+                    <p className="wrap-break-word whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+
+                    <time
+                      className="block opacity-50"
+                      dateTime={message.createdAt}
+                    >
+                      {new Date(message.createdAt).toLocaleString()}
+                    </time>
+
+                    {ownMessage && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMessage(message.id)}
+                        className="delete self-end"
+                      >
+                        Delete
+                      </button>
+                    )}
+
+                    <HorizontalHR />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="mt-4 flex items-center gap-2"
           >
-            {sending ? 'Sending...' : 'Send'}
-          </button>
-        </form>
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="Write a message..."
+              maxLength={10000}
+              disabled={!selectedConversationId || messagesLoading || sending}
+              className="borde-hr-line w-full rounded-lg border-2 p-3"
+            />
+
+            <button
+              type="submit"
+              disabled={
+                !selectedConversationId ||
+                messagesLoading ||
+                sending ||
+                !content.trim()
+              }
+              className="submit"
+            >
+              {sending ? 'Sending...' : 'Send'}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

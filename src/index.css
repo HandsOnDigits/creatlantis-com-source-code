@@ -151,6 +151,7 @@ html.green-theme {
 
       &#delete,
       &.delete,
+      &#end,
       &#logout {
         @apply bg-red-500 hover:bg-red-600;
       }
@@ -332,7 +333,6 @@ html.green-theme {
     }
 
     /* Global post styling */
-
     .post {
       @apply shadow-shadow-color shadow-lg/40;
     }

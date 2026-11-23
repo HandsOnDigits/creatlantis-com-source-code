@@ -23,7 +23,7 @@ function Settings() {
       >
         <h1 className="mr-2 text-3xl font-bold">Settings</h1>
       </NavTabs>
-      <p className="light-to-dark-gradient h-8"></p>
+      <div className="light-to-dark-gradient h-8"></div>
       <div className="max-w-4xl p-4">
         {activeTab === 'profile' && <ProfileSettings />}
 

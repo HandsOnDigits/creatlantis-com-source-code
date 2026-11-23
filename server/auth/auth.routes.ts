@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { rateLimit } from 'express-rate-limit'
 
 import { db } from '../../src/prisma/db'
+import { getPublicObjectUrl } from '../storage/b2.client'
 import {
   loginSchema,
   registerSchema,
@@ -170,24 +171,37 @@ router.post('/login', authLimiter, async (req, res) => {
 })
 
 router.get('/me', requireAuth, async (req, res) => {
-  const user = await db.orm.public.User.where({ id: req.auth!.userId })
-    .select(
-      'id',
-      'identityId',
-      'email',
-      'username',
-      'name',
-      'nameIsPublic',
-      'createdAt',
-    )
-    .first()
+  const [user, avatar] = await Promise.all([
+    db.orm.public.User.where({ id: req.auth!.userId })
+      .select(
+        'id',
+        'identityId',
+        'email',
+        'username',
+        'name',
+        'nameIsPublic',
+        'createdAt',
+      )
+      .first(),
+
+    db.orm.public.UserAvatar.where({ userId: req.auth!.userId })
+      .select('publicObjectKey', 'status')
+      .first(),
+  ])
 
   if (!user) {
     res.status(404).json({ error: 'User not found' })
     return
   }
 
-  res.json({ data: user })
+  res.json({
+    data: {
+      ...user,
+      avatarUrl: avatar?.publicObjectKey
+        ? getPublicObjectUrl(avatar.publicObjectKey)
+        : null,
+    },
+  })
 })
 
 router.post('/change-password', requireAuth, authLimiter, async (req, res) => {

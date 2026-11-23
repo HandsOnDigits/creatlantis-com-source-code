@@ -19,6 +19,7 @@ export interface AuthUser {
   username: string
   name: string | null
   nameIsPublic: boolean
+  avatarUrl: string | null
   createdAt: string
 }
 
