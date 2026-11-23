@@ -256,7 +256,7 @@ function Notes() {
       </div>
 
       <div className="flex grow">
-        <div>
+        <div className="w-[24vw] max-w-[320px] min-w-45">
           <NavTabs<'ALL' | 'UNREAD' | 'READ'>
             tabs={tabs}
             activeTab={activeTab}
@@ -269,7 +269,7 @@ function Notes() {
           {/* Conversation Index */}
           <ol
             id="notes-index"
-            className="bg-background-blend h-[85vh] w-[24vw] max-w-[320px] min-w-45 overflow-y-scroll p-4"
+            className="bg-background-blend h-[85vh] overflow-y-scroll p-4"
           >
             {loading && <li>Loading conversations...</li>}
 
@@ -289,11 +289,11 @@ function Notes() {
                     : 'hover:bg-background-blend'
                 }`}
               >
-                {
-                  /*conversation.unreadCount > 0 &&*/ <var className="size-min self-end rounded-full bg-blue-600 p-2 text-xs text-white">
+                {conversation.unreadCount > 0 && (
+                  <var className="size-min self-end rounded-full bg-blue-600 p-2 text-xs text-white">
                     {conversation.unreadCount}
                   </var>
-                }
+                )}
 
                 {/* Small lookup at last message */}
 
