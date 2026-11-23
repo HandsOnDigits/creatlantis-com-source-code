@@ -245,11 +245,7 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
                   className="flex items-center gap-4"
                 >
                   {user.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt=""
-                      className="h-16 w-16 rounded-full object-cover"
-                    />
+                    <img src={user.avatarUrl} alt="" className="h-16 w-16" />
                   ) : (
                     <div className="flex h-16 w-16 items-center justify-center rounded-full">
                       {user.username.charAt(0).toUpperCase()}
