@@ -295,7 +295,7 @@ export const usersApi = {
   directory(
     page = 1,
     limit = 24,
-    sort: 'newest' | 'alphabetical' = 'newest',
+    sort: 'newest' | 'oldest' | 'alphabetical' = 'newest',
     search?: string,
   ) {
     const params = new URLSearchParams({
@@ -516,14 +516,25 @@ export interface UpdateProfileCustomizationInput {
 
 export const postsApi = {
   // GET /api/posts
-  list(page = 1, limit = 10, categoryId?: number) {
+  list(
+    page = 1,
+    limit = 10,
+    categoryId?: number,
+    sort: 'newest' | 'oldest' | 'alphabetical' = 'newest',
+    search?: string,
+  ) {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
+      sort,
     })
 
     if (categoryId !== undefined) {
       params.set('categoryId', String(categoryId))
+    }
+
+    if (search?.trim()) {
+      params.set('search', search.trim())
     }
 
     return api.get<PostListResponse>(`/api/posts?${params}`, {

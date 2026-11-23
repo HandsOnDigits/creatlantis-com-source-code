@@ -27,7 +27,7 @@ const router = Router()
 const userDirectoryQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(1_000_000).default(1),
   limit: z.coerce.number().int().min(1).max(48).default(24),
-  sort: z.enum(['newest', 'alphabetical']).default('newest'),
+  sort: z.enum(['newest', 'oldest', 'alphabetical']).default('newest'),
   search: z.string().trim().min(1).max(50).optional(),
 })
 
@@ -147,7 +147,9 @@ router.get('/directory', async (req, res) => {
   const orderBy =
     sort === 'alphabetical'
       ? '"username" ASC, "id" ASC'
-      : '"createdAt" DESC, "id" DESC'
+      : sort === 'oldest'
+        ? '"createdAt" ASC, "id" ASC'
+        : '"createdAt" DESC, "id" DESC'
 
   const result = await mainQueryPool.query<{
     id: number

@@ -2,7 +2,7 @@
 import search_icon from './assets/images/icons/searchIcon.webp'
 
 export type CollectionType = 'posts' | 'users'
-export type CollectionSort = 'newest' | 'alphabetical'
+export type CollectionSort = 'newest' | 'oldest' | 'alphabetical'
 
 interface SearchAndFilterProps {
   collectionType: CollectionType
@@ -65,6 +65,7 @@ function SearchAndFilter({
           }
         >
           <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
           <option value="alphabetical">Alphabetical</option>
         </select>
       </div>

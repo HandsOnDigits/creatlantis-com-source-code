@@ -76,6 +76,8 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
           1,
           50,
           selectedCategoryId ?? undefined,
+          sort,
+          search,
         )
 
         if (!cancelled) {
@@ -97,7 +99,7 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
     return () => {
       cancelled = true
     }
-  }, [selectedCategoryId, collectionType])
+  }, [selectedCategoryId, collectionType, search, sort])
 
   // Load public users.
   useEffect(() => {

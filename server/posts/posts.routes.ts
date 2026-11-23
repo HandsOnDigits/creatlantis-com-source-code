@@ -2,11 +2,19 @@ import { Router } from 'express'
 import { z } from 'zod'
 
 import { db } from '../../src/prisma/db'
+import { mainQueryPool } from '../db/main-query.pool'
 import { getMediaVariantUrl, getPublicObjectUrl } from '../storage/b2.client'
 import { requireAuth } from '../auth/auth.middleware'
 import { publishLiveEvent } from '../live/live.service'
 
 const router = Router()
+
+const postListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(1_000_000).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  sort: z.enum(['newest', 'oldest', 'alphabetical']).default('newest'),
+  search: z.string().trim().min(1).max(100).optional(),
+})
 
 function parseCategoryId(value: unknown): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
@@ -27,26 +35,21 @@ function parsePostId(value: string | string[] | undefined): number | null {
 }
 
 router.get('/', async (req, res) => {
-  const page = z.coerce
-    .number()
-    .int()
-    .min(1)
-    .safeParse(req.query.page ?? 1)
-  const limit = z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(50)
-    .safeParse(req.query.limit ?? 10)
+  const parsed = postListQuerySchema.safeParse(req.query)
 
-  if (!page.success || !limit.success) {
+  if (!parsed.success) {
     return res.status(400).json({
-      error: 'Invalid pagination parameters',
+      error: 'Invalid post list query',
+      details: parsed.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
     })
   }
 
-  const pageSize = limit.data
-  const offset = (page.data - 1) * pageSize
+  const { page, limit, sort, search } = parsed.data
+  const pageSize = limit
+  const offset = (page - 1) * pageSize
 
   const categoryId =
     req.query.categoryId === undefined
@@ -59,9 +62,6 @@ router.get('/', async (req, res) => {
     })
   }
 
-  let pagePosts
-  let hasMore: boolean
-
   if (categoryId !== null) {
     const category = await db.orm.public.Category.where({ id: categoryId })
       .select('id')
@@ -72,42 +72,56 @@ router.get('/', async (req, res) => {
         error: 'Category not found',
       })
     }
-
-    const categoryPosts = await db.orm.public.CategoryPost.where({
-      categoryId,
-    })
-      .orderBy([(item) => item.position.asc(), (item) => item.postId.asc()])
-      .all()
-
-    // Load approved posts while preserving category order.
-    const approvedPosts = (
-      await Promise.all(
-        categoryPosts.map((item) =>
-          db.orm.public.Post.where({
-            id: item.postId,
-            publicationStatus: 'APPROVED',
-          })
-            .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
-            .first(),
-        ),
-      )
-    ).filter((post) => post !== null)
-
-    hasMore = approvedPosts.length > offset + pageSize
-    pagePosts = approvedPosts.slice(offset, offset + pageSize)
-  } else {
-    const posts = await db.orm.public.Post.where({
-      publicationStatus: 'APPROVED',
-    })
-      .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
-      .orderBy([(post) => post.createdAt.desc(), (post) => post.id.desc()])
-      .limit(pageSize + 1)
-      .offset(offset)
-      .all()
-
-    hasMore = posts.length > pageSize
-    pagePosts = posts.slice(0, pageSize)
   }
+
+  const orderBy =
+    sort === 'alphabetical'
+      ? 'p."title" ASC, p."id" ASC'
+      : sort === 'oldest'
+        ? 'p."createdAt" ASC, p."id" ASC'
+        : 'p."createdAt" DESC, p."id" DESC'
+
+  const result = await mainQueryPool.query<{ id: number }>(
+    `
+      SELECT p."id"
+      FROM public."Post" p
+      WHERE
+        p."publicationStatus" = 'APPROVED'
+        AND (
+          $1::integer IS NULL
+          OR EXISTS (
+            SELECT 1
+            FROM public."CategoryPost" cp
+            WHERE cp."postId" = p."id"
+              AND cp."categoryId" = $1
+          )
+        )
+        AND (
+          $2::text IS NULL
+          OR strpos(lower(p."title"), lower($2)) > 0
+          OR strpos(lower(COALESCE(p."content", '')), lower($2)) > 0
+        )
+        ORDER BY ${orderBy}
+      LIMIT $3
+      OFFSET $4
+    `,
+    [categoryId, search ?? null, pageSize + 1, offset],
+  )
+
+  const hasMore = result.rows.length > pageSize
+
+  const pagePosts = (
+    await Promise.all(
+      result.rows.slice(0, pageSize).map((row) =>
+        db.orm.public.Post.where({
+          id: row.id,
+          publicationStatus: 'APPROVED',
+        })
+          .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
+          .first(),
+      ),
+    )
+  ).filter((post) => post !== null)
 
   const data = await Promise.all(
     pagePosts.map(async (post) => {
@@ -182,7 +196,7 @@ router.get('/', async (req, res) => {
   return res.json({
     data,
     pagination: {
-      page: page.data,
+      page,
       limit: pageSize,
       hasMore,
     },
