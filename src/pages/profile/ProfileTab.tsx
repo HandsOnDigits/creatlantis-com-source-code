@@ -24,6 +24,9 @@ interface ProfileTabProps {
   galleryHasMore: boolean
   onLoadMoreGallery: () => void
 
+  spotlightPosts: Post[]
+  spotlightLoading: boolean
+
   journalPosts: Post[]
   journalLoading: boolean
   journalHasMore: boolean
@@ -32,11 +35,92 @@ interface ProfileTabProps {
   canEditWidgets: boolean
   onUpdateWidgetConfig: (
     widgetId: string,
-    field: 'title' | 'content',
-    value: string,
+    field: 'title' | 'content' | 'postIds',
+    value: string | number[],
   ) => Promise<void>
   savingWidgetConfig: boolean
   widgetConfigError: string | null
+}
+
+interface SpotlightCarouselProps {
+  posts: Post[]
+}
+
+function SpotlightCarousel({ posts }: SpotlightCarouselProps) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  if (posts.length === 0) {
+    return (
+      <p className="text-sm opacity-60">No posts selected for Spotlight yet.</p>
+    )
+  }
+
+  const post = posts[currentIndex]
+
+  function changeSlide(nextIndex: number) {
+    setCurrentIndex((nextIndex + posts.length) % posts.length)
+  }
+
+  const firstImage = post.images?.[0]
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Link to={`/posts/${post.id}`} className="block overflow-hidden rounded">
+        {firstImage?.variants?.length ? (
+          <Image
+            variants={firstImage.variants}
+            alt={post.title}
+            className="max-h-125 w-full object-contain"
+          />
+        ) : post.type === 'JOURNAL' && post.content ? (
+          <div className="rounded bg-current/5 p-4">
+            <Journal content={post.content} />
+          </div>
+        ) : null}
+
+        <h3 className="mt-2 text-lg font-medium">
+          {post.title || 'Untitled post'}
+        </h3>
+      </Link>
+
+      {posts.length > 1 && (
+        <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => changeSlide(currentIndex - 1)}
+            aria-label="Previous Spotlight post"
+            className="rounded px-3 py-1 hover:bg-current/10"
+          >
+            ←
+          </button>
+
+          <div className="flex items-center gap-2">
+            {posts.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => changeSlide(index)}
+                aria-label={`Show Spotlight post ${index + 1}`}
+                aria-current={index === currentIndex ? 'true' : undefined}
+                className={`h-2 w-2 rounded-full ${
+                  index === currentIndex ? 'bg-current' : 'bg-current/30'
+                }`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => changeSlide(currentIndex + 1)}
+            aria-label="Next Spotlight post"
+            className="rounded px-3 py-1 hover:bg-current/10"
+          >
+            →
+          </button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ProfileTab({
@@ -51,6 +135,8 @@ function ProfileTab({
   journalLoading,
   journalHasMore,
   onLoadMoreJournal,
+  spotlightPosts,
+  spotlightLoading,
   canEditWidgets,
   onUpdateWidgetConfig,
   savingWidgetConfig,
@@ -259,24 +345,86 @@ function ProfileTab({
                   />
                 )}
 
-                <textarea
-                  defaultValue={widget.config?.content ?? ''}
-                  placeholder={
-                    widget.type === 'featured'
-                      ? 'Write your Spotlight content...'
-                      : 'Write your custom text...'
-                  }
-                  maxLength={20000}
-                  rows={5}
-                  className="w-full resize-y rounded border border-current/20 bg-transparent p-3"
-                  onBlur={(event) =>
-                    void onUpdateWidgetConfig(
-                      widget.id,
-                      'content',
-                      event.target.value,
-                    )
-                  }
-                />
+                {widget.type === 'featured' ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm opacity-60">
+                      Select up to 20 posts to feature. Visitors can browse them
+                      manually.
+                    </p>
+
+                    {spotlightLoading ? (
+                      <p className="text-sm opacity-60">
+                        Loading your posts...
+                      </p>
+                    ) : spotlightPosts.length === 0 ? (
+                      <p className="text-sm opacity-60">
+                        No approved posts available to feature.
+                      </p>
+                    ) : (
+                      <div className="flex max-h-96 flex-col gap-2 overflow-y-auto rounded border border-current/20 p-3">
+                        {spotlightPosts.map((post) => {
+                          const selectedPostIds = widget.config?.postIds ?? []
+                          const isSelected = selectedPostIds.includes(post.id)
+
+                          return (
+                            <label
+                              key={post.id}
+                              className="flex cursor-pointer items-center gap-3 rounded p-2 transition-colors hover:bg-current/5"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                disabled={
+                                  !isSelected && selectedPostIds.length >= 20
+                                }
+                                onChange={(event) => {
+                                  const nextPostIds = event.target.checked
+                                    ? [...selectedPostIds, post.id]
+                                    : selectedPostIds.filter(
+                                        (id) => id !== post.id,
+                                      )
+
+                                  void onUpdateWidgetConfig(
+                                    widget.id,
+                                    'postIds',
+                                    nextPostIds,
+                                  )
+                                }}
+                              />
+
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-medium">
+                                  {post.title || 'Untitled post'}
+                                </span>
+                                <span className="text-xs opacity-50">
+                                  {post.type} ·{' '}
+                                  {new Date(
+                                    post.createdAt,
+                                  ).toLocaleDateString()}
+                                </span>
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <textarea
+                    defaultValue={widget.config?.content ?? ''}
+                    placeholder="Write your custom text..."
+                    maxLength={20000}
+                    rows={5}
+                    className="w-full resize-y rounded border border-current/20 bg-transparent p-3"
+                    onBlur={(event) =>
+                      void onUpdateWidgetConfig(
+                        widget.id,
+                        'content',
+                        event.target.value,
+                      )
+                    }
+                  />
+                )}
 
                 {savingWidgetConfig && (
                   <p className="text-xs opacity-50">Saving...</p>
@@ -294,7 +442,17 @@ function ProfileTab({
 
                 <HorizontalHR />
 
-                <ProfileContent html={widget.config?.content ?? ''} />
+                {widget.type === 'featured' ? (
+                  <SpotlightCarousel
+                    posts={(widget.config?.postIds ?? [])
+                      .map((id) =>
+                        spotlightPosts.find((post) => post.id === id),
+                      )
+                      .filter((post): post is Post => post !== undefined)}
+                  />
+                ) : (
+                  <ProfileContent html={widget.config?.content ?? ''} />
+                )}
               </>
             )}
           </section>

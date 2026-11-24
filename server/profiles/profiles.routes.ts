@@ -42,6 +42,7 @@ const profileWidgetSchema = z.object({
     .object({
       title: z.string().optional(),
       content: z.string().optional(),
+      postIds: z.array(z.number().int().positive()).max(20).optional(),
     })
     .optional(),
 })

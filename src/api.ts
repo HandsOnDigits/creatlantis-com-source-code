@@ -175,6 +175,7 @@ export interface ProfileWidget {
   config?: {
     title?: string
     content?: string
+    postIds?: number[]
   }
 }
 
@@ -562,7 +563,7 @@ export const postsApi = {
     username: string,
     page = 1,
     limit = 12,
-    type?: 'IMAGE' | 'JOURNAL',
+    type?: 'IMAGE' | 'JOURNAL' | 'MODEL',
   ) {
     const params = new URLSearchParams({
       page: String(page),

@@ -72,6 +72,8 @@ function Profile() {
   const [journalLoading, setJournalLoading] = useState(false)
   const [journalHasMore, setJournalHasMore] = useState(false)
   const [journalPage, setJournalPage] = useState(1)
+  const [spotlightPosts, setSpotlightPosts] = useState<Post[]>([])
+  const [spotlightLoading, setSpotlightLoading] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -103,8 +105,8 @@ function Profile() {
 
   async function updateWidgetConfig(
     widgetId: string,
-    field: 'title' | 'content',
-    value: string,
+    field: 'title' | 'content' | 'postIds',
+    value: string | number[],
   ) {
     if (!layout || !profile || user?.identityId !== profile.identityId) {
       return
@@ -261,6 +263,41 @@ function Profile() {
     }
 
     loadJournal()
+
+    return () => {
+      cancelled = true
+    }
+  }, [username])
+
+  useEffect(() => {
+    if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      return
+    }
+
+    let cancelled = false
+
+    async function loadSpotlightPosts() {
+      try {
+        setSpotlightLoading(true)
+
+        const response = await postsApi.listByUsername(username!, 1, 50)
+
+        if (!cancelled) {
+          setSpotlightPosts(response.data)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to load Spotlight posts:', err)
+          setSpotlightPosts([])
+        }
+      } finally {
+        if (!cancelled) {
+          setSpotlightLoading(false)
+        }
+      }
+    }
+
+    loadSpotlightPosts()
 
     return () => {
       cancelled = true
@@ -500,6 +537,8 @@ function Profile() {
           journalLoading={journalLoading}
           journalHasMore={journalHasMore}
           onLoadMoreJournal={loadMoreJournal}
+          spotlightPosts={spotlightPosts}
+          spotlightLoading={spotlightLoading}
         />
       )}
 

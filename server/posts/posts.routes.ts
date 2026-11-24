@@ -450,7 +450,7 @@ router.get('/user/:username', async (req, res) => {
   }
 
   const postType = z
-    .enum(['IMAGE', 'JOURNAL'])
+    .enum(['IMAGE', 'JOURNAL', 'MODEL'])
     .optional()
     .safeParse(req.query.type)
 
