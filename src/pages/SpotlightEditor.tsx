@@ -1,10 +1,81 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { profilesApi, type ProfileLayout } from '../api'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+
+import { CSS } from '@dnd-kit/utilities'
+
+import { postsApi, profilesApi, type Post, type ProfileLayout } from '../api'
 
 import { useAuth } from '../AuthContext'
 import PostSelectorOverlay from '../components/PostSelectorOverlay'
+
+interface SortableSpotlightPostProps {
+  post: Post
+  index: number
+}
+
+function SortableSpotlightPost({ post, index }: SortableSpotlightPostProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: post.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-4 rounded-lg border border-current/15 p-3 ${
+        isDragging ? 'z-10 opacity-50 shadow-lg' : ''
+      }`}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="cursor-grab touch-none rounded px-2 py-2 text-xl opacity-60 hover:bg-current/5 active:cursor-grabbing"
+        aria-label={`Drag to reorder ${post.title}`}
+        title="Drag to reorder"
+      >
+        ⠿
+      </button>
+
+      <span className="w-6 text-center text-sm opacity-50">{index + 1}</span>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{post.title}</p>
+        <p className="text-xs opacity-50">
+          {post.type} · {new Date(post.createdAt).toLocaleDateString()}
+        </p>
+      </div>
+    </div>
+  )
+}
 
 function SpotlightEditor() {
   const { widgetId } = useParams<{ widgetId: string }>()
@@ -17,6 +88,18 @@ function SpotlightEditor() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectorOpen, setSelectorOpen] = useState(false)
+  const [selectedPosts, setSelectedPosts] = useState<Post[]>([])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -44,8 +127,14 @@ function SpotlightEditor() {
           return
         }
 
+        const postIds = widget.config?.postIds ?? []
+
         setLayout(currentLayout)
-        setSelectedPostIds(widget.config?.postIds ?? [])
+        setSelectedPostIds(postIds)
+
+        if (postIds.length > 0) {
+          await loadSelectedPosts(postIds)
+        }
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -65,6 +154,45 @@ function SpotlightEditor() {
       cancelled = true
     }
   }, [user?.username, widgetId])
+
+  async function loadSelectedPosts(postIds: number[]) {
+    const posts = await Promise.all(
+      postIds.map(async (id) => {
+        const response = await postsApi.get(id)
+        return response.data
+      }),
+    )
+
+    setSelectedPosts(posts)
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    if (!over || active.id === over.id) return
+
+    setSelectedPostIds((currentIds) => {
+      const oldIndex = currentIds.indexOf(Number(active.id))
+      const newIndex = currentIds.indexOf(Number(over.id))
+
+      if (oldIndex === -1 || newIndex === -1) return currentIds
+
+      return arrayMove(currentIds, oldIndex, newIndex)
+    })
+
+    setSelectedPosts((currentPosts) => {
+      const oldIndex = currentPosts.findIndex(
+        (post) => post.id === Number(active.id),
+      )
+      const newIndex = currentPosts.findIndex(
+        (post) => post.id === Number(over.id),
+      )
+
+      if (oldIndex === -1 || newIndex === -1) return currentPosts
+
+      return arrayMove(currentPosts, oldIndex, newIndex)
+    })
+  }
 
   async function handleSave() {
     if (!layout || !widgetId || !user?.username) return
@@ -140,6 +268,37 @@ function SpotlightEditor() {
             </button>
           </div>
 
+          {selectedPosts.length > 0 && (
+            <div className="mt-6">
+              <h2 className="mb-3 text-sm font-semibold">Spotlight order</h2>
+
+              <p className="mb-3 text-xs opacity-50">
+                Drag posts using the handle to change their display order.
+              </p>
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={selectedPosts.map((post) => post.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="flex flex-col gap-2">
+                    {selectedPosts.map((post, index) => (
+                      <SortableSpotlightPost
+                        key={post.id}
+                        post={post}
+                        index={index}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+          )}
+
           <div className="mt-6 flex items-center justify-end gap-3">
             <button
               type="button"
@@ -171,6 +330,13 @@ function SpotlightEditor() {
           maxSelections={20}
           onConfirm={(postIds) => {
             setSelectedPostIds(postIds)
+            void loadSelectedPosts(postIds).catch((err) => {
+              setError(
+                err instanceof Error
+                  ? err.message
+                  : 'Failed to load selected posts.',
+              )
+            })
             setSelectorOpen(false)
           }}
           onClose={() => setSelectorOpen(false)}
