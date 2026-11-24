@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -7,7 +7,6 @@ import {
   closestCenter,
   pointerWithin,
   type DragEndEvent,
-  type DragOverEvent,
   type CollisionDetection,
   type DragStartEvent,
   KeyboardSensor,
@@ -19,7 +18,6 @@ import {
 
 import {
   SortableContext,
-  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
@@ -124,31 +122,6 @@ interface DroppableColumnProps {
   children: React.ReactNode
 }
 
-interface WidgetDropZoneProps {
-  id: string
-}
-
-function WidgetDropZone({ id }: WidgetDropZoneProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `slot:${id}`,
-    data: {
-      type: 'slot',
-      slotId: id,
-    },
-  })
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`min-h-3 rounded transition-all duration-150 ${
-        isOver
-          ? 'min-h-10 border-2 border-dashed border-current/60 bg-current/10'
-          : 'border border-transparent'
-      }`}
-    />
-  )
-}
-
 function DroppableColumn({
   columnId,
   widgetIds,
@@ -172,27 +145,10 @@ function DroppableColumn({
   )
 }
 
-function getSlotTarget(id: string) {
-  const match = /^slot:(main|sidebar):(\d+)$/.exec(id)
-
-  if (!match) return null
-
-  return {
-    columnId: match[1],
-    index: Number(match[2]),
-  }
-}
-
 function getTargetColumn(layout: ProfileLayout, targetId: string) {
-  const slot = getSlotTarget(targetId)
-
-  if (slot) {
-    return layout.columns.find(({ id }) => id === slot.columnId)
-  }
-
   if (targetId.startsWith('column:')) {
     const columnId = targetId.slice('column:'.length)
-    return layout.columns.find((column) => column.id === columnId)
+    return layout.columns.find(({ id }) => id === columnId)
   }
 
   return layout.columns.find(({ widgets }) =>
@@ -203,13 +159,8 @@ function getTargetColumn(layout: ProfileLayout, targetId: string) {
 function getWidgetInsertIndex(
   targetWidgets: ProfileWidget[],
   targetId: string,
-  slotTarget: { columnId: string; index: number } | null,
   insertAfter: boolean,
 ) {
-  if (slotTarget) {
-    return Math.min(slotTarget.index, targetWidgets.length)
-  }
-
   if (targetId.startsWith('column:')) {
     return targetWidgets.length
   }
@@ -232,12 +183,11 @@ function moveWidget(
   )
 
   const targetColumn = getTargetColumn(layout, targetId)
-  const slotTarget = getSlotTarget(targetId)
 
   if (!sourceColumn || !targetColumn) return layout
 
   const sourceIndex = sourceColumn.widgets.findIndex(
-    (widget) => widget.id === activeId,
+    ({ id }) => id === activeId,
   )
 
   const widget = sourceColumn.widgets[sourceIndex]
@@ -245,54 +195,35 @@ function moveWidget(
   if (!widget) return layout
 
   if (sourceColumn.id === targetColumn.id) {
-    if (slotTarget) {
-      const widgets = [...sourceColumn.widgets]
-      widgets.splice(sourceIndex, 1)
+    if (targetId.startsWith('column:')) return layout
 
-      const insertIndex = Math.min(
-        Math.max(
-          slotTarget.index - (slotTarget.index > sourceIndex ? 1 : 0),
-          0,
-        ),
-        widgets.length,
-      )
-
-      widgets.splice(insertIndex, 0, widget)
-
-      return {
-        ...layout,
-        columns: layout.columns.map((column) =>
-          column.id === sourceColumn.id ? { ...column, widgets } : column,
-        ),
-      }
-    }
-
-    const targetIndex = targetId.startsWith('column:')
-      ? sourceColumn.widgets.length - 1
-      : sourceColumn.widgets.findIndex((item) => item.id === targetId)
+    const targetIndex = sourceColumn.widgets.findIndex(
+      ({ id }) => id === targetId,
+    )
 
     if (targetIndex === -1) return layout
+
+    const widgets = [...sourceColumn.widgets]
+    widgets.splice(sourceIndex, 1)
+
+    let insertIndex = targetIndex + (insertAfter ? 1 : 0)
+
+    if (sourceIndex < insertIndex) {
+      insertIndex--
+    }
+
+    widgets.splice(insertIndex, 0, widget)
 
     return {
       ...layout,
       columns: layout.columns.map((column) =>
-        column.id === sourceColumn.id
-          ? {
-              ...column,
-              widgets: arrayMove(column.widgets, sourceIndex, targetIndex),
-            }
-          : column,
+        column.id === sourceColumn.id ? { ...column, widgets } : column,
       ),
     }
   }
 
   const targetWidgets = [...targetColumn.widgets]
-  const insertIndex = getWidgetInsertIndex(
-    targetWidgets,
-    targetId,
-    slotTarget,
-    insertAfter,
-  )
+  const insertIndex = getWidgetInsertIndex(targetWidgets, targetId, insertAfter)
 
   if (insertIndex === -1) return layout
 
@@ -304,7 +235,7 @@ function moveWidget(
       if (column.id === sourceColumn.id) {
         return {
           ...column,
-          widgets: column.widgets.filter((item) => item.id !== activeId),
+          widgets: column.widgets.filter(({ id }) => id !== activeId),
         }
       }
 
@@ -335,29 +266,16 @@ const profileCollisionDetection: CollisionDetection = (args) => {
   return closestCenter(args)
 }
 
-function shouldInsertAfter(event: DragEndEvent | DragOverEvent) {
+function shouldInsertAfter(event: DragEndEvent) {
   const overRect = event.over?.rect
+  const activeRect = event.active.rect.current.translated
 
-  if (!overRect) return false
+  if (!overRect || !activeRect) return false
 
-  const activatorEvent = event.activatorEvent
+  const activeCenterY = activeRect.top + activeRect.height / 2
+  const targetCenterY = overRect.top + overRect.height / 2
 
-  let pointerY: number
-
-  if (
-    'clientY' in activatorEvent &&
-    typeof activatorEvent.clientY === 'number'
-  ) {
-    pointerY = activatorEvent.clientY + event.delta.y
-  } else {
-    const activeRect = event.active.rect.current.translated
-
-    if (!activeRect) return false
-
-    pointerY = activeRect.top + activeRect.height / 2
-  }
-
-  return pointerY > overRect.top + overRect.height / 2
+  return activeCenterY > targetCenterY
 }
 
 interface WidgetConfigurationProps {
@@ -465,21 +383,16 @@ function WidgetColumn({
         {column.id === 'main' ? 'Main column' : 'Sidebar'}
       </h3>
 
-      {column.widgets.map((widget, index) => (
-        <Fragment key={widget.id}>
-          <WidgetDropZone id={`${column.id}:${index}`} />
-
-          <SortableWidget
-            widgetId={widget.id}
-            label={getWidgetLabel(widget.type)}
-            onRemove={() => onRemove(widget.id)}
-          >
-            <WidgetConfiguration widget={widget} onChange={onConfigChange} />
-          </SortableWidget>
-        </Fragment>
+      {column.widgets.map((widget) => (
+        <SortableWidget
+          key={widget.id}
+          widgetId={widget.id}
+          label={getWidgetLabel(widget.type)}
+          onRemove={() => onRemove(widget.id)}
+        >
+          <WidgetConfiguration widget={widget} onChange={onConfigChange} />
+        </SortableWidget>
       ))}
-
-      <WidgetDropZone id={`${column.id}:${column.widgets.length}`} />
 
       {column.widgets.length === 0 && (
         <p className="rounded border border-dashed border-current/30 p-6 text-center text-sm opacity-50">
@@ -521,7 +434,6 @@ function ProfileEditor() {
   const [error, setError] = useState<string | null>(null)
   const [layoutSuccess, setLayoutSuccess] = useState(false)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
-  const [dragLayout, setDragLayout] = useState<ProfileLayout | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -648,31 +560,12 @@ function ProfileEditor() {
 
   function handleDragStart(event: DragStartEvent) {
     setActiveDragId(String(event.active.id))
-    setDragLayout(layout)
-  }
-
-  function handleDragOver(event: DragOverEvent) {
-    const { active, over } = event
-
-    if (!over || active.id === over.id) return
-
-    setDragLayout((current) =>
-      current
-        ? moveWidget(
-            current,
-            String(active.id),
-            String(over.id),
-            shouldInsertAfter(event),
-          )
-        : current,
-    )
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
 
     setActiveDragId(null)
-    setDragLayout(null)
 
     if (!over || active.id === over.id) return
 
@@ -692,7 +585,6 @@ function ProfileEditor() {
 
   function handleDragCancel() {
     setActiveDragId(null)
-    setDragLayout(null)
   }
 
   function updateWidgetConfig(
@@ -773,12 +665,11 @@ function ProfileEditor() {
           sensors={sensors}
           collisionDetection={profileCollisionDetection}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {(dragLayout ?? layout).columns.map((column) => (
+            {layout.columns.map((column) => (
               <WidgetColumn
                 key={column.id}
                 column={column}
