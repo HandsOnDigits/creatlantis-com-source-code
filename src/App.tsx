@@ -15,10 +15,6 @@ import Post from './pages/Post'
 import ProtectedRoute from './ProtectedRoute'
 import Profile from './pages/Profile'
 import ProfileEditor from './pages/ProfileEditor'
-import ProfileEditorHome from './pages/ProfileEditorHome'
-import ProfileEditorBio from './pages/ProfileEditorBio'
-import ProfileEditorCss from './pages/ProfileEditorCss'
-import SpotlightEditor from './pages/SpotlightEditor'
 import Settings from './pages/settings'
 import Notes from './pages/Notes'
 
@@ -70,14 +66,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/upload/:type" element={<Upload />} />
           <Route path="/upload" element={<Upload />} />
-          <Route path="/profile/edit" element={<ProfileEditorHome />} />
-          <Route path="/profile/edit/layout" element={<ProfileEditor />} />
-          <Route path="/profile/edit/bio" element={<ProfileEditorBio />} />
-          <Route path="/profile/edit/css" element={<ProfileEditorCss />} />
-          <Route
-            path="/profile/edit/spotlight/:widgetId"
-            element={<SpotlightEditor />}
-          />
+          <Route path="/profile/edit" element={<ProfileEditor />} />
           <Route path="/notes" element={<Notes />} />
         </Route>
       </Routes>

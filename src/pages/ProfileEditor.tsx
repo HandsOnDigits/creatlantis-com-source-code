@@ -435,6 +435,13 @@ function ProfileEditor() {
   const [layoutSuccess, setLayoutSuccess] = useState(false)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
 
+  const [customCss, setCustomCss] = useState('')
+
+  const [loadingCss, setLoadingCss] = useState(true)
+  const [savingCss, setSavingCss] = useState(false)
+  const [cssError, setCssError] = useState<string | null>(null)
+  const [cssSuccess, setCssSuccess] = useState(false)
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -446,6 +453,56 @@ function ProfileEditor() {
     }),
   )
 
+  async function saveCss() {
+    try {
+      setSavingCss(true)
+      setCssError(null)
+      setCssSuccess(false)
+
+      const response = await profilesApi.updateMyCustomization({
+        customCss,
+      })
+
+      setCustomCss(response.data.customCss ?? '')
+      setCssSuccess(true)
+    } catch (err) {
+      setCssError(getErrorMessage(err, 'Failed to save custom CSS.'))
+    } finally {
+      setSavingCss(false)
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadCss() {
+      try {
+        setLoadingCss(true)
+        setCssError(null)
+
+        const response = await profilesApi.getMyCustomization()
+
+        if (!cancelled) {
+          setCustomCss(response.data.customCss ?? '')
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCssError(getErrorMessage(err, 'Failed to load custom CSS.'))
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingCss(false)
+        }
+      }
+    }
+
+    loadCss()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   useEffect(() => {
     let cancelled = false
 
@@ -456,9 +513,10 @@ function ProfileEditor() {
 
         const layoutResponse = await profilesApi.getMyLayout()
 
-        if (!cancelled) {
-          setLayout(layoutResponse.data.layout)
-        }
+        if (cancelled) return
+
+        const currentLayout = layoutResponse.data.layout
+        setLayout(currentLayout)
       } catch (err) {
         if (!cancelled) {
           setError(getErrorMessage(err, 'Failed to load profile editor.'))
@@ -710,6 +768,65 @@ function ProfileEditor() {
             </p>
           )}
         </div>
+      </section>
+
+      {/* Custom CSS editor */}
+      <section className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-xl font-bold">Custom CSS</h2>
+
+          <HorizontalHR />
+
+          <p className="mt-1 text-sm opacity-60">
+            Customize the appearance of your public profile using CSS.
+          </p>
+        </div>
+
+        {loadingCss ? (
+          <p className="text-sm opacity-60">Loading CSS editor...</p>
+        ) : (
+          <>
+            <textarea
+              value={customCss}
+              onChange={(event) => {
+                setCustomCss(event.target.value)
+                setCssSuccess(false)
+              }}
+              maxLength={50_000}
+              rows={20}
+              spellCheck={false}
+              className="bg-background-blend w-full resize-y rounded border border-current/30 p-4 font-mono text-sm"
+              placeholder="/* Your profile styles */"
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs opacity-50">
+                {customCss.length.toLocaleString()} / 50,000 characters
+              </p>
+
+              <button
+                type="button"
+                onClick={saveCss}
+                disabled={savingCss}
+                className="save"
+              >
+                {savingCss ? 'Saving...' : 'Save CSS'}
+              </button>
+            </div>
+          </>
+        )}
+
+        {cssError && (
+          <p role="alert" className="error-feedback">
+            {cssError}
+          </p>
+        )}
+
+        {cssSuccess && (
+          <p role="status" className="text-green-500">
+            Custom CSS saved.
+          </p>
+        )}
       </section>
 
       <hr className="border-current/20" />

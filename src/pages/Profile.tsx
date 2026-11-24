@@ -8,6 +8,9 @@ import ProfileTabs from './profile/ProfileTabs'
 import ProfileTab from './profile/ProfileTab'
 import ContentTab from './profile/ContentTab'
 
+import { useSpotlightEditor } from './profile/useSpotlightEditor'
+import SpotlightEditor from './profile/SpotlightEditor'
+
 // Images
 import wirteNoteIcon from '../assets/images/icons/wirteNoteIcon.webp'
 import editIcon from '../assets/images/icons/editIcon.webp'
@@ -72,7 +75,28 @@ function Profile() {
   const [journalLoading, setJournalLoading] = useState(false)
   const [journalHasMore, setJournalHasMore] = useState(false)
   const [journalPage, setJournalPage] = useState(1)
-  const [spotlightPosts, setSpotlightPosts] = useState<Post[]>([])
+
+  const {
+    spotlightPosts,
+    editingSpotlightId,
+    setEditingSpotlightId,
+    spotlightTitle,
+    setSpotlightTitle,
+    selectedSpotlightPosts,
+    setSelectedSpotlightPosts,
+    spotlightSelectorOpen,
+    setSpotlightSelectorOpen,
+    savingSpotlight,
+    spotlightError,
+    openSpotlightEditor,
+    saveSpotlight,
+  } = useSpotlightEditor({
+    username,
+    identityId: user?.identityId,
+    profileIdentityId: profile?.identityId,
+    layout,
+    setLayout,
+  })
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -262,35 +286,6 @@ function Profile() {
     }
 
     loadJournal()
-
-    return () => {
-      cancelled = true
-    }
-  }, [username])
-
-  useEffect(() => {
-    if (!username || !/^[a-zA-Z0-9_]+$/.test(username)) {
-      return
-    }
-
-    let cancelled = false
-
-    async function loadSpotlightPosts() {
-      try {
-        const response = await postsApi.listByUsername(username!, 1, 50)
-
-        if (!cancelled) {
-          setSpotlightPosts(response.data)
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Failed to load Spotlight posts:', err)
-          setSpotlightPosts([])
-        }
-      }
-    }
-
-    loadSpotlightPosts()
 
     return () => {
       cancelled = true
@@ -512,6 +507,21 @@ function Profile() {
         profileInfo={profile}
       />
 
+      <SpotlightEditor
+        username={profile.username}
+        editingSpotlightId={editingSpotlightId}
+        onClose={() => setEditingSpotlightId(null)}
+        title={spotlightTitle}
+        onTitleChange={setSpotlightTitle}
+        selectedPosts={selectedSpotlightPosts}
+        onSelectedPostsChange={setSelectedSpotlightPosts}
+        selectorOpen={spotlightSelectorOpen}
+        onSelectorOpenChange={setSpotlightSelectorOpen}
+        saving={savingSpotlight}
+        error={spotlightError}
+        onSave={() => void saveSpotlight()}
+      />
+
       {/* Profile tab */}
       {activeTab === 'profile' && (
         <ProfileTab
@@ -531,6 +541,7 @@ function Profile() {
           journalHasMore={journalHasMore}
           onLoadMoreJournal={loadMoreJournal}
           spotlightPosts={spotlightPosts}
+          onEditSpotlight={openSpotlightEditor}
         />
       )}
 
