@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -6,8 +6,9 @@ import {
   DragOverlay,
   closestCenter,
   pointerWithin,
-  type CollisionDetection,
+  type DragEndEvent,
   type DragOverEvent,
+  type CollisionDetection,
   type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
@@ -167,6 +168,7 @@ function ProfileEditor() {
   const [error, setError] = useState<string | null>(null)
   const [layoutSuccess, setLayoutSuccess] = useState(false)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
+  const [dragLayout, setDragLayout] = useState<ProfileLayout | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -177,6 +179,17 @@ function ProfileEditor() {
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
+  )
+
+  const columnWidgetIds = useMemo(
+    () =>
+      new Map(
+        ((dragLayout ?? layout)?.columns ?? []).map((column) => [
+          column.id,
+          column.widgets.map((widget) => widget.id),
+        ]),
+      ),
+    [dragLayout, layout],
   )
 
   useEffect(() => {
@@ -304,10 +317,83 @@ function ProfileEditor() {
 
   function handleDragStart(event: DragStartEvent) {
     setActiveDragId(String(event.active.id))
+    setDragLayout(layout)
   }
 
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event
+
+    if (!over || active.id === over.id) return
+
+    const activeId = String(active.id)
+    const overId = String(over.id)
+
+    setDragLayout((current) => {
+      if (!current) return current
+
+      const sourceColumn = current.columns.find((column) =>
+        column.widgets.some((widget) => widget.id === activeId),
+      )
+
+      const targetColumn = overId.startsWith('column:')
+        ? current.columns.find(
+            (column) => column.id === overId.slice('column:'.length),
+          )
+        : current.columns.find((column) =>
+            column.widgets.some((widget) => widget.id === overId),
+          )
+
+      if (!sourceColumn || !targetColumn) return current
+
+      // Only update the preview when crossing between columns.
+      if (sourceColumn.id === targetColumn.id) return current
+
+      const widget = sourceColumn.widgets.find((item) => item.id === activeId)
+
+      if (!widget) return current
+
+      const targetWidgets = [...targetColumn.widgets]
+
+      if (overId.startsWith('column:')) {
+        targetWidgets.push(widget)
+      } else {
+        const targetIndex = targetWidgets.findIndex(
+          (item) => item.id === overId,
+        )
+
+        if (targetIndex === -1) return current
+
+        targetWidgets.splice(targetIndex, 0, widget)
+      }
+
+      return {
+        ...current,
+        columns: current.columns.map((column) => {
+          if (column.id === sourceColumn.id) {
+            return {
+              ...column,
+              widgets: column.widgets.filter((item) => item.id !== activeId),
+            }
+          }
+
+          if (column.id === targetColumn.id) {
+            return {
+              ...column,
+              widgets: targetWidgets,
+            }
+          }
+
+          return column
+        }),
+      }
+    })
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    setActiveDragId(null)
+    setDragLayout(null)
 
     if (!over || active.id === over.id) return
 
@@ -339,15 +425,30 @@ function ProfileEditor() {
 
       const widget = sourceColumn.widgets[sourceIndex]
 
-      const targetIndex = overId.startsWith('column:')
-        ? targetColumn.widgets.length
-        : targetColumn.widgets.findIndex((item) => item.id === overId)
-
       if (sourceColumn.id === targetColumn.id) {
-        const destinationIndex =
-          targetIndex === -1 ? targetColumn.widgets.length - 1 : targetIndex
+        if (overId.startsWith('column:')) {
+          return {
+            ...current,
+            columns: current.columns.map((column) =>
+              column.id === sourceColumn.id
+                ? {
+                    ...column,
+                    widgets: arrayMove(
+                      column.widgets,
+                      sourceIndex,
+                      column.widgets.length - 1,
+                    ),
+                  }
+                : column,
+            ),
+          }
+        }
 
-        if (sourceIndex === destinationIndex) return current
+        const targetIndex = targetColumn.widgets.findIndex(
+          (item) => item.id === overId,
+        )
+
+        if (targetIndex === -1) return current
 
         return {
           ...current,
@@ -355,11 +456,7 @@ function ProfileEditor() {
             column.id === sourceColumn.id
               ? {
                   ...column,
-                  widgets: arrayMove(
-                    column.widgets,
-                    sourceIndex,
-                    destinationIndex,
-                  ),
+                  widgets: arrayMove(column.widgets, sourceIndex, targetIndex),
                 }
               : column,
           ),
@@ -367,11 +464,18 @@ function ProfileEditor() {
       }
 
       const targetWidgets = [...targetColumn.widgets]
-      targetWidgets.splice(
-        targetIndex === -1 ? targetWidgets.length : targetIndex,
-        0,
-        widget,
-      )
+
+      if (overId.startsWith('column:')) {
+        targetWidgets.push(widget)
+      } else {
+        const targetIndex = targetWidgets.findIndex(
+          (item) => item.id === overId,
+        )
+
+        if (targetIndex === -1) return current
+
+        targetWidgets.splice(targetIndex, 0, widget)
+      }
 
       return {
         ...current,
@@ -394,11 +498,13 @@ function ProfileEditor() {
         }),
       }
     })
+
+    setLayoutSuccess(false)
   }
 
-  function handleDragEnd() {
+  function handleDragCancel() {
     setActiveDragId(null)
-    setLayoutSuccess(false)
+    setDragLayout(null)
   }
 
   function updateWidgetConfig(
@@ -510,14 +616,14 @@ function ProfileEditor() {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
-          onDragCancel={handleDragEnd}
+          onDragCancel={handleDragCancel}
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {layout.columns.map((column) => (
+            {(dragLayout ?? layout).columns.map((column) => (
               <DroppableColumn
                 key={column.id}
                 columnId={column.id}
-                widgetIds={column.widgets.map((widget) => widget.id)}
+                widgetIds={columnWidgetIds.get(column.id) ?? []}
               >
                 <h3 className="font-bold">
                   {column.id === 'main' ? 'Main column' : 'Sidebar'}
