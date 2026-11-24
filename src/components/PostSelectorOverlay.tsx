@@ -4,6 +4,9 @@ import { postsApi, type Post } from '../api'
 
 import { Image, Journal } from '../PostElements'
 
+// Icon
+import searchIcon from '../assets/images/icons/searchIcon.webp'
+
 interface PostSelectorOverlayProps {
   username: string
   selectedPostIds: number[]
@@ -102,37 +105,30 @@ function PostSelectorOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="post-selector-title"
-        className="bg-background flex max-h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-lg border border-current/20"
+        className="bg-background bg-drop-down flex max-h-[90vh] w-full max-w-7xl flex-col overflow-hidden border border-current/20"
       >
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-current/20 p-5">
           <div>
-            <h2 id="post-selector-title" className="text-xl font-bold">
+            <h2 id="post-selector-title" className="extra-big-text">
               Select posts
             </h2>
-
-            <p className="mt-1 text-sm opacity-60">
-              {selection.length} of {maxSelections} posts selected
-            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded border border-current/20 px-3 py-2 text-sm hover:bg-current/5"
-          >
+          <button type="button" onClick={onClose} className="cancel">
             Close
           </button>
         </header>
 
-        <div className="border-b border-current/20 p-4">
+        <div className="flex gap-4 p-4">
           <input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search your posts..."
             maxLength={100}
-            className="w-full rounded border border-current/20 bg-transparent px-4 py-2 outline-none focus:border-current/50"
+            className="bg-background-blend w-full p-4"
           />
+          <img src={searchIcon} className="navigation-icon" />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
@@ -207,28 +203,27 @@ function PostSelectorOverlay({
           )}
         </div>
 
-        <footer className="flex items-center justify-between gap-3 border-t border-current/20 p-4">
-          <p className="text-sm opacity-60">{selection.length} selected</p>
+        <section className="bg-drop-down flex items-center justify-center p-4">
+          <p>
+            <var>
+              {selection.length}/{maxSelections}
+            </var>{' '}
+            posts selected
+          </p>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded border border-current/20 px-4 py-2 text-sm hover:bg-current/5"
-            >
-              Cancel
-            </button>
+          <button type="button" onClick={onClose} className="cancel">
+            Cancel
+          </button>
 
-            <button
-              type="button"
-              onClick={() => onConfirm(selection)}
-              disabled={loading || Boolean(error)}
-              className="text-background rounded bg-current px-4 py-2 text-sm disabled:opacity-50"
-            >
-              Confirm selection
-            </button>
-          </div>
-        </footer>
+          <button
+            type="button"
+            onClick={() => onConfirm(selection)}
+            disabled={loading || Boolean(error)}
+            className="submit"
+          >
+            Confirm
+          </button>
+        </section>
       </section>
     </div>
   )

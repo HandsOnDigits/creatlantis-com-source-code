@@ -161,6 +161,7 @@ html.green-theme {
       &#cancel,
       &.cancel,
       &#edit,
+      &.edit,
       &.register,
       &#go-to-account-settings,
       &#go-to-profile &.cancel {
@@ -187,7 +188,8 @@ html.green-theme {
   }
 
   & input,
-  & textarea {
+  & textarea,
+  .border-style {
     @apply border-hr-line rounded-sm border-2;
   }
 

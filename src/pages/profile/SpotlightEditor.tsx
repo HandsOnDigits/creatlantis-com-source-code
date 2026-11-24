@@ -1,8 +1,28 @@
-import type { Dispatch, SetStateAction } from 'react'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+
+import { CSS } from '@dnd-kit/utilities'
 
 import PostSelectorOverlay from '../../components/PostSelectorOverlay'
 
 import { postsApi, type Post } from '../../api'
+
+import type { Dispatch, SetStateAction } from 'react'
 
 interface SpotlightEditorProps {
   username: string
@@ -19,6 +39,54 @@ interface SpotlightEditorProps {
   onSave: () => void
 }
 
+interface SortablePostProps {
+  post: Post
+  index: number
+  disabled: boolean
+}
+
+function SortablePost({ post, index, disabled }: SortablePostProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: post.id,
+    disabled,
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+      className="border-style bg-background-blend flex items-center gap-3 p-3"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        disabled={disabled}
+        className="cursor-grab touch-none px-2 text-xl opacity-50 select-none hover:opacity-100 active:cursor-grabbing disabled:cursor-not-allowed"
+        aria-label={`Drag to reorder ${post.title || 'post'}`}
+      >
+        ⠿
+      </button>
+
+      <div className="flex-1">
+        <p className="truncate font-medium">{post.title || 'Untitled post'}</p>
+        <p className="text-xs opacity-50">Position {index + 1}</p>
+      </div>
+    </div>
+  )
+}
+
 function SpotlightEditor({
   username,
   editingSpotlightId,
@@ -33,134 +101,146 @@ function SpotlightEditor({
   error,
   onSave,
 }: SpotlightEditorProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const oldIndex = selectedPosts.findIndex(
+      (post) => String(post.id) === String(active.id),
+    )
+
+    const newIndex = selectedPosts.findIndex(
+      (post) => String(post.id) === String(over.id),
+    )
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return
+    }
+
+    onSelectedPostsChange((current) => arrayMove(current, oldIndex, newIndex))
+  }
+
   if (!editingSpotlightId) {
     return null
   }
 
   return (
     <>
-      <section className="mx-auto mb-6 max-w-4xl rounded border border-current/20 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Edit Spotlight</h2>
+      <div className="fixed inset-0 z-40 flex items-center justify-center">
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="spotlight-editor-title"
+          className="bg-drop-down shadow-shadow-color max-h-[85vh] w-full max-w-2xl overflow-y-auto border-current/20 p-6"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h2 id="spotlight-editor-title" className="text-xl font-bold">
+              Edit Spotlight
+            </h2>
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="rounded border border-current/20 px-3 py-1 text-sm hover:bg-current/5"
-          >
-            Close
-          </button>
-        </div>
-
-        <label className="mb-2 block text-sm font-medium">
-          Spotlight title
-        </label>
-
-        <input
-          type="text"
-          value={title}
-          onChange={(event) => onTitleChange(event.target.value)}
-          maxLength={160}
-          placeholder="Spotlight title"
-          className="w-full rounded border border-current/20 bg-transparent p-2"
-        />
-
-        <div className="mt-6 flex flex-col gap-3">
-          <div>
-            <h3 className="font-medium">Selected posts</h3>
-            <p className="text-sm opacity-60">
-              {selectedPosts.length} of 20 posts selected
-            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="cancel"
+            >
+              Close
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => onSelectorOpenChange(true)}
-            className="w-fit rounded border border-current/20 px-4 py-2 text-sm hover:bg-current/5"
-          >
-            Select posts
-          </button>
+          <label className="mb-2 block text-sm font-medium">
+            Spotlight title
+          </label>
 
-          {selectedPosts.length > 0 && (
-            <div className="mt-4 flex flex-col gap-3">
-              {selectedPosts.map((post, index) => (
-                <div
-                  key={post.id}
-                  className="flex items-center gap-3 rounded border border-current/10 p-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">
-                      {post.title || 'Untitled post'}
-                    </p>
-                    <p className="text-xs opacity-50">Position {index + 1}</p>
-                  </div>
+          <input
+            type="text"
+            value={title}
+            onChange={(event) => onTitleChange(event.target.value)}
+            maxLength={160}
+            placeholder="Spotlight title"
+            className="bg-background-blend w-full p-2"
+          />
 
-                  <button
-                    type="button"
-                    disabled={index === 0 || saving}
-                    onClick={() => {
-                      onSelectedPostsChange((current) => {
-                        const updated = [...current]
-                        ;[updated[index - 1], updated[index]] = [
-                          updated[index],
-                          updated[index - 1],
-                        ]
-                        return updated
-                      })
-                    }}
-                    className="rounded border border-current/20 px-3 py-1 disabled:opacity-30"
-                    aria-label={`Move ${post.title || 'post'} up`}
-                  >
-                    ↑
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={index === selectedPosts.length - 1 || saving}
-                    onClick={() => {
-                      onSelectedPostsChange((current) => {
-                        const updated = [...current]
-                        ;[updated[index], updated[index + 1]] = [
-                          updated[index + 1],
-                          updated[index],
-                        ]
-                        return updated
-                      })
-                    }}
-                    className="rounded border border-current/20 px-3 py-1 disabled:opacity-30"
-                    aria-label={`Move ${post.title || 'post'} down`}
-                  >
-                    ↓
-                  </button>
-                </div>
-              ))}
+          <div className="mt-6 flex flex-col gap-3">
+            <div>
+              <h3 className="font-medium">Selected posts</h3>
+              <p className="text-sm opacity-60">
+                {selectedPosts.length} of 20 posts selected
+              </p>
+              <p className="mt-1 text-xs opacity-50">
+                Drag posts using the handle to change their order.
+              </p>
             </div>
-          )}
-        </div>
 
-        {error && <p className="error-feedback mt-4">{error}</p>}
+            <button
+              type="button"
+              onClick={() => onSelectorOpenChange(true)}
+              disabled={saving}
+              className="edit"
+            >
+              Select posts
+            </button>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="cancel"
-          >
-            Cancel
-          </button>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={selectedPosts.map((post) => post.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="bg-background-blend flex h-120 flex-col gap-3 overflow-y-scroll p-4">
+                  {selectedPosts.map((post, index) => (
+                    <SortablePost
+                      key={post.id}
+                      post={post}
+                      index={index}
+                      disabled={saving}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
 
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={saving}
-            className="submit"
-          >
-            {saving ? 'Saving...' : 'Save Spotlight'}
-          </button>
-        </div>
-      </section>
+          {error && <p className="error-feedback mt-4">{error}</p>}
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="cancel"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving}
+              className="submit"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </section>
+      </div>
 
       {selectorOpen && (
         <PostSelectorOverlay

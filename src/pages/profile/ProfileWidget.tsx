@@ -6,6 +6,9 @@ import ProfileContent from './ProfileContent'
 
 import { HorizontalHR } from '../../Utilites'
 
+/* Icons */
+import editIcon from '../../assets/images/icons/editIcon.webp'
+
 import type {
   Post,
   PublicProfile,
@@ -164,8 +167,8 @@ export default function ProfileWidget({
 
     case 'bio':
       return (
-        <section className="bg-background-blend mb-6">
-          <h2 className="mb-4 text-xl font-bold">About</h2>
+        <section className="bg-background-blend mb-6 flex flex-col items-center">
+          <h2 className="mt-4 text-xl font-bold">About</h2>
 
           <HorizontalHR />
 
@@ -176,7 +179,7 @@ export default function ProfileWidget({
     case 'gallery':
       return (
         <section className="bg-background-blend mb-6">
-          <h2 className="mb-4 text-xl font-bold">Gallery</h2>
+          <h2 className="mb-4 p-4 pb-0 text-xl font-bold">Gallery</h2>
 
           <HorizontalHR />
 
@@ -231,7 +234,7 @@ export default function ProfileWidget({
     case 'journal':
       return (
         <section className="bg-background-blend mb-6">
-          <h2 className="mb-4 text-xl font-bold">Journal</h2>
+          <h2 className="mb-4 p-4 pb-0 text-xl font-bold">Journal</h2>
 
           <HorizontalHR />
 
@@ -299,18 +302,22 @@ export default function ProfileWidget({
               <button
                 type="button"
                 onClick={() => onEditSpotlight(widget.id)}
-                className="rounded border border-current/20 px-3 py-1 text-sm transition-opacity hover:opacity-60"
+                className="bg-background-blend"
                 title="Edit Spotlight"
                 aria-label="Edit Spotlight"
               >
-                ✎
+                <img src={editIcon} />
               </button>
             </div>
           )}
 
-          {title.trim() && <h2 className="mb-4 text-xl font-bold">{title}</h2>}
+          <div className="flex flex-col items-center">
+            {title.trim() && (
+              <h2 className="big-text font-semibold">{title}</h2>
+            )}
 
-          <HorizontalHR />
+            <HorizontalHR />
+          </div>
 
           <SpotlightCarousel
             posts={(widget.config?.postIds ?? [])
@@ -329,13 +336,13 @@ export default function ProfileWidget({
               <button
                 type="button"
                 onClick={() => setIsEditing((current) => !current)}
-                className="rounded border border-current/20 px-3 py-1 text-sm transition-opacity hover:opacity-60"
+                className={isEditing ? 'submit' : 'bg-background-blend'}
                 title={isEditing ? 'View mode' : 'Edit mode'}
                 aria-label={
                   isEditing ? 'Switch to view mode' : 'Edit custom text'
                 }
               >
-                {isEditing ? '✓' : '✎'}
+                {isEditing ? 'Done' : <img src={editIcon} />}
               </button>
             </div>
           )}
