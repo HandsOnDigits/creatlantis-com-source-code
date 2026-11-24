@@ -73,7 +73,6 @@ function Profile() {
   const [journalHasMore, setJournalHasMore] = useState(false)
   const [journalPage, setJournalPage] = useState(1)
   const [spotlightPosts, setSpotlightPosts] = useState<Post[]>([])
-  const [spotlightLoading, setSpotlightLoading] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -278,8 +277,6 @@ function Profile() {
 
     async function loadSpotlightPosts() {
       try {
-        setSpotlightLoading(true)
-
         const response = await postsApi.listByUsername(username!, 1, 50)
 
         if (!cancelled) {
@@ -289,10 +286,6 @@ function Profile() {
         if (!cancelled) {
           console.error('Failed to load Spotlight posts:', err)
           setSpotlightPosts([])
-        }
-      } finally {
-        if (!cancelled) {
-          setSpotlightLoading(false)
         }
       }
     }
@@ -538,7 +531,6 @@ function Profile() {
           journalHasMore={journalHasMore}
           onLoadMoreJournal={loadMoreJournal}
           spotlightPosts={spotlightPosts}
-          spotlightLoading={spotlightLoading}
         />
       )}
 

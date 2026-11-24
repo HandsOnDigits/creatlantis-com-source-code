@@ -25,7 +25,6 @@ interface ProfileTabProps {
   onLoadMoreGallery: () => void
 
   spotlightPosts: Post[]
-  spotlightLoading: boolean
 
   journalPosts: Post[]
   journalLoading: boolean
@@ -136,7 +135,6 @@ function ProfileTab({
   journalHasMore,
   onLoadMoreJournal,
   spotlightPosts,
-  spotlightLoading,
   canEditWidgets,
   onUpdateWidgetConfig,
   savingWidgetConfig,
@@ -352,62 +350,17 @@ function ProfileTab({
                       manually.
                     </p>
 
-                    {spotlightLoading ? (
-                      <p className="text-sm opacity-60">
-                        Loading your posts...
-                      </p>
-                    ) : spotlightPosts.length === 0 ? (
-                      <p className="text-sm opacity-60">
-                        No approved posts available to feature.
-                      </p>
-                    ) : (
-                      <div className="flex max-h-96 flex-col gap-2 overflow-y-auto rounded border border-current/20 p-3">
-                        {spotlightPosts.map((post) => {
-                          const selectedPostIds = widget.config?.postIds ?? []
-                          const isSelected = selectedPostIds.includes(post.id)
+                    <p className="text-sm">
+                      {(widget.config?.postIds ?? []).length} of 20 posts
+                      selected
+                    </p>
 
-                          return (
-                            <label
-                              key={post.id}
-                              className="flex cursor-pointer items-center gap-3 rounded p-2 transition-colors hover:bg-current/5"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                disabled={
-                                  !isSelected && selectedPostIds.length >= 20
-                                }
-                                onChange={(event) => {
-                                  const nextPostIds = event.target.checked
-                                    ? [...selectedPostIds, post.id]
-                                    : selectedPostIds.filter(
-                                        (id) => id !== post.id,
-                                      )
-
-                                  void onUpdateWidgetConfig(
-                                    widget.id,
-                                    'postIds',
-                                    nextPostIds,
-                                  )
-                                }}
-                              />
-
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium">
-                                  {post.title || 'Untitled post'}
-                                </span>
-                                <span className="text-xs opacity-50">
-                                  {post.type} ·{' '}
-                                  {new Date(
-                                    post.createdAt,
-                                  ).toLocaleDateString()}
-                                </span>
-                              </span>
-                            </label>
-                          )
-                        })}
-                      </div>
-                    )}
+                    <Link
+                      to={`/profile/edit/spotlight/${encodeURIComponent(widget.id)}`}
+                      className="w-fit rounded border border-current/20 px-4 py-2 text-sm transition-colors hover:bg-current/5"
+                    >
+                      Select posts
+                    </Link>
                   </div>
                 ) : (
                   <textarea

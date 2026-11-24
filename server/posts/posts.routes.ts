@@ -460,22 +460,58 @@ router.get('/user/:username', async (req, res) => {
     })
   }
 
+  const search = z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .optional()
+    .safeParse(req.query.search)
+
+  if (!search.success) {
+    return res.status(400).json({
+      error: 'Invalid search parameter',
+    })
+  }
+
   const pageSize = limit.data
   const offset = (page.data - 1) * pageSize
 
-  const posts = await db.orm.public.Post.where({
-    authorId: user.id,
-    publicationStatus: 'APPROVED',
-    ...(postType.data ? { type: postType.data } : {}),
-  })
-    .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
-    .orderBy([(post) => post.createdAt.desc(), (post) => post.id.desc()])
-    .limit(pageSize + 1)
-    .offset(offset)
-    .all()
+  const result = await mainQueryPool.query<{ id: number }>(
+    `
+      SELECT p."id"
+      FROM public."Post" p
+      WHERE
+        p."authorId" = $1
+        AND p."publicationStatus" = 'APPROVED'
+        AND ($2::text IS NULL OR p."type" = $2)
+        AND (
+          $3::text IS NULL
+          OR strpos(lower(p."title"), lower($3)) > 0
+          OR strpos(lower(COALESCE(p."content", '')), lower($3)) > 0
+        )
+      ORDER BY p."createdAt" DESC, p."id" DESC
+      LIMIT $4
+      OFFSET $5
+    `,
+    [user.id, postType.data ?? null, search.data ?? null, pageSize + 1, offset],
+  )
 
-  const hasMore = posts.length > pageSize
-  const pagePosts = posts.slice(0, pageSize)
+  const hasMore = result.rows.length > pageSize
+
+  const pagePosts = (
+    await Promise.all(
+      result.rows.slice(0, pageSize).map((row) =>
+        db.orm.public.Post.where({
+          id: row.id,
+          authorId: user.id,
+          publicationStatus: 'APPROVED',
+        })
+          .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
+          .first(),
+      ),
+    )
+  ).filter((post) => post !== null)
 
   const data = await Promise.all(
     pagePosts.map(async (post) => {

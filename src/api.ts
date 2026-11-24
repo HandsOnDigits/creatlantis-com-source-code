@@ -564,6 +564,7 @@ export const postsApi = {
     page = 1,
     limit = 12,
     type?: 'IMAGE' | 'JOURNAL' | 'MODEL',
+    search?: string,
   ) {
     const params = new URLSearchParams({
       page: String(page),
@@ -572,6 +573,10 @@ export const postsApi = {
 
     if (type) {
       params.set('type', type)
+    }
+
+    if (search?.trim()) {
+      params.set('search', search.trim())
     }
 
     return api.get<PostListResponse>(
