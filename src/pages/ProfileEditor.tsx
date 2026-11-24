@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -48,6 +48,10 @@ const availableWidgets: {
   { type: 'links', label: 'Links' },
   { type: 'friends', label: 'Friends' },
 ]
+
+function getWidgetLabel(type: ProfileWidget['type']) {
+  return availableWidgets.find((widget) => widget.type === type)?.label ?? type
+}
 
 interface SortableWidgetProps {
   widgetId: string
@@ -120,6 +124,31 @@ interface DroppableColumnProps {
   children: React.ReactNode
 }
 
+interface WidgetDropZoneProps {
+  id: string
+}
+
+function WidgetDropZone({ id }: WidgetDropZoneProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `slot:${id}`,
+    data: {
+      type: 'slot',
+      slotId: id,
+    },
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-3 rounded transition-all duration-150 ${
+        isOver
+          ? 'min-h-10 border-2 border-dashed border-current/60 bg-current/10'
+          : 'border border-transparent'
+      }`}
+    />
+  )
+}
+
 function DroppableColumn({
   columnId,
   widgetIds,
@@ -143,6 +172,151 @@ function DroppableColumn({
   )
 }
 
+function getSlotTarget(id: string) {
+  const match = /^slot:(main|sidebar):(\d+)$/.exec(id)
+
+  if (!match) return null
+
+  return {
+    columnId: match[1],
+    index: Number(match[2]),
+  }
+}
+
+function getTargetColumn(layout: ProfileLayout, targetId: string) {
+  const slot = getSlotTarget(targetId)
+
+  if (slot) {
+    return layout.columns.find(({ id }) => id === slot.columnId)
+  }
+
+  if (targetId.startsWith('column:')) {
+    const columnId = targetId.slice('column:'.length)
+    return layout.columns.find((column) => column.id === columnId)
+  }
+
+  return layout.columns.find(({ widgets }) =>
+    widgets.some(({ id }) => id === targetId),
+  )
+}
+
+function getWidgetInsertIndex(
+  targetWidgets: ProfileWidget[],
+  targetId: string,
+  slotTarget: { columnId: string; index: number } | null,
+  insertAfter: boolean,
+) {
+  if (slotTarget) {
+    return Math.min(slotTarget.index, targetWidgets.length)
+  }
+
+  if (targetId.startsWith('column:')) {
+    return targetWidgets.length
+  }
+
+  const targetIndex = targetWidgets.findIndex(({ id }) => id === targetId)
+
+  if (targetIndex === -1) return -1
+
+  return targetIndex + (insertAfter ? 1 : 0)
+}
+
+function moveWidget(
+  layout: ProfileLayout,
+  activeId: string,
+  targetId: string,
+  insertAfter: boolean,
+): ProfileLayout {
+  const sourceColumn = layout.columns.find(({ widgets }) =>
+    widgets.some(({ id }) => id === activeId),
+  )
+
+  const targetColumn = getTargetColumn(layout, targetId)
+  const slotTarget = getSlotTarget(targetId)
+
+  if (!sourceColumn || !targetColumn) return layout
+
+  const sourceIndex = sourceColumn.widgets.findIndex(
+    (widget) => widget.id === activeId,
+  )
+
+  const widget = sourceColumn.widgets[sourceIndex]
+
+  if (!widget) return layout
+
+  if (sourceColumn.id === targetColumn.id) {
+    if (slotTarget) {
+      const widgets = [...sourceColumn.widgets]
+      widgets.splice(sourceIndex, 1)
+
+      const insertIndex = Math.min(
+        Math.max(
+          slotTarget.index - (slotTarget.index > sourceIndex ? 1 : 0),
+          0,
+        ),
+        widgets.length,
+      )
+
+      widgets.splice(insertIndex, 0, widget)
+
+      return {
+        ...layout,
+        columns: layout.columns.map((column) =>
+          column.id === sourceColumn.id ? { ...column, widgets } : column,
+        ),
+      }
+    }
+
+    const targetIndex = targetId.startsWith('column:')
+      ? sourceColumn.widgets.length - 1
+      : sourceColumn.widgets.findIndex((item) => item.id === targetId)
+
+    if (targetIndex === -1) return layout
+
+    return {
+      ...layout,
+      columns: layout.columns.map((column) =>
+        column.id === sourceColumn.id
+          ? {
+              ...column,
+              widgets: arrayMove(column.widgets, sourceIndex, targetIndex),
+            }
+          : column,
+      ),
+    }
+  }
+
+  const targetWidgets = [...targetColumn.widgets]
+  const insertIndex = getWidgetInsertIndex(
+    targetWidgets,
+    targetId,
+    slotTarget,
+    insertAfter,
+  )
+
+  if (insertIndex === -1) return layout
+
+  targetWidgets.splice(insertIndex, 0, widget)
+
+  return {
+    ...layout,
+    columns: layout.columns.map((column) => {
+      if (column.id === sourceColumn.id) {
+        return {
+          ...column,
+          widgets: column.widgets.filter((item) => item.id !== activeId),
+        }
+      }
+
+      if (column.id === targetColumn.id) {
+        return { ...column, widgets: targetWidgets }
+      }
+
+      return column
+    }),
+  }
+}
+
 const profileCollisionDetection: CollisionDetection = (args) => {
   const pointerCollisions = pointerWithin(args)
 
@@ -159,6 +333,185 @@ const profileCollisionDetection: CollisionDetection = (args) => {
   }
 
   return closestCenter(args)
+}
+
+function shouldInsertAfter(event: DragEndEvent | DragOverEvent) {
+  const overRect = event.over?.rect
+
+  if (!overRect) return false
+
+  const activatorEvent = event.activatorEvent
+
+  let pointerY: number
+
+  if (
+    'clientY' in activatorEvent &&
+    typeof activatorEvent.clientY === 'number'
+  ) {
+    pointerY = activatorEvent.clientY + event.delta.y
+  } else {
+    const activeRect = event.active.rect.current.translated
+
+    if (!activeRect) return false
+
+    pointerY = activeRect.top + activeRect.height / 2
+  }
+
+  return pointerY > overRect.top + overRect.height / 2
+}
+
+interface WidgetConfigurationProps {
+  widget: ProfileWidget
+  onChange: (
+    widgetId: string,
+    field: 'title' | 'content',
+    value: string,
+  ) => void
+}
+
+function WidgetConfiguration({ widget, onChange }: WidgetConfigurationProps) {
+  if (widget.type !== 'featured' && widget.type !== 'customText') {
+    return null
+  }
+
+  const isFeatured = widget.type === 'featured'
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-current/20 pt-3">
+      {isFeatured && (
+        <label className="flex flex-col gap-1 text-sm">
+          Spotlight title
+          <input
+            type="text"
+            value={widget.config?.title ?? ''}
+            onChange={(event) =>
+              onChange(widget.id, 'title', event.target.value)
+            }
+            maxLength={160}
+            className="bg-background-blend rounded border border-current/30 p-2"
+            placeholder="Enter a title..."
+          />
+        </label>
+      )}
+
+      <label className="flex flex-col gap-1 text-sm">
+        {isFeatured ? 'Spotlight content' : 'Custom text content'}
+        <textarea
+          value={widget.config?.content ?? ''}
+          onChange={(event) =>
+            onChange(widget.id, 'content', event.target.value)
+          }
+          maxLength={20000}
+          rows={5}
+          className="bg-background-blend rounded border border-current/30 p-2"
+          placeholder="Write your content..."
+        />
+      </label>
+    </div>
+  )
+}
+
+interface WidgetPickerProps {
+  layout: ProfileLayout
+  onAdd: (type: ProfileWidget['type']) => void
+}
+
+function WidgetPicker({ layout, onAdd }: WidgetPickerProps) {
+  const hasBio = layout.columns.some(({ widgets }) =>
+    widgets.some(({ type }) => type === 'bio'),
+  )
+
+  return (
+    <div className="bg-background-blend rounded border border-current/20 p-4">
+      <h3 className="mb-3 font-bold">Add widgets</h3>
+
+      <div className="flex flex-wrap gap-2">
+        {availableWidgets.map((item) => (
+          <button
+            key={item.type}
+            type="button"
+            onClick={() => onAdd(item.type)}
+            disabled={item.type === 'bio' && hasBio}
+            className="bg-background-blend rounded border border-current/30 px-3 py-2 text-sm transition-opacity hover:opacity-60 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            + {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+interface WidgetColumnProps {
+  column: ProfileLayout['columns'][number]
+  widgetIds: string[]
+  onRemove: (widgetId: string) => void
+  onConfigChange: (
+    widgetId: string,
+    field: 'title' | 'content',
+    value: string,
+  ) => void
+}
+
+function WidgetColumn({
+  column,
+  widgetIds,
+  onRemove,
+  onConfigChange,
+}: WidgetColumnProps) {
+  return (
+    <DroppableColumn columnId={column.id} widgetIds={widgetIds}>
+      <h3 className="font-bold">
+        {column.id === 'main' ? 'Main column' : 'Sidebar'}
+      </h3>
+
+      {column.widgets.map((widget, index) => (
+        <Fragment key={widget.id}>
+          <WidgetDropZone id={`${column.id}:${index}`} />
+
+          <SortableWidget
+            widgetId={widget.id}
+            label={getWidgetLabel(widget.type)}
+            onRemove={() => onRemove(widget.id)}
+          >
+            <WidgetConfiguration widget={widget} onChange={onConfigChange} />
+          </SortableWidget>
+        </Fragment>
+      ))}
+
+      <WidgetDropZone id={`${column.id}:${column.widgets.length}`} />
+
+      {column.widgets.length === 0 && (
+        <p className="rounded border border-dashed border-current/30 p-6 text-center text-sm opacity-50">
+          Drop widgets here
+        </p>
+      )}
+
+      <p className="mt-auto text-xs opacity-40">
+        Drag widgets to reorder or move them here.
+      </p>
+    </DroppableColumn>
+  )
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
+function updateLayoutWidgets(
+  layout: ProfileLayout,
+  update: (widget: ProfileWidget) => ProfileWidget | null,
+): ProfileLayout {
+  return {
+    ...layout,
+    columns: layout.columns.map((column) => ({
+      ...column,
+      widgets: column.widgets.flatMap((widget) => {
+        const updated = update(widget)
+        return updated ? [updated] : []
+      }),
+    })),
+  }
 }
 
 function ProfileEditor() {
@@ -181,17 +534,6 @@ function ProfileEditor() {
     }),
   )
 
-  const columnWidgetIds = useMemo(
-    () =>
-      new Map(
-        ((dragLayout ?? layout)?.columns ?? []).map((column) => [
-          column.id,
-          column.widgets.map((widget) => widget.id),
-        ]),
-      ),
-    [dragLayout, layout],
-  )
-
   useEffect(() => {
     let cancelled = false
 
@@ -207,11 +549,7 @@ function ProfileEditor() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Failed to load profile editor.',
-          )
+          setError(getErrorMessage(err, 'Failed to load profile editor.'))
         }
       } finally {
         if (!cancelled) {
@@ -240,9 +578,7 @@ function ProfileEditor() {
       setLayout(response.data.layout)
       setLayoutSuccess(true)
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to save profile layout.',
-      )
+      setError(getErrorMessage(err, 'Failed to save profile layout.'))
     } finally {
       setSavingLayout(false)
     }
@@ -256,8 +592,8 @@ function ProfileEditor() {
       // belongs to the profile itself.
       if (
         type === 'bio' &&
-        current.columns.some((column) =>
-          column.widgets.some((widget) => widget.type === 'bio'),
+        current.columns.some(({ widgets }) =>
+          widgets.some(({ type }) => type === 'bio'),
         )
       ) {
         return current
@@ -266,21 +602,20 @@ function ProfileEditor() {
       const newWidget: ProfileWidget = {
         id: `${type}-${crypto.randomUUID()}`,
         type,
-        ...(type === 'featured'
-          ? {
-              config: {
-                title: 'Spotlight',
-                content: '',
-              },
-            }
-          : type === 'customText'
-            ? {
-                config: {
-                  content:
-                    '<div style="background: rgba(200, 200, 200, 0.6); padding: 20px; border-radius: 8px;"><h2>Welcome to my space!</h2><p>Tell visitors a little about yourself, your interests, your creative work, or anything you would like to share.</p></div>',
-                },
-              }
-            : {}),
+      }
+
+      if (type === 'featured') {
+        newWidget.config = {
+          title: 'Spotlight',
+          content: '',
+        }
+      }
+
+      if (type === 'customText') {
+        newWidget.config = {
+          content:
+            '<div style="background: rgba(200, 200, 200, 0.6); padding: 20px; border-radius: 8px;"><h2>Welcome to my space!</h2><p>Tell visitors a little about yourself, your interests, your creative work, or anything you would like to share.</p></div>',
+        }
       }
 
       return {
@@ -300,17 +635,13 @@ function ProfileEditor() {
   }
 
   function removeWidget(widgetId: string) {
-    setLayout((current) => {
-      if (!current) return current
-
-      return {
-        ...current,
-        columns: current.columns.map((column) => ({
-          ...column,
-          widgets: column.widgets.filter((widget) => widget.id !== widgetId),
-        })),
-      }
-    })
+    setLayout((current) =>
+      current
+        ? updateLayoutWidgets(current, (widget) =>
+            widget.id === widgetId ? null : widget,
+          )
+        : current,
+    )
 
     setLayoutSuccess(false)
   }
@@ -325,68 +656,16 @@ function ProfileEditor() {
 
     if (!over || active.id === over.id) return
 
-    const activeId = String(active.id)
-    const overId = String(over.id)
-
-    setDragLayout((current) => {
-      if (!current) return current
-
-      const sourceColumn = current.columns.find((column) =>
-        column.widgets.some((widget) => widget.id === activeId),
-      )
-
-      const targetColumn = overId.startsWith('column:')
-        ? current.columns.find(
-            (column) => column.id === overId.slice('column:'.length),
+    setDragLayout((current) =>
+      current
+        ? moveWidget(
+            current,
+            String(active.id),
+            String(over.id),
+            shouldInsertAfter(event),
           )
-        : current.columns.find((column) =>
-            column.widgets.some((widget) => widget.id === overId),
-          )
-
-      if (!sourceColumn || !targetColumn) return current
-
-      // Only update the preview when crossing between columns.
-      if (sourceColumn.id === targetColumn.id) return current
-
-      const widget = sourceColumn.widgets.find((item) => item.id === activeId)
-
-      if (!widget) return current
-
-      const targetWidgets = [...targetColumn.widgets]
-
-      if (overId.startsWith('column:')) {
-        targetWidgets.push(widget)
-      } else {
-        const targetIndex = targetWidgets.findIndex(
-          (item) => item.id === overId,
-        )
-
-        if (targetIndex === -1) return current
-
-        targetWidgets.splice(targetIndex, 0, widget)
-      }
-
-      return {
-        ...current,
-        columns: current.columns.map((column) => {
-          if (column.id === sourceColumn.id) {
-            return {
-              ...column,
-              widgets: column.widgets.filter((item) => item.id !== activeId),
-            }
-          }
-
-          if (column.id === targetColumn.id) {
-            return {
-              ...column,
-              widgets: targetWidgets,
-            }
-          }
-
-          return column
-        }),
-      }
-    })
+        : current,
+    )
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -397,107 +676,16 @@ function ProfileEditor() {
 
     if (!over || active.id === over.id) return
 
-    const activeId = String(active.id)
-    const overId = String(over.id)
-
-    setLayout((current) => {
-      if (!current) return current
-
-      const sourceColumn = current.columns.find((column) =>
-        column.widgets.some((widget) => widget.id === activeId),
-      )
-
-      if (!sourceColumn) return current
-
-      const sourceIndex = sourceColumn.widgets.findIndex(
-        (widget) => widget.id === activeId,
-      )
-
-      const targetColumn = overId.startsWith('column:')
-        ? current.columns.find(
-            (column) => column.id === overId.slice('column:'.length),
+    setLayout((current) =>
+      current
+        ? moveWidget(
+            current,
+            String(active.id),
+            String(over.id),
+            shouldInsertAfter(event),
           )
-        : current.columns.find((column) =>
-            column.widgets.some((widget) => widget.id === overId),
-          )
-
-      if (!targetColumn) return current
-
-      const widget = sourceColumn.widgets[sourceIndex]
-
-      if (sourceColumn.id === targetColumn.id) {
-        if (overId.startsWith('column:')) {
-          return {
-            ...current,
-            columns: current.columns.map((column) =>
-              column.id === sourceColumn.id
-                ? {
-                    ...column,
-                    widgets: arrayMove(
-                      column.widgets,
-                      sourceIndex,
-                      column.widgets.length - 1,
-                    ),
-                  }
-                : column,
-            ),
-          }
-        }
-
-        const targetIndex = targetColumn.widgets.findIndex(
-          (item) => item.id === overId,
-        )
-
-        if (targetIndex === -1) return current
-
-        return {
-          ...current,
-          columns: current.columns.map((column) =>
-            column.id === sourceColumn.id
-              ? {
-                  ...column,
-                  widgets: arrayMove(column.widgets, sourceIndex, targetIndex),
-                }
-              : column,
-          ),
-        }
-      }
-
-      const targetWidgets = [...targetColumn.widgets]
-
-      if (overId.startsWith('column:')) {
-        targetWidgets.push(widget)
-      } else {
-        const targetIndex = targetWidgets.findIndex(
-          (item) => item.id === overId,
-        )
-
-        if (targetIndex === -1) return current
-
-        targetWidgets.splice(targetIndex, 0, widget)
-      }
-
-      return {
-        ...current,
-        columns: current.columns.map((column) => {
-          if (column.id === sourceColumn.id) {
-            return {
-              ...column,
-              widgets: column.widgets.filter((item) => item.id !== activeId),
-            }
-          }
-
-          if (column.id === targetColumn.id) {
-            return {
-              ...column,
-              widgets: targetWidgets,
-            }
-          }
-
-          return column
-        }),
-      }
-    })
+        : current,
+    )
 
     setLayoutSuccess(false)
   }
@@ -512,14 +700,9 @@ function ProfileEditor() {
     field: 'title' | 'content',
     value: string,
   ) {
-    setLayout((current) => {
-      if (!current) return current
-
-      return {
-        ...current,
-        columns: current.columns.map((column) => ({
-          ...column,
-          widgets: column.widgets.map((widget) =>
+    setLayout((current) =>
+      current
+        ? updateLayoutWidgets(current, (widget) =>
             widget.id === widgetId
               ? {
                   ...widget,
@@ -529,10 +712,9 @@ function ProfileEditor() {
                   },
                 }
               : widget,
-          ),
-        })),
-      }
-    })
+          )
+        : current,
+    )
 
     setLayoutSuccess(false)
   }
@@ -556,13 +738,12 @@ function ProfileEditor() {
 
   const activeWidget = activeDragId
     ? layout.columns
-        .flatMap((column) => column.widgets)
-        .find((widget) => widget.id === activeDragId)
+        .flatMap(({ widgets }) => widgets)
+        .find(({ id }) => id === activeDragId)
     : null
 
   const activeWidgetLabel = activeWidget
-    ? (availableWidgets.find((item) => item.type === activeWidget.type)
-        ?.label ?? activeWidget.type)
+    ? getWidgetLabel(activeWidget.type)
     : ''
 
   return (
@@ -585,29 +766,7 @@ function ProfileEditor() {
           </p>
         </div>
 
-        {/* Available widgets */}
-        <div className="bg-background-blend rounded border border-current/20 p-4">
-          <h3 className="mb-3 font-bold">Add widgets</h3>
-
-          <div className="flex flex-wrap gap-2">
-            {availableWidgets.map((item) => (
-              <button
-                key={item.type}
-                type="button"
-                onClick={() => addWidget(item.type)}
-                disabled={
-                  item.type === 'bio' &&
-                  layout.columns.some((column) =>
-                    column.widgets.some((widget) => widget.type === 'bio'),
-                  )
-                }
-                className="bg-background-blend rounded border border-current/30 px-3 py-2 text-sm transition-opacity hover:opacity-60 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                + {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <WidgetPicker layout={layout} onAdd={addWidget} />
 
         {/* Layout columns */}
         <DndContext
@@ -620,85 +779,13 @@ function ProfileEditor() {
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {(dragLayout ?? layout).columns.map((column) => (
-              <DroppableColumn
+              <WidgetColumn
                 key={column.id}
-                columnId={column.id}
-                widgetIds={columnWidgetIds.get(column.id) ?? []}
-              >
-                <h3 className="font-bold">
-                  {column.id === 'main' ? 'Main column' : 'Sidebar'}
-                </h3>
-
-                {column.widgets.map((widget) => {
-                  const label =
-                    availableWidgets.find((item) => item.type === widget.type)
-                      ?.label ?? widget.type
-
-                  return (
-                    <SortableWidget
-                      key={widget.id}
-                      widgetId={widget.id}
-                      label={label}
-                      onRemove={() => removeWidget(widget.id)}
-                    >
-                      {(widget.type === 'featured' ||
-                        widget.type === 'customText') && (
-                        <div className="flex flex-col gap-3 border-t border-current/20 pt-3">
-                          {widget.type === 'featured' && (
-                            <label className="flex flex-col gap-1 text-sm">
-                              Spotlight title
-                              <input
-                                type="text"
-                                value={widget.config?.title ?? ''}
-                                onChange={(event) =>
-                                  updateWidgetConfig(
-                                    widget.id,
-                                    'title',
-                                    event.target.value,
-                                  )
-                                }
-                                maxLength={160}
-                                className="bg-background-blend rounded border border-current/30 p-2"
-                                placeholder="Enter a title..."
-                              />
-                            </label>
-                          )}
-
-                          <label className="flex flex-col gap-1 text-sm">
-                            {widget.type === 'featured'
-                              ? 'Spotlight content'
-                              : 'Custom text content'}
-                            <textarea
-                              value={widget.config?.content ?? ''}
-                              onChange={(event) =>
-                                updateWidgetConfig(
-                                  widget.id,
-                                  'content',
-                                  event.target.value,
-                                )
-                              }
-                              maxLength={20000}
-                              rows={5}
-                              className="bg-background-blend rounded border border-current/30 p-2"
-                              placeholder="Write your content..."
-                            />
-                          </label>
-                        </div>
-                      )}
-                    </SortableWidget>
-                  )
-                })}
-
-                {column.widgets.length === 0 && (
-                  <p className="rounded border border-dashed border-current/30 p-6 text-center text-sm opacity-50">
-                    Drop widgets here
-                  </p>
-                )}
-
-                <p className="mt-auto text-xs opacity-40">
-                  Drag widgets to reorder or move them here.
-                </p>
-              </DroppableColumn>
+                column={column}
+                widgetIds={column.widgets.map((widget) => widget.id)}
+                onRemove={removeWidget}
+                onConfigChange={updateWidgetConfig}
+              />
             ))}
           </div>
 
