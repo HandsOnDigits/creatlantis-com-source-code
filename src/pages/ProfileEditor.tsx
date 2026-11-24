@@ -17,24 +17,18 @@ const availableWidgets: {
   { type: 'gallery', label: 'Gallery' },
   { type: 'journal', label: 'Journal' },
   { type: 'statistics', label: 'Statistics' },
-  { type: 'featured', label: 'Featured' },
+  { type: 'featured', label: 'Spotlight' },
   { type: 'customText', label: 'Custom text' },
   { type: 'links', label: 'Links' },
   { type: 'friends', label: 'Friends' },
 ]
 
 function ProfileEditor() {
-  const [description, setDescription] = useState('')
-  const [customCss, setCustomCss] = useState('')
   const [layout, setLayout] = useState<ProfileLayout | null>(null)
-
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [savingLayout, setSavingLayout] = useState(false)
   const [draggingId, setDraggingId] = useState<string | null>(null)
-
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
   const [layoutSuccess, setLayoutSuccess] = useState(false)
 
   useEffect(() => {
@@ -45,14 +39,9 @@ function ProfileEditor() {
         setLoading(true)
         setError(null)
 
-        const [customizationResponse, layoutResponse] = await Promise.all([
-          profilesApi.getMyCustomization(),
-          profilesApi.getMyLayout(),
-        ])
+        const layoutResponse = await profilesApi.getMyLayout()
 
         if (!cancelled) {
-          setDescription(customizationResponse.data.description)
-          setCustomCss(customizationResponse.data.customCss)
           setLayout(layoutResponse.data.layout)
         }
       } catch (err) {
@@ -76,31 +65,6 @@ function ProfileEditor() {
       cancelled = true
     }
   }, [])
-
-  async function saveCustomization() {
-    try {
-      setSaving(true)
-      setError(null)
-      setSuccess(false)
-
-      const response = await profilesApi.updateMyCustomization({
-        description,
-        customCss,
-      })
-
-      setDescription(response.data.description)
-      setCustomCss(response.data.customCss)
-      setSuccess(true)
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to save profile customization.',
-      )
-    } finally {
-      setSaving(false)
-    }
-  }
 
   async function saveLayout() {
     if (!layout) return
@@ -141,6 +105,21 @@ function ProfileEditor() {
       const newWidget: ProfileWidget = {
         id: `${type}-${crypto.randomUUID()}`,
         type,
+        ...(type === 'featured'
+          ? {
+              config: {
+                title: 'Spotlight',
+                content: '',
+              },
+            }
+          : type === 'customText'
+            ? {
+                config: {
+                  content:
+                    '<div style="background: rgba(200, 200, 200, 0.6); padding: 20px; border-radius: 8px;"><h2>Welcome to my space!</h2><p>Tell visitors a little about yourself, your interests, your creative work, or anything you would like to share.</p></div>',
+                },
+              }
+            : {}),
       }
 
       return {
@@ -168,6 +147,36 @@ function ProfileEditor() {
         columns: current.columns.map((column) => ({
           ...column,
           widgets: column.widgets.filter((widget) => widget.id !== widgetId),
+        })),
+      }
+    })
+
+    setLayoutSuccess(false)
+  }
+
+  function updateWidgetConfig(
+    widgetId: string,
+    field: 'title' | 'content',
+    value: string,
+  ) {
+    setLayout((current) => {
+      if (!current) return current
+
+      return {
+        ...current,
+        columns: current.columns.map((column) => ({
+          ...column,
+          widgets: column.widgets.map((widget) =>
+            widget.id === widgetId
+              ? {
+                  ...widget,
+                  config: {
+                    ...widget.config,
+                    [field]: value,
+                  },
+                }
+              : widget,
+          ),
         })),
       }
     })
@@ -365,45 +374,48 @@ function ProfileEditor() {
                       </button>
                     </div>
 
-                    {/* BIO configuration */}
-                    {widget.type === 'bio' && (
-                      <div
-                        className="flex flex-col gap-3 border-t border-current/20 pt-3"
-                        draggable={false}
-                      >
-                        <div>
-                          <h4 className="font-bold">BIO content</h4>
-                          <p className="mt-1 text-xs opacity-60">
-                            Write your profile biography using BBCode, Markdown,
-                            or HTML. HTML is sanitized before display.
-                          </p>
-                        </div>
+                    {(widget.type === 'featured' ||
+                      widget.type === 'customText') && (
+                      <div className="flex flex-col gap-3 border-t border-current/20 pt-3">
+                        {widget.type === 'featured' && (
+                          <label className="flex flex-col gap-1 text-sm">
+                            Spotlight title
+                            <input
+                              type="text"
+                              value={widget.config?.title ?? ''}
+                              onChange={(event) =>
+                                updateWidgetConfig(
+                                  widget.id,
+                                  'title',
+                                  event.target.value,
+                                )
+                              }
+                              maxLength={160}
+                              className="bg-background-blend rounded border border-current/30 p-2"
+                              placeholder="Enter a title..."
+                            />
+                          </label>
+                        )}
 
-                        <label
-                          htmlFor="profile-bio"
-                          className="text-sm font-bold"
-                        >
-                          Biography content
+                        <label className="flex flex-col gap-1 text-sm">
+                          {widget.type === 'featured'
+                            ? 'Spotlight content'
+                            : 'Custom text content'}
+                          <textarea
+                            value={widget.config?.content ?? ''}
+                            onChange={(event) =>
+                              updateWidgetConfig(
+                                widget.id,
+                                'content',
+                                event.target.value,
+                              )
+                            }
+                            maxLength={20000}
+                            rows={5}
+                            className="bg-background-blend rounded border border-current/30 p-2"
+                            placeholder="Write your content..."
+                          />
                         </label>
-
-                        <textarea
-                          id="profile-bio"
-                          draggable={false}
-                          value={description}
-                          onChange={(event) => {
-                            setDescription(event.target.value)
-                            setSuccess(false)
-                          }}
-                          maxLength={20_000}
-                          rows={10}
-                          className="w-full resize-y rounded border border-current/20 bg-transparent p-3 font-mono text-sm"
-                          placeholder="[b]Welcome to my profile![/b]"
-                        />
-
-                        <p className="text-xs opacity-50">
-                          {description.length.toLocaleString()} / 20,000
-                          characters
-                        </p>
                       </div>
                     )}
                   </div>
@@ -447,60 +459,11 @@ function ProfileEditor() {
 
       <hr className="border-current/20" />
 
-      {/* Custom CSS editor */}
-      <section className="bg-background-blend flex flex-col gap-3">
-        <h2 className="text-xl font-bold">Custom CSS</h2>
-
-        <HorizontalHR />
-
-        <label htmlFor="profile-css" className="font-bold">
-          Profile styles
-        </label>
-
-        <textarea
-          id="profile-css"
-          value={customCss}
-          onChange={(event) => {
-            setCustomCss(event.target.value)
-            setSuccess(false)
-          }}
-          maxLength={50_000}
-          rows={14}
-          className="w-full resize-y rounded border border-current/20 bg-transparent p-4 font-mono text-sm"
-          placeholder="/* Your profile styles */"
-        />
-
-        <p className="text-xs opacity-50">
-          {customCss.length.toLocaleString()} / 50,000 characters
-        </p>
-      </section>
-
       {error && (
         <p role="alert" className="error-feedback">
           {error}
         </p>
       )}
-
-      {success && (
-        <p role="status" className="text-green-500">
-          Profile profile and CSS saved.
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-4">
-        <button
-          type="button"
-          onClick={saveCustomization}
-          disabled={saving}
-          className="save"
-        >
-          {saving ? 'Saving...' : 'Save CSS'}
-        </button>
-
-        <Link to="/">
-          <button className="cancel">Cancel</button>
-        </Link>
-      </div>
     </main>
   )
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { Image, Journal } from '../../PostElements'
@@ -27,6 +28,15 @@ interface ProfileTabProps {
   journalLoading: boolean
   journalHasMore: boolean
   onLoadMoreJournal: () => void
+
+  canEditWidgets: boolean
+  onUpdateWidgetConfig: (
+    widgetId: string,
+    field: 'title' | 'content',
+    value: string,
+  ) => Promise<void>
+  savingWidgetConfig: boolean
+  widgetConfigError: string | null
 }
 
 function ProfileTab({
@@ -41,7 +51,21 @@ function ProfileTab({
   journalLoading,
   journalHasMore,
   onLoadMoreJournal,
+  canEditWidgets,
+  onUpdateWidgetConfig,
+  savingWidgetConfig,
+  widgetConfigError,
 }: ProfileTabProps) {
+  const [editingWidgets, setEditingWidgets] = useState<string[]>([])
+
+  function toggleWidgetEditing(widgetId: string) {
+    setEditingWidgets((current) =>
+      current.includes(widgetId)
+        ? current.filter((id) => id !== widgetId)
+        : [...current, widgetId],
+    )
+  }
+
   function renderWidget(widget: ProfileWidget) {
     switch (widget.type) {
       case 'header':
@@ -189,15 +213,101 @@ function ProfileTab({
           </section>
         )
 
+      case 'featured':
+      case 'customText': {
+        const title =
+          widget.type === 'featured'
+            ? (widget.config?.title ?? '')
+            : 'Custom text'
+
+        const isEditing = editingWidgets.includes(widget.id)
+
+        return (
+          <section key={widget.id} className="bg-background-blend mb-6">
+            {canEditWidgets && (
+              <div className="mb-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => toggleWidgetEditing(widget.id)}
+                  className="rounded border border-current/20 px-3 py-1 text-sm transition-opacity hover:opacity-60"
+                  title={isEditing ? 'View mode' : 'Edit mode'}
+                  aria-label={
+                    isEditing ? 'Switch to view mode' : 'Switch to edit mode'
+                  }
+                >
+                  {isEditing ? '✓' : '✎'}
+                </button>
+              </div>
+            )}
+
+            {canEditWidgets && isEditing ? (
+              <div className="flex flex-col gap-3">
+                {widget.type === 'featured' && (
+                  <input
+                    type="text"
+                    defaultValue={title}
+                    placeholder="Spotlight title"
+                    maxLength={160}
+                    className="w-full rounded border border-current/20 bg-transparent p-2 text-xl font-bold"
+                    onBlur={(event) =>
+                      void onUpdateWidgetConfig(
+                        widget.id,
+                        'title',
+                        event.target.value,
+                      )
+                    }
+                  />
+                )}
+
+                <textarea
+                  defaultValue={widget.config?.content ?? ''}
+                  placeholder={
+                    widget.type === 'featured'
+                      ? 'Write your Spotlight content...'
+                      : 'Write your custom text...'
+                  }
+                  maxLength={20000}
+                  rows={5}
+                  className="w-full resize-y rounded border border-current/20 bg-transparent p-3"
+                  onBlur={(event) =>
+                    void onUpdateWidgetConfig(
+                      widget.id,
+                      'content',
+                      event.target.value,
+                    )
+                  }
+                />
+
+                {savingWidgetConfig && (
+                  <p className="text-xs opacity-50">Saving...</p>
+                )}
+
+                {widgetConfigError && (
+                  <p className="error-feedback">{widgetConfigError}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                {widget.type === 'featured' && title.trim() && (
+                  <h2 className="mb-4 text-xl font-bold">{title}</h2>
+                )}
+
+                <HorizontalHR />
+
+                <ProfileContent html={widget.config?.content ?? ''} />
+              </>
+            )}
+          </section>
+        )
+      }
+
       default:
         return (
           <section
             key={widget.id}
             className="mb-6 rounded border border-current/10 p-4"
           >
-            <h2 className="font-bold capitalize">
-              {widget.type === 'customText' ? 'Custom text' : widget.type}
-            </h2>
+            <h2 className="font-bold capitalize">{widget.type}</h2>
             <p className="mt-2 text-sm opacity-50">
               This widget has not been implemented yet.
             </p>

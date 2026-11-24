@@ -38,6 +38,12 @@ const updateTaglineSchema = z.object({
 const profileWidgetSchema = z.object({
   id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/),
   type: z.enum(PROFILE_WIDGET_TYPES),
+  config: z
+    .object({
+      title: z.string().optional(),
+      content: z.string().optional(),
+    })
+    .optional(),
 })
 
 const profileColumnSchema = z.object({
@@ -143,7 +149,15 @@ function normalizeProfileLayout(value: unknown) {
               return []
             }
 
-            return [{ id: widget.id, type }]
+            const parsedWidget = profileWidgetSchema.safeParse({
+              id: widget.id,
+              type,
+              ...('config' in widget ? { config: widget.config } : {}),
+            })
+
+            return parsedWidget.success
+              ? [parsedWidget.data]
+              : [{ id: widget.id, type }]
           }),
         }
       })

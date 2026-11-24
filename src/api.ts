@@ -172,6 +172,10 @@ export async function chatApiRequest<T>(
 export interface ProfileWidget {
   id: string
   type: ProfileWidgetType
+  config?: {
+    title?: string
+    content?: string
+  }
 }
 
 export interface ProfileColumn {

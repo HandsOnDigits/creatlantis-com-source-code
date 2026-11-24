@@ -36,6 +36,10 @@ function Profile() {
     useState<PublicProfileCustomization | null>(null)
 
   const [layout, setLayout] = useState<ProfileLayout | null>(null)
+  const [savingWidgetConfig, setSavingWidgetConfig] = useState(false)
+  const [widgetConfigError, setWidgetConfigError] = useState<string | null>(
+    null,
+  )
 
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -94,6 +98,48 @@ function Profile() {
       setNoteError(err instanceof Error ? err.message : 'Failed to send note.')
     } finally {
       setNoteSending(false)
+    }
+  }
+
+  async function updateWidgetConfig(
+    widgetId: string,
+    field: 'title' | 'content',
+    value: string,
+  ) {
+    if (!layout || !profile || user?.identityId !== profile.identityId) {
+      return
+    }
+
+    const updatedLayout: ProfileLayout = {
+      ...layout,
+      columns: layout.columns.map((column) => ({
+        ...column,
+        widgets: column.widgets.map((widget) =>
+          widget.id === widgetId
+            ? {
+                ...widget,
+                config: {
+                  ...widget.config,
+                  [field]: value,
+                },
+              }
+            : widget,
+        ),
+      })),
+    }
+
+    try {
+      setSavingWidgetConfig(true)
+      setWidgetConfigError(null)
+
+      const response = await profilesApi.updateMyLayout(updatedLayout)
+      setLayout(response.data.layout)
+    } catch (err) {
+      setWidgetConfigError(
+        err instanceof Error ? err.message : 'Failed to save widget.',
+      )
+    } finally {
+      setSavingWidgetConfig(false)
     }
   }
 
@@ -442,6 +488,10 @@ function Profile() {
           profile={profile}
           customization={customization}
           layout={layout}
+          canEditWidgets={user?.identityId === profile.identityId}
+          onUpdateWidgetConfig={updateWidgetConfig}
+          savingWidgetConfig={savingWidgetConfig}
+          widgetConfigError={widgetConfigError}
           galleryPosts={galleryPosts}
           galleryLoading={galleryLoading}
           galleryHasMore={galleryHasMore}
