@@ -21,7 +21,7 @@ interface CollectionProps {
 }
 
 function Collection({ collectionType, search, sort }: CollectionProps) {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const selectedTag = searchParams.get('tag')?.trim().toLowerCase() ?? ''
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
@@ -151,6 +151,7 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
         : selectedCategory
           ? `${selectedCategory.name} Posts`
           : 'All Posts'
+
   return (
     <div className="flex min-h-screen">
       {/* Category Selection */}
@@ -163,7 +164,13 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
             className={`cursor-pointer transition-colors ${
               selectedCategoryId === null ? 'selected-index' : ''
             }`}
-            onClick={() => setSelectedCategoryId(null)}
+            onClick={() => {
+              setSelectedCategoryId(null)
+              setSearchParams((params) => {
+                params.delete('tag')
+                return params
+              })
+            }}
           >
             All
           </li>
@@ -206,14 +213,19 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
 
           {/* Masonry Layout */}
           {!loading && !error && collectionType === 'posts' && (
-            <div className="columns-1 gap-6 space-y-6 sm:columns-2 lg:columns-3">
+            <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:block lg:columns-[500px]">
               {posts.map((post) => (
                 <article
                   key={post.id}
-                  className="cursor-pointer break-inside-avoid"
+                  className="mb-3 w-full max-w-150 cursor-pointer overflow-hidden lg:break-inside-avoid"
                 >
                   <Link to={`/posts/${post.id}`} className="block">
-                    <h3 className="mb-2 font-semibold">{post.title}</h3>
+                    <h3
+                      className="mb-2 truncate font-semibold"
+                      title={post.title}
+                    >
+                      {post.title}
+                    </h3>
 
                     {post.type === 'IMAGE' && (
                       <div className="space-y-4">
