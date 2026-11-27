@@ -363,7 +363,7 @@ function Post() {
                   <Link
                     key={tag.id}
                     to={`/?tag=${encodeURIComponent(tag.name)}`}
-                    className="rounded-full border px-3 py-1 text-sm transition-colors hover:bg-white/10"
+                    className="border-style bg-background-blend px-3 py-1"
                   >
                     #{tag.name}
                   </Link>
