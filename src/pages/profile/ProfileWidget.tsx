@@ -66,24 +66,26 @@ function SpotlightCarousel({ posts }: SpotlightCarouselProps) {
   const firstImage = post.images?.[0]
 
   return (
-    <div className="flex flex-col gap-3">
-      <Link to={`/posts/${post.id}`} className="block overflow-hidden rounded">
-        {firstImage?.variants?.length ? (
-          <Image
-            variants={firstImage.variants}
-            alt={post.title}
-            className="max-h-125 w-full object-contain"
-          />
-        ) : post.type === 'JOURNAL' && post.content ? (
-          <div className="rounded bg-current/5 p-4">
-            <Journal content={post.content} />
-          </div>
-        ) : null}
+    <div className="flex flex-col items-center">
+      <div className="h-200 max-w-200 min-w-125">
+        <Link to={`/posts/${post.id}`}>
+          {firstImage?.variants?.length ? (
+            <Image
+              variants={firstImage.variants}
+              alt={post.title}
+              className="object-contain"
+            />
+          ) : post.type === 'JOURNAL' && post.content ? (
+            <div className="rounded bg-current/5 p-4">
+              <Journal content={post.content} />
+            </div>
+          ) : null}
 
-        <h3 className="mt-2 text-lg font-medium">
-          {post.title || 'Untitled post'}
-        </h3>
-      </Link>
+          <h3 className="mt-2 text-lg font-medium">
+            {post.title || 'Untitled post'}
+          </h3>
+        </Link>
+      </div>
 
       {posts.length > 1 && (
         <div className="flex items-center justify-center gap-3">
