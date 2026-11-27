@@ -146,10 +146,11 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
   const heading =
     collectionType === 'users'
       ? 'Users'
-      : selectedCategory
-        ? `${selectedCategory.name} Posts`
-        : 'All Posts'
-
+      : selectedTag
+        ? `#${selectedTag} Posts`
+        : selectedCategory
+          ? `${selectedCategory.name} Posts`
+          : 'All Posts'
   return (
     <div className="flex min-h-screen">
       {/* Category Selection */}
