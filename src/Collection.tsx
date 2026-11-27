@@ -22,7 +22,16 @@ interface CollectionProps {
 
 function Collection({ collectionType, search, sort }: CollectionProps) {
   const [searchParams, setSearchParams] = useSearchParams()
-  const selectedTag = searchParams.get('tag')?.trim().toLowerCase() ?? ''
+
+  const urlTag = searchParams.get('tag')?.trim().toLowerCase() ?? ''
+
+  const searchTags = search
+    .split(/\s+/)
+    .filter((part) => part.startsWith('#'))
+    .map((tag) => tag.slice(1).toLowerCase())
+    .filter(Boolean)
+
+  const selectedTags = urlTag ? [urlTag] : searchTags
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   )
@@ -79,8 +88,8 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
           50,
           selectedCategoryId ?? undefined,
           sort,
-          search,
-          selectedTag || undefined,
+          search.replace(/(?:^|\s)#[^\s]+/g, ' ').trim() || undefined,
+          selectedTags.length > 0 ? selectedTags.join(',') : undefined,
         )
 
         if (!cancelled) {
@@ -102,7 +111,7 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
     return () => {
       cancelled = true
     }
-  }, [selectedCategoryId, collectionType, search, sort, selectedTag])
+  }, [selectedCategoryId, collectionType, search, sort, selectedTags.join(',')])
 
   // Load public users.
   useEffect(() => {
@@ -137,7 +146,11 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
     return () => {
       cancelled = true
     }
-  }, [collectionType, search, sort])
+  }, [
+    collectionType,
+    search.replace(/(?:^|\s)#[^\s]+/g, ' ').trim() || undefined,
+    sort,
+  ])
 
   const selectedCategory = categories.find(
     (category) => category.id === selectedCategoryId,
@@ -146,8 +159,8 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
   const heading =
     collectionType === 'users'
       ? 'Users'
-      : selectedTag
-        ? `#${selectedTag} Posts`
+      : selectedTags.length > 0
+        ? `${selectedTags.map((tag) => `#${tag}`).join(' ')} Posts`
         : selectedCategory
           ? `${selectedCategory.name} Posts`
           : 'All Posts'
