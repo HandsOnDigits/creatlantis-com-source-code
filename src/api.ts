@@ -486,6 +486,10 @@ export interface Post {
   id: number
   type: PostType
   title: string
+  tags?: {
+    id: string
+    name: string
+  }[]
   content: string | null
   createdAt: string
   authorId: number
@@ -496,6 +500,7 @@ export interface Post {
 export interface CreatePostInput {
   type?: PostType
   title: string
+  tags?: string[]
   content?: string | null
   mediaIds?: string[]
   categoryIds?: number[]
@@ -527,6 +532,7 @@ export const postsApi = {
     categoryId?: number,
     sort: 'newest' | 'oldest' | 'alphabetical' = 'newest',
     search?: string,
+    tag?: string,
   ) {
     const params = new URLSearchParams({
       page: String(page),
@@ -540,6 +546,10 @@ export const postsApi = {
 
     if (search?.trim()) {
       params.set('search', search.trim())
+    }
+
+    if (tag?.trim()) {
+      params.set('tags', tag.trim())
     }
 
     return api.get<PostListResponse>(`/api/posts?${params}`, {

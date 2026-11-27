@@ -39,16 +39,20 @@ function Upload() {
   const { type } = useParams<{ type: string }>()
 
   const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [status, setStatus] = useState('')
-  const [error, setError] = useState('')
+  const [tagsInput, setTagsInput] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [categorySearch, setCategorySearch] = useState('')
+
+  const [content, setContent] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const [status, setStatus] = useState('')
+  const [error, setError] = useState('')
+
   const uploadController = useRef<AbortController | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
@@ -137,16 +141,21 @@ function Upload() {
       await postsApi.create({
         type: apiPostTypes[postType],
         title,
+        tags: tagsInput
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        categoryIds: selectedCategoryIds,
         content: content || null,
         mediaIds,
-        categoryIds: selectedCategoryIds,
       })
 
       setStatus('Post created successfully.')
       setTitle('')
+      setTagsInput('')
+      setSelectedCategoryIds([])
       setContent('')
       setFile(null)
-      setSelectedCategoryIds([])
 
       const fileInput = document.getElementById(
         'post-file',
@@ -271,6 +280,21 @@ function Upload() {
                   ).length === 0 && <p>No matching categories.</p>}
               </div>
             )}
+          </div>
+
+          {/* Tag selection */}
+          <div className="submit-input item flex-col">
+            <label htmlFor="post-tags">Tags</label>
+            <input
+              id="post-tags"
+              type="text"
+              value={tagsInput}
+              onChange={(event) => setTagsInput(event.target.value)}
+              placeholder="digital-art, 3d, photography"
+            />
+            <p className="text-sm opacity-70">
+              Separate tags with commas. Maximum 20 tags, 30 characters each.
+            </p>
           </div>
 
           {/* File inputs */}

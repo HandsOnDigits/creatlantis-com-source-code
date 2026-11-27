@@ -345,7 +345,7 @@ function Post() {
           )}
 
           {/* Metadata */}
-          <div className="bg-background-blend flex flex-col items-center">
+          <div className="bg-background-blend flex flex-col items-center pb-4">
             <HorizontalHR />
 
             {post.content && post.type !== 'JOURNAL' && (
@@ -355,6 +355,21 @@ function Post() {
             )}
 
             {post.type === 'MODEL' && <p>Model posts are not available yet.</p>}
+
+            {/* Tags */}
+            {post.tags && post.tags.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {post.tags.map((tag) => (
+                  <Link
+                    key={tag.id}
+                    to={`/?tag=${encodeURIComponent(tag.name)}`}
+                    className="rounded-full border px-3 py-1 text-sm transition-colors hover:bg-white/10"
+                  >
+                    #{tag.name}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </main>

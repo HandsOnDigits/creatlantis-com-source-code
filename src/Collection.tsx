@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import type { CollectionType, CollectionSort } from './SearchAndFilter'
 
@@ -21,6 +21,8 @@ interface CollectionProps {
 }
 
 function Collection({ collectionType, search, sort }: CollectionProps) {
+  const [searchParams] = useSearchParams()
+  const selectedTag = searchParams.get('tag')?.trim().toLowerCase() ?? ''
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   )
@@ -78,6 +80,7 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
           selectedCategoryId ?? undefined,
           sort,
           search,
+          selectedTag || undefined,
         )
 
         if (!cancelled) {
@@ -99,7 +102,7 @@ function Collection({ collectionType, search, sort }: CollectionProps) {
     return () => {
       cancelled = true
     }
-  }, [selectedCategoryId, collectionType, search, sort])
+  }, [selectedCategoryId, collectionType, search, sort, selectedTag])
 
   // Load public users.
   useEffect(() => {
