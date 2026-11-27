@@ -44,6 +44,10 @@
       "model": "PostMedia",
       "namespace": "public"
     },
+    "PostTag": {
+      "model": "PostTag",
+      "namespace": "public"
+    },
     "ProfileCustomization": {
       "model": "ProfileCustomization",
       "namespace": "public"
@@ -54,6 +58,10 @@
     },
     "Session": {
       "model": "Session",
+      "namespace": "public"
+    },
+    "Tag": {
+      "model": "Tag",
       "namespace": "public"
     },
     "UploadReservation": {
@@ -1273,6 +1281,21 @@
                   "model": "PostMedia",
                   "namespace": "public"
                 }
+              },
+              "tags": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "postId"
+                  ]
+                },
+                "to": {
+                  "model": "PostTag",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -1387,6 +1410,80 @@
               },
               "namespaceId": "public",
               "table": "PostMedia"
+            }
+          },
+          "PostTag": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "postId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "tagId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "post": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "postId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Post",
+                  "namespace": "public"
+                }
+              },
+              "tag": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "tagId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tag",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "postId": {
+                  "column": "postId"
+                },
+                "tagId": {
+                  "column": "tagId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "PostTag"
             }
           },
           "ProfileCustomization": {
@@ -1641,6 +1738,73 @@
               },
               "namespaceId": "public",
               "table": "Session"
+            }
+          },
+          "Tag": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "normalizedName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "posts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "tagId"
+                  ]
+                },
+                "to": {
+                  "model": "PostTag",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "normalizedName": {
+                  "column": "normalizedName"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Tag"
             }
           },
           "UploadReservation": {
@@ -3402,6 +3566,105 @@
                 }
               ]
             },
+            "PostTag": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "postId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "tagId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "PostTag_postId_idx_a7a72715"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "postId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "PostTag"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Post"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "PostTag_tagId_idx_86854244"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "tagId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "PostTag"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Tag"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "postId"
+                  ],
+                  "name": "PostTag_postId_idx_a7a72715",
+                  "prefix": "PostTag_postId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tagId"
+                  ],
+                  "name": "PostTag_tagId_idx_86854244",
+                  "prefix": "PostTag_tagId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tagId",
+                    "postId"
+                  ],
+                  "name": "PostTag_tagId_postId_idx_f3e733b5",
+                  "prefix": "PostTag_tagId_postId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "postId",
+                  "tagId"
+                ]
+              },
+              "uniques": []
+            },
             "ProfileCustomization": {
               "columns": {
                 "createdAt": {
@@ -3641,6 +3904,57 @@
                 {
                   "columns": [
                     "refreshTokenHash"
+                  ]
+                }
+              ]
+            },
+            "Tag": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "normalizedName": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "name"
+                  ],
+                  "name": "Tag_name_idx_ce87e6ba",
+                  "prefix": "Tag_name_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "normalizedName"
                   ]
                 }
               ]
@@ -4119,10 +4433,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "2246bd16b53e2e7781fccaf57b5fdc62c0f9893cb0bbf1e98d7a2bad4c883bc3"
+    "storageHash": "a6725a09d7b7c4d2168a447e6f45eaf66c0cb533a55d79a51003296d3e566202"
   },
   "execution": {
-    "executionHash": "1a4300e501ae749078cbc524e83d2355fa9e18a3a51d8a31098c0b95d43aba21",
+    "executionHash": "169af2f3640aaf4a7a62ca5cccfffb0540e696aeb843390453b7b037b014b818",
     "mutations": {
       "defaults": [
         {
@@ -4299,6 +4613,17 @@
           },
           "ref": {
             "entry": "Session",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Tag",
             "field": "id",
             "namespace": "public"
           }

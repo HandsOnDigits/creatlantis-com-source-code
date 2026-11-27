@@ -14,6 +14,7 @@ const postListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(10),
   sort: z.enum(['newest', 'oldest', 'alphabetical']).default('newest'),
   search: z.string().trim().min(1).max(100).optional(),
+  tags: z.string().optional(),
 })
 
 function parseCategoryId(value: unknown): number | null {
@@ -48,6 +49,28 @@ router.get('/', async (req, res) => {
   }
 
   const { page, limit, sort, search } = parsed.data
+
+  const tags = parsed.data.tags
+    ? [
+        ...new Set(
+          parsed.data.tags
+            .split(',')
+            .map((tag) => tag.trim().replace(/^#/, '').toLowerCase()),
+        ),
+      ]
+    : []
+
+  if (
+    tags.length > 20 ||
+    tags.some(
+      (tag) => tag.length < 1 || tag.length > 30 || !/^[a-z0-9_-]+$/.test(tag),
+    )
+  ) {
+    return res.status(400).json({
+      error: 'Invalid tags parameter',
+    })
+  }
+
   const pageSize = limit
   const offset = (page - 1) * pageSize
 
@@ -101,11 +124,22 @@ router.get('/', async (req, res) => {
           OR strpos(lower(p."title"), lower($2)) > 0
           OR strpos(lower(COALESCE(p."content", '')), lower($2)) > 0
         )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM unnest($3::text[]) AS selected_tag(name)
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM public."PostTag" pt
+            JOIN public."Tag" t ON t."id" = pt."tagId"
+            WHERE pt."postId" = p."id"
+              AND t."normalizedName" = selected_tag.name
+          )
+        )
         ORDER BY ${orderBy}
-      LIMIT $3
-      OFFSET $4
+      LIMIT $4
+      OFFSET $5
     `,
-    [categoryId, search ?? null, pageSize + 1, offset],
+    [categoryId, search ?? null, tags, pageSize + 1, offset],
   )
 
   const hasMore = result.rows.length > pageSize
@@ -125,6 +159,18 @@ router.get('/', async (req, res) => {
 
   const data = await Promise.all(
     pagePosts.map(async (post) => {
+      const postTags = await db.orm.public.PostTag.where({
+        postId: post.id,
+      }).all()
+
+      const tags = await Promise.all(
+        postTags.map(async (postTag) =>
+          db.orm.public.Tag.where({ id: postTag.tagId })
+            .select('id', 'name')
+            .first(),
+        ),
+      )
+
       const author = await db.orm.public.User.where({ id: post.authorId })
         .select('id', 'username', 'name', 'nameIsPublic')
         .first()
@@ -178,6 +224,7 @@ router.get('/', async (req, res) => {
 
       return {
         ...post,
+        tags: tags.filter((tag) => tag !== null),
         author: author
           ? {
               id: author.id,
@@ -210,6 +257,22 @@ const createPostSchema = z
     content: z.string().max(50000).nullable().optional(),
     mediaIds: z.array(z.string().uuid()).max(20).default([]),
     categoryIds: z.array(z.number().int().positive()).max(50).default([]),
+    tags: z
+      .array(
+        z
+          .string()
+          .trim()
+          .transform((value) => value.replace(/^#/, '').toLowerCase())
+          .pipe(
+            z
+              .string()
+              .min(1)
+              .max(30)
+              .regex(/^[a-z0-9_-]+$/),
+          ),
+      )
+      .max(20)
+      .default([]),
   })
   .refine((data) => data.type !== 'MODEL', {
     message: 'Model posts are not available yet',
@@ -232,6 +295,10 @@ const createPostSchema = z
     path: ['mediaIds'],
   })
 
+function normalizeTags(tags: string[]): string[] {
+  return [...new Set(tags)]
+}
+
 router.post('/', requireAuth, async (req, res) => {
   const parsed = createPostSchema.safeParse(req.body)
 
@@ -242,7 +309,8 @@ router.post('/', requireAuth, async (req, res) => {
     })
   }
 
-  const { type, title, content, mediaIds, categoryIds } = parsed.data
+  const { type, title, content, mediaIds, categoryIds, tags } = parsed.data
+  const uniqueTags = normalizeTags(tags)
   const userId = req.auth!.userId
 
   const post = await db.transaction(async (tx) => {
@@ -281,6 +349,31 @@ router.post('/', requireAuth, async (req, res) => {
       publicationStatus: 'PENDING_APPROVAL',
     })
 
+    if (uniqueTags.length > 0) {
+      await tx.orm.public.Tag.createAll(
+        uniqueTags.map((name) => ({
+          name,
+          normalizedName: name,
+        })),
+        { onConflict: 'skip' },
+      )
+    }
+
+    for (const normalizedName of uniqueTags) {
+      const tag = await tx.orm.public.Tag.where({ normalizedName })
+        .select('id')
+        .first()
+
+      if (!tag) {
+        throw new Error(`Failed to retrieve tag: ${normalizedName}`)
+      }
+
+      await tx.orm.public.PostTag.create({
+        postId: createdPost.id,
+        tagId: tag.id,
+      })
+    }
+
     // Attach categories in the supplied order.
     for (const [position, categoryId] of categoryIds.entries()) {
       await tx.orm.public.CategoryPost.create({
@@ -299,7 +392,24 @@ router.post('/', requireAuth, async (req, res) => {
       })
     }
 
-    return createdPost
+    const postTags = await tx.orm.public.PostTag.where({
+      postId: createdPost.id,
+    }).all()
+
+    const tags = await Promise.all(
+      postTags.map(async (postTag) => {
+        const tag = await tx.orm.public.Tag.where({ id: postTag.tagId })
+          .select('id', 'name')
+          .first()
+
+        return tag
+      }),
+    )
+
+    return {
+      ...createdPost,
+      tags: tags.filter((tag) => tag !== null),
+    }
   })
 
   if (!post) {
@@ -340,6 +450,18 @@ router.get('/:id', async (req, res) => {
   if (!post) {
     return res.status(404).json({ error: 'Post not found' })
   }
+
+  const postTags = await db.orm.public.PostTag.where({
+    postId: post.id,
+  }).all()
+
+  const tags = await Promise.all(
+    postTags.map(async (postTag) =>
+      db.orm.public.Tag.where({ id: postTag.tagId })
+        .select('id', 'name')
+        .first(),
+    ),
+  )
 
   const author = await db.orm.public.User.where({ id: post.authorId })
     .select('id', 'username', 'name', 'nameIsPublic')
@@ -395,6 +517,7 @@ router.get('/:id', async (req, res) => {
   return res.json({
     data: {
       ...post,
+      tags: tags.filter((tag) => tag !== null),
       author: author
         ? {
             id: author.id,
@@ -515,6 +638,18 @@ router.get('/user/:username', async (req, res) => {
 
   const data = await Promise.all(
     pagePosts.map(async (post) => {
+      const postTags = await db.orm.public.PostTag.where({
+        postId: post.id,
+      }).all()
+
+      const tags = await Promise.all(
+        postTags.map(async (postTag) =>
+          db.orm.public.Tag.where({ id: postTag.tagId })
+            .select('id', 'name')
+            .first(),
+        ),
+      )
+
       const postMedia = await db.orm.public.PostMedia.where({
         postId: post.id,
       })
@@ -557,6 +692,7 @@ router.get('/user/:username', async (req, res) => {
 
       return {
         ...post,
+        tags: tags.filter((tag) => tag !== null),
         author: {
           id: user.id,
           username: user.username,

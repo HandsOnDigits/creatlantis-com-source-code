@@ -240,8 +240,10 @@ model Post {
   reviewedByAdminId String?
   rejectionReason   String?
 
-  media      PostMedia[]
+  media PostMedia[]
+
   categories CategoryPost[]
+  tags       PostTag[]
 }
 
 model PostMedia {
@@ -318,6 +320,32 @@ model CategoryPost {
   @@id([categoryId, postId])
   @@index([postId])
   @@index([categoryId, position])
+}
+
+model Tag {
+  id String @id @onCreate(uuid())
+
+  name           String
+  normalizedName String @unique
+
+  posts PostTag[]
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([name])
+}
+
+model PostTag {
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId Int
+
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId String
+
+  createdAt TimestamptzString @default(now())
+
+  @@id([postId, tagId])
+  @@index([tagId, postId])
 }
 
 model Notification {

@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'2246bd16b53e2e7781fccaf57b5fdc62c0f9893cb0bbf1e98d7a2bad4c883bc3'>;
+  StorageHashBase<'a6725a09d7b7c4d2168a447e6f45eaf66c0cb533a55d79a51003296d3e566202'>;
 export type ExecutionHash =
-  ExecutionHashBase<'1a4300e501ae749078cbc524e83d2355fa9e18a3a51d8a31098c0b95d43aba21'>;
+  ExecutionHashBase<'169af2f3640aaf4a7a62ca5cccfffb0540e696aeb843390453b7b037b014b818'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -581,7 +581,8 @@ export namespace Models {
     author: public_User;
     categories: public_CategoryPost[];
     media: public_PostMedia[];
-    readonly [RelationKeys]?: 'author' | 'categories' | 'media';
+    tags: public_PostTag[];
+    readonly [RelationKeys]?: 'author' | 'categories' | 'media' | 'tags';
   };
   export type public_PostMedia = {
     mediaId: FieldOutputTypes['public']['PostMedia']['mediaId'];
@@ -590,6 +591,14 @@ export namespace Models {
     media: public_Media;
     post: public_Post;
     readonly [RelationKeys]?: 'media' | 'post';
+  };
+  export type public_PostTag = {
+    createdAt: FieldOutputTypes['public']['PostTag']['createdAt'];
+    postId: FieldOutputTypes['public']['PostTag']['postId'];
+    tagId: FieldOutputTypes['public']['PostTag']['tagId'];
+    post: public_Post;
+    tag: public_Tag;
+    readonly [RelationKeys]?: 'post' | 'tag';
   };
   export type public_ProfileCustomization = {
     createdAt: FieldOutputTypes['public']['ProfileCustomization']['createdAt'];
@@ -619,6 +628,14 @@ export namespace Models {
     userId: FieldOutputTypes['public']['Session']['userId'];
     user: public_User;
     readonly [RelationKeys]?: 'user';
+  };
+  export type public_Tag = {
+    createdAt: FieldOutputTypes['public']['Tag']['createdAt'];
+    id: FieldOutputTypes['public']['Tag']['id'];
+    name: FieldOutputTypes['public']['Tag']['name'];
+    normalizedName: FieldOutputTypes['public']['Tag']['normalizedName'];
+    posts: public_PostTag[];
+    readonly [RelationKeys]?: 'posts';
   };
   export type public_UploadReservation = {
     contentType: FieldOutputTypes['public']['UploadReservation']['contentType'];
@@ -707,9 +724,11 @@ export declare const models: {
     NotificationPreference: Models.public_NotificationPreference;
     Post: Models.public_Post;
     PostMedia: Models.public_PostMedia;
+    PostTag: Models.public_PostTag;
     ProfileCustomization: Models.public_ProfileCustomization;
     ProfileLayout: Models.public_ProfileLayout;
     Session: Models.public_Session;
+    Tag: Models.public_Tag;
     UploadReservation: Models.public_UploadReservation;
     User: Models.public_User;
     UserAvatar: Models.public_UserAvatar;
@@ -1592,6 +1611,77 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly PostTag: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly postId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly tagId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['postId', 'tagId'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'PostTag_postId_idx_a7a72715';
+                  readonly prefix: 'PostTag_postId_idx';
+                  readonly columns: readonly ['postId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'PostTag_tagId_idx_86854244';
+                  readonly prefix: 'PostTag_tagId_idx';
+                  readonly columns: readonly ['tagId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'PostTag_tagId_postId_idx_f3e733b5';
+                  readonly prefix: 'PostTag_tagId_postId_idx';
+                  readonly columns: readonly ['tagId', 'postId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'PostTag';
+                    readonly columns: readonly ['postId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Post';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'PostTag';
+                    readonly columns: readonly ['tagId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Tag';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly ProfileCustomization: {
               columns: {
                 readonly createdAt: {
@@ -1782,6 +1872,46 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly Tag: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly normalizedName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['normalizedName'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'Tag_name_idx_ce87e6ba';
+                  readonly prefix: 'Tag_name_idx';
+                  readonly columns: readonly ['name'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly UploadReservation: {
               columns: {
@@ -2218,6 +2348,7 @@ type ContractBase = Omit<
     };
     readonly Post: { readonly namespace: 'public' & NamespaceId; readonly model: 'Post' };
     readonly PostMedia: { readonly namespace: 'public' & NamespaceId; readonly model: 'PostMedia' };
+    readonly PostTag: { readonly namespace: 'public' & NamespaceId; readonly model: 'PostTag' };
     readonly ProfileCustomization: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ProfileCustomization';
@@ -2227,6 +2358,7 @@ type ContractBase = Omit<
       readonly model: 'ProfileLayout';
     };
     readonly Session: { readonly namespace: 'public' & NamespaceId; readonly model: 'Session' };
+    readonly Tag: { readonly namespace: 'public' & NamespaceId; readonly model: 'Tag' };
     readonly UploadReservation: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'UploadReservation';
@@ -2898,6 +3030,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['postId'];
                 };
               };
+              readonly tags: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PostTag';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['postId'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'Post';
@@ -2962,6 +3105,54 @@ type ContractBase = Omit<
                 readonly mediaId: { readonly column: 'mediaId' };
                 readonly position: { readonly column: 'position' };
                 readonly postId: { readonly column: 'postId' };
+              };
+            };
+          };
+          readonly PostTag: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly postId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly tagId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly post: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Post' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['postId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly tag: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Tag' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['tagId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'PostTag';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly postId: { readonly column: 'postId' };
+                readonly tagId: { readonly column: 'tagId' };
               };
             };
           };
@@ -3128,6 +3319,52 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly refreshTokenHash: { readonly column: 'refreshTokenHash' };
                 readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
+          readonly Tag: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly normalizedName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly posts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PostTag';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['tagId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Tag';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly normalizedName: { readonly column: 'normalizedName' };
               };
             };
           };
@@ -3781,6 +4018,14 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'Session';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Tag';
             readonly field: 'id';
             readonly namespace: 'public';
           };
