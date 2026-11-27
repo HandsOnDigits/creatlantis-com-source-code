@@ -1,6 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { Link, useParams } from 'react-router-dom'
+
+import { useAuth } from '../AuthContext'
 
 import { HorizontalHR, ProfileIcon } from '../Utilites'
 
@@ -35,6 +41,7 @@ function getLargestImage(variants: PostImageVariant[]) {
 
 function Post() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
 
   const [post, setPost] = useState<PostData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -298,6 +305,15 @@ function Post() {
         {/* Post Header */}
         <header>
           <h1 className="big-text font-bold">{post.title}</h1>
+
+          {user?.id === post.authorId && (
+            <Link
+              to={`/posts/${post.id}/edit`}
+              className="mt-3 inline-block underline transition-opacity hover:opacity-60"
+            >
+              Edit post
+            </Link>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-3 text-sm opacity-60">
             {post.author && <span>By {name}</span>}

@@ -506,6 +506,21 @@ export interface CreatePostInput {
   categoryIds?: number[]
 }
 
+export interface UpdatePostInput {
+  title?: string
+  content?: string | null
+  tags?: string[]
+  categoryIds?: number[]
+}
+
+export interface EditablePost extends Post {
+  publicationStatus: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED'
+  categories: {
+    id: number
+    name: string
+  }[]
+}
+
 export interface ProfileCustomization {
   id?: string
   userId?: number
@@ -562,6 +577,16 @@ export const postsApi = {
     return api.get<ApiResponse<Post>>(`/api/posts/${id}`, {
       authenticated: false,
     })
+  },
+
+  // GET /api/posts/:id/edit
+  getForEdit(id: number) {
+    return api.get<ApiResponse<EditablePost>>(`/api/posts/${id}/edit`)
+  },
+
+  // PATCH /api/posts/:id
+  update(id: number, input: UpdatePostInput) {
+    return api.patch<ApiResponse<EditablePost>>(`/api/posts/${id}`, input)
   },
 
   // POST /api/posts

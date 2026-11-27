@@ -295,9 +295,325 @@ const createPostSchema = z
     path: ['mediaIds'],
   })
 
+const updatePostSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200).optional(),
+
+    content: z.string().max(50000).nullable().optional(),
+
+    tags: z
+      .array(
+        z
+          .string()
+          .trim()
+          .transform((value) => value.replace(/^#/, '').toLowerCase())
+          .pipe(
+            z
+              .string()
+              .min(1)
+              .max(30)
+              .regex(/^[a-z0-9_-]+$/),
+          ),
+      )
+      .max(20)
+      .optional(),
+
+    categoryIds: z.array(z.number().int().positive()).max(50).optional(),
+  })
+  .strict()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided.',
+  })
+
+class InvalidPostCategoryError extends Error {
+  constructor(public readonly categoryId: number) {
+    super(`Invalid category ID: ${categoryId}`)
+    this.name = 'InvalidPostCategoryError'
+  }
+}
+
 function normalizeTags(tags: string[]): string[] {
   return [...new Set(tags)]
 }
+
+// Get a post owned by the authenticated user for editing.
+// Unlike the public endpoint, this also returns pending and rejected posts.
+router.get('/:id/edit', requireAuth, async (req, res) => {
+  const postId = parsePostId(req.params.id)
+
+  if (!postId) {
+    return res.status(400).json({
+      error: 'Invalid post ID.',
+    })
+  }
+
+  const userId = req.auth!.userId
+
+  const post = await db.orm.public.Post.where({
+    id: postId,
+    authorId: userId,
+  })
+    .select('id', 'type', 'title', 'content', 'createdAt', 'publicationStatus')
+    .first()
+
+  if (!post) {
+    return res.status(404).json({
+      error: 'Post not found.',
+    })
+  }
+
+  const postTags = await db.orm.public.PostTag.where({
+    postId,
+  }).all()
+
+  const tags = await Promise.all(
+    postTags.map(async (association) =>
+      db.orm.public.Tag.where({ id: association.tagId })
+        .select('id', 'name')
+        .first(),
+    ),
+  )
+
+  const postCategories = await db.orm.public.CategoryPost.where({
+    postId,
+  })
+    .orderBy((association) => association.position.asc())
+    .all()
+
+  const categories = await Promise.all(
+    postCategories.map(async (association) =>
+      db.orm.public.Category.where({ id: association.categoryId })
+        .select('id', 'name')
+        .first(),
+    ),
+  )
+
+  return res.json({
+    data: {
+      ...post,
+      tags: tags.filter((tag) => tag !== null),
+      categories: categories.filter((category) => category !== null),
+    },
+  })
+})
+
+router.patch('/:id', requireAuth, async (req, res) => {
+  const postId = parsePostId(req.params.id)
+
+  if (!postId) {
+    return res.status(400).json({
+      error: 'Invalid post ID.',
+    })
+  }
+
+  const parsed = updatePostSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Invalid post update.',
+      details: parsed.error.flatten(),
+    })
+  }
+
+  const userId = req.auth!.userId
+  const data = parsed.data
+
+  try {
+    const updatedPost = await db.transaction(async (tx) => {
+      const existingPost = await tx.orm.public.Post.where({
+        id: postId,
+        authorId: userId,
+      })
+        .select('id')
+        .first()
+
+      if (!existingPost) {
+        return null
+      }
+
+      // Update only explicitly supplied scalar fields.
+      const postUpdate: {
+        title?: string
+        content?: string | null
+      } = {}
+
+      if (data.title !== undefined) {
+        postUpdate.title = data.title
+      }
+
+      if (data.content !== undefined) {
+        postUpdate.content = data.content
+      }
+
+      if (Object.keys(postUpdate).length > 0) {
+        await tx.orm.public.Post.where({
+          id: postId,
+          authorId: userId,
+        }).update(postUpdate)
+      }
+
+      // Replace tags only when tags were supplied.
+      if (data.tags !== undefined) {
+        const uniqueTags = normalizeTags(data.tags)
+
+        const existingPostTags = await tx.orm.public.PostTag.where({
+          postId,
+        }).all()
+
+        for (const association of existingPostTags) {
+          await tx.orm.public.PostTag.where({
+            postId,
+            tagId: association.tagId,
+          }).delete()
+        }
+
+        if (uniqueTags.length > 0) {
+          await tx.orm.public.Tag.createAll(
+            uniqueTags.map((name) => ({
+              name,
+              normalizedName: name,
+            })),
+            { onConflict: 'skip' },
+          )
+
+          for (const normalizedName of uniqueTags) {
+            const tag = await tx.orm.public.Tag.where({ normalizedName })
+              .select('id')
+              .first()
+
+            if (!tag) {
+              throw new Error(`Failed to resolve tag: ${normalizedName}`)
+            }
+
+            await tx.orm.public.PostTag.create({
+              postId,
+              tagId: tag.id,
+            })
+          }
+        }
+      }
+
+      // Replace categories only when categoryIds were supplied.
+      if (data.categoryIds !== undefined) {
+        const uniqueCategoryIds = [...new Set(data.categoryIds)]
+
+        // Validate every category before changing existing associations.
+        for (const categoryId of uniqueCategoryIds) {
+          const category = await tx.orm.public.Category.where({
+            id: categoryId,
+          })
+            .select('id')
+            .first()
+
+          if (!category) {
+            throw new InvalidPostCategoryError(categoryId)
+          }
+        }
+
+        const existingPostCategories = await tx.orm.public.CategoryPost.where({
+          postId,
+        }).all()
+
+        for (const association of existingPostCategories) {
+          await tx.orm.public.CategoryPost.where({
+            postId,
+            categoryId: association.categoryId,
+          }).delete()
+        }
+
+        // Preserve the supplied category order.
+        for (const [position, categoryId] of uniqueCategoryIds.entries()) {
+          await tx.orm.public.CategoryPost.create({
+            postId,
+            categoryId,
+            position,
+          })
+        }
+      }
+
+      const post = await tx.orm.public.Post.where({
+        id: postId,
+        authorId: userId,
+      })
+        .select(
+          'id',
+          'type',
+          'title',
+          'content',
+          'createdAt',
+          'publicationStatus',
+        )
+        .first()
+
+      if (!post) {
+        throw new Error('Updated post could not be retrieved.')
+      }
+
+      const postTags = await tx.orm.public.PostTag.where({ postId }).all()
+
+      const tags = []
+
+      for (const association of postTags) {
+        const tag = await tx.orm.public.Tag.where({ id: association.tagId })
+          .select('id', 'name')
+          .first()
+
+        if (tag) {
+          tags.push(tag)
+        }
+      }
+
+      const postCategories = await tx.orm.public.CategoryPost.where({
+        postId,
+      })
+        .orderBy((association) => association.position.asc())
+        .all()
+
+      const categories = []
+
+      for (const association of postCategories) {
+        const category = await tx.orm.public.Category.where({
+          id: association.categoryId,
+        })
+          .select('id', 'name')
+          .first()
+
+        if (category) {
+          categories.push(category)
+        }
+      }
+
+      return {
+        ...post,
+        tags,
+        categories,
+      }
+    })
+
+    if (!updatedPost) {
+      return res.status(404).json({
+        error: 'Post not found.',
+      })
+    }
+
+    return res.json({
+      data: updatedPost,
+    })
+  } catch (error) {
+    if (error instanceof InvalidPostCategoryError) {
+      return res.status(400).json({
+        error: 'Invalid category ID.',
+        categoryId: error.categoryId,
+      })
+    }
+
+    console.error('Failed to update post:', error)
+
+    return res.status(500).json({
+      error: 'Failed to update post.',
+    })
+  }
+})
 
 router.post('/', requireAuth, async (req, res) => {
   const parsed = createPostSchema.safeParse(req.body)

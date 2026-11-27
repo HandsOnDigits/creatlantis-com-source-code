@@ -12,6 +12,7 @@ import Upload from './pages/Upload'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Post from './pages/Post'
+import EditPost from './pages/EditPost'
 import ProtectedRoute from './ProtectedRoute'
 import Profile from './pages/Profile'
 import ProfileEditor from './pages/ProfileEditor'
@@ -58,6 +59,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/posts/:id" element={<Post />} />
+        <Route path="/posts/:id/edit" element={<EditPost />} />
         <Route path="/settings" element={<Settings />} />
 
         {/* Public profile */}
