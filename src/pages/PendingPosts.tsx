@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { postsApi, type Post } from '../api'
 
+import { HorizontalHR } from '../Utilites'
+
+/* Images */
+import editIcon from '../assets/images/icons/editIcon.webp'
+
 function PendingPosts() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,8 +45,11 @@ function PendingPosts() {
   }, [])
 
   return (
-    <main className="bg-background-blend min-h-screen p-8">
-      <h1 className="big-text">Pending posts</h1>
+    <main className="bg-background-blend min-h-screen p-4">
+      <h1 className="extra-big-text">Pending posts</h1>
+
+      <HorizontalHR />
+
       <p className="mb-6">
         These posts are waiting for administrator approval. You can edit them
         while they are pending.
@@ -55,20 +63,22 @@ function PendingPosts() {
         <p>You have no posts waiting for approval.</p>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="bg-background-blend flex flex-col gap-4 overflow-y-scroll p-4">
         {posts.map((post) => (
-          <article key={post.id} className="border border-current/20 p-4">
-            <h2 className="text-xl font-semibold">{post.title}</h2>
+          <article
+            key={post.id}
+            className="border-style bg-background-blend flex justify-between p-4"
+          >
+            <div>
+              <h2 className="big-text font-semibold">{post.title}</h2>
 
-            <p className="text-sm opacity-70">
-              {post.type} · {new Date(post.createdAt).toLocaleDateString()}
-            </p>
+              <p className="text-sm opacity-70">
+                {post.type} · {new Date(post.createdAt).toLocaleDateString()}
+              </p>
+            </div>
 
-            <Link
-              to={`/posts/${post.id}/edit`}
-              className="mt-3 inline-block underline hover:opacity-60"
-            >
-              Edit post
+            <Link to={`/posts/${post.id}/edit`}>
+              <img title={`Edit post ${post.title}`} src={editIcon} />
             </Link>
           </article>
         ))}

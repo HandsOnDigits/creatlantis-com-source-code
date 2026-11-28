@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import {
   categoriesApi,
   mediaApi,
@@ -55,6 +55,8 @@ function Upload() {
 
   const uploadController = useRef<AbortController | null>(null)
   const [cancelling, setCancelling] = useState(false)
+
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
 
   useEffect(() => {
     if (!file) {
@@ -151,6 +153,8 @@ function Upload() {
       })
 
       setStatus('Post created successfully.')
+      setShowSuccessPopup(true)
+
       setTitle('')
       setTagsInput('')
       setSelectedCategoryIds([])
@@ -346,6 +350,55 @@ function Upload() {
         <p role="alert" id="error-feedback">
           {error}
         </p>
+      )}
+
+      {showSuccessPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          role="presentation"
+        >
+          <div
+            className="bg-drop-down border-style flex h-1/6 w-[50wv] flex-col items-center justify-between pt-4 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-success-title"
+          >
+            <h2
+              id="upload-success-title"
+              className="extra-big-text mb-3 font-bold"
+            >
+              Upload successful!
+            </h2>
+
+            <p className="w-3/4">
+              Your post has been submitted successfully and is awaiting review
+              by the moderation team. You can check its approval status at any
+              time.
+            </p>
+
+            <div className="light-to-dark-gradient flex justify-center gap-2">
+              <VerticalHR />
+
+              <button
+                type="button"
+                className="cancel"
+                onClick={() => setShowSuccessPopup(false)}
+              >
+                Close
+              </button>
+
+              <Link
+                to="/posts/pending"
+
+                onClick={() => setShowSuccessPopup(false)}
+              >
+                <button className="submit">View status</button>
+              </Link>
+
+              <VerticalHR />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
