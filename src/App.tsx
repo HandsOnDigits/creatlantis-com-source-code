@@ -13,6 +13,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Post from './pages/Post'
 import EditPost from './pages/EditPost'
+import PendingPosts from './pages/PendingPosts'
 import ProtectedRoute from './ProtectedRoute'
 import Profile from './pages/Profile'
 import ProfileEditor from './pages/ProfileEditor'
@@ -65,11 +66,13 @@ function App() {
         {/* Public profile */}
         <Route path="/profile/:username" element={<Profile />} />
 
+        {/* Private pages (login only) */}
         <Route element={<ProtectedRoute />}>
           <Route path="/upload/:type" element={<Upload />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/profile/edit" element={<ProfileEditor />} />
           <Route path="/notes" element={<Notes />} />
+          <Route path="/posts/pending" element={<PendingPosts />} />
         </Route>
       </Routes>
     </BrowserRouter>

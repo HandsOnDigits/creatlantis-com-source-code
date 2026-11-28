@@ -95,7 +95,7 @@ function EditPost() {
       })
 
       setStatus('Post updated successfully.')
-      navigate(`/posts/${post.id}`)
+      navigate(`/posts/pending`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update post.')
     } finally {

@@ -201,14 +201,23 @@ function NavigationBar({
             )}
 
             {user && (
-              <button
-                id="main-profile"
-                onClick={() =>
-                  navigate(`/profile/${encodeURIComponent(user.username)}`)
-                }
-              >
-                My Profile
-              </button>
+              <>
+                <button
+                  id="main-profile"
+                  onClick={() =>
+                    navigate(`/profile/${encodeURIComponent(user.username)}`)
+                  }
+                >
+                  My Profile
+                </button>
+
+                <button
+                  onClick={() => navigate('/posts/pending')}
+                  className="edit"
+                >
+                  Pending Posts
+                </button>
+              </>
             )}
 
             <HorizontalHR />

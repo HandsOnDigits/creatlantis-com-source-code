@@ -579,6 +579,16 @@ export const postsApi = {
     })
   },
 
+  // GET /api/posts/mine/pending
+  listMyPending(page = 1, limit = 10) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    })
+
+    return api.get<PostListResponse>(`/api/posts/mine/pending?${params}`)
+  },
+
   // GET /api/posts/:id/edit
   getForEdit(id: number) {
     return api.get<ApiResponse<EditablePost>>(`/api/posts/${id}/edit`)

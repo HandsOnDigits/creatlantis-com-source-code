@@ -336,6 +336,49 @@ function normalizeTags(tags: string[]): string[] {
   return [...new Set(tags)]
 }
 
+// Get the authenticated user's posts awaiting approval.
+router.get('/mine/pending', requireAuth, async (req, res) => {
+  const page = Math.max(1, Number(req.query.page) || 1)
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10))
+  const offset = (page - 1) * limit
+  const userId = req.auth!.userId
+
+  const result = await mainQueryPool.query<{ id: number }>(
+    `
+      SELECT p."id"
+      FROM public."Post" p
+      WHERE p."authorId" = $1
+        AND p."publicationStatus" = 'PENDING_APPROVAL'
+      ORDER BY p."createdAt" DESC, p."id" DESC
+      LIMIT $2
+      OFFSET $3
+    `,
+    [userId, limit + 1, offset],
+  )
+
+  const hasMore = result.rows.length > limit
+  const data = await Promise.all(
+    result.rows.slice(0, limit).map((row) =>
+      db.orm.public.Post.where({
+        id: row.id,
+        authorId: userId,
+        publicationStatus: 'PENDING_APPROVAL',
+      })
+        .select('id', 'type', 'title', 'content', 'createdAt', 'authorId')
+        .first(),
+    ),
+  )
+
+  return res.json({
+    data: data.filter((post) => post !== null),
+    pagination: {
+      page,
+      limit,
+      hasMore,
+    },
+  })
+})
+
 // Get a post owned by the authenticated user for editing.
 // Unlike the public endpoint, this also returns pending and rejected posts.
 router.get('/:id/edit', requireAuth, async (req, res) => {
